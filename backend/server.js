@@ -37,14 +37,16 @@ const allowedOrigins = [
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://localhost:8080',
 ];
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    cb(null, true); // allow all for now, restrict in production
-  },
+  origin: (origin, cb) => cb(null, true), // allow all origins
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+app.options('*', cors()); // handle all preflight requests
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -518,22 +520,61 @@ app.post('/api/admin/products/bulk', authMiddleware, async (req, res) => {
 });
 
 // ============ ORDERS (PUBLIC) ============
+app.options('/api/orders', (req, res) => res.sendStatus(200)); // explicit preflight
+
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customerName, customerPhone, customerAddress, deliveryArea, items, subtotal, total, notes } = req.body;
-    if (!customerName || !customerPhone || !customerAddress || !items || !items.length)
-      return res.status(400).json({ success: false, message: 'Required fields missing' });
+    let body = req.body;
+    // Handle cases where body might be a string (some frontend setups)
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch { body = {}; }
+    }
+
+    const { customerName, customerPhone, customerAddress, deliveryArea, items, subtotal, total, notes } = body;
+
+    if (!customerName || !customerPhone || !customerAddress)
+      return res.status(400).json({ success: false, message: 'নাম, ফোন ও ঠিকানা আবশ্যক' });
+    if (!items || !Array.isArray(items) || items.length === 0)
+      return res.status(400).json({ success: false, message: 'অর্ডারে কোনো পণ্য নেই' });
+
+    // Normalize items - handle different frontend data structures
+    const normalizedItems = items.map(item => ({
+      productId: item.productId || item._id || item.id || '',
+      name: item.name || item.productName || 'Unknown Product',
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 1,
+      img: item.img || item.image || item.thumbnail || '',
+      category: item.category || '',
+    }));
+
+    const area = deliveryArea || 'inside';
+    const charge = area === 'outside' ? 120 : 60;
+    const calcSubtotal = normalizedItems.reduce((s, i) => s + (i.price * i.quantity), 0);
+    const finalSubtotal = Number(subtotal) || calcSubtotal;
+    const finalTotal = Number(total) || (finalSubtotal + charge);
 
     const orderId = generateOrderId();
     const order = await Order.create({
-      orderId, customerName, customerPhone, customerAddress,
-      deliveryArea: deliveryArea || 'inside',
-      deliveryCharge: deliveryArea === 'outside' ? 120 : 60,
-      items, subtotal, total, notes: notes || '',
-      statusHistory: [{ status: 'pending', note: 'Order placed' }],
+      orderId,
+      customerName: String(customerName).trim(),
+      customerPhone: String(customerPhone).trim(),
+      customerAddress: String(customerAddress).trim(),
+      deliveryArea: area,
+      deliveryCharge: charge,
+      items: normalizedItems,
+      subtotal: finalSubtotal,
+      total: finalTotal,
+      notes: notes ? String(notes).trim() : '',
+      statusHistory: [{ status: 'pending', note: 'অর্ডার দেওয়া হয়েছে' }],
     });
-    res.json({ success: true, data: { orderId: order.orderId, _id: order._id }, message: 'Order placed successfully' });
+
+    res.json({
+      success: true,
+      data: { orderId: order.orderId, _id: order._id },
+      message: 'অর্ডার সফলভাবে দেওয়া হয়েছে',
+    });
   } catch (err) {
+    console.error('Order error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -880,6 +921,104 @@ app.post('/api/admin/seed', async (req, res) => {
     const hashed = await bcrypt.hash('admin123', 10);
     await Admin.create({ username: 'admin', password: hashed });
     res.json({ success: true, message: 'Admin created: admin/admin123' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ============ SEED ALL (Categories + Products) ============
+app.post('/api/admin/seed-all', async (req, res) => {
+  try {
+    const { secret } = req.body;
+    if (secret !== 'FFH_SEED_2024') return res.status(403).json({ success: false, message: 'Forbidden' });
+
+    // ---- CATEGORIES ----
+    const categoriesData = [
+      { name: 'শাড়ি', slug: 'saree', description: 'সুন্দর ও বৈচিত্র্যময় শাড়ির কালেকশন', sortOrder: 1 },
+      { name: 'থ্রি-পিস', slug: 'three-piece', description: 'মহিলাদের থ্রি-পিস কালেকশন', sortOrder: 2 },
+      { name: 'কামিজ ও সালোয়ার', slug: 'kamiz-salwar', description: 'সালোয়ার কামিজ কালেকশন', sortOrder: 3 },
+      { name: 'পাঞ্জাবি', slug: 'panjabi', description: 'ছেলেদের পাঞ্জাবি কালেকশন', sortOrder: 4 },
+      { name: 'কিডস কালেকশন', slug: 'kids', description: 'ছেলে ও মেয়ে শিশুদের পোশাক', sortOrder: 5 },
+      { name: 'লেহেঙ্গা', slug: 'lehenga', description: 'বিশেষ অনুষ্ঠানের জন্য লেহেঙ্গা', sortOrder: 6 },
+      { name: 'কুর্তি', slug: 'kurti', description: 'কুর্তি কালেকশন', sortOrder: 7 },
+      { name: 'বোরখা ও হিজাব', slug: 'borka-hijab', description: 'বোরখা, হিজাব ও আবায়া কালেকশন', sortOrder: 8 },
+    ];
+
+    const createdCats = {};
+    for (const cat of categoriesData) {
+      const existing = await Category.findOne({ slug: cat.slug });
+      if (!existing) {
+        const created = await Category.create({ ...cat, isActive: true });
+        createdCats[cat.slug] = created;
+      } else {
+        createdCats[cat.slug] = existing;
+      }
+    }
+
+    // ---- PRODUCTS ----
+    const productsData = [
+      // শাড়ি
+      { name: 'মসলিন সিল্ক শাড়ি - লাল', price: 1850, oldPrice: 2200, saving: 350, category: 'saree', description: 'উচ্চমানের মসলিন সিল্ক শাড়ি, বিশেষ অনুষ্ঠানের জন্য আদর্শ।', onSale: true, featured: true, stock: 25, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/saree-red', sortOrder: 1 },
+      { name: 'জামদানি শাড়ি - সবুজ', price: 2500, oldPrice: 3000, saving: 500, category: 'saree', description: 'ঐতিহ্যবাহী জামদানি শাড়ি, হাতে বোনা নকশা।', onSale: true, featured: true, stock: 15, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/saree-green', sortOrder: 2 },
+      { name: 'কাতান সিল্ক শাড়ি - নীল', price: 3200, oldPrice: 3800, saving: 600, category: 'saree', description: 'বিবাহ ও বিশেষ অনুষ্ঠানের জন্য কাতান সিল্ক শাড়ি।', onSale: false, featured: true, stock: 10, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/saree-blue', sortOrder: 3 },
+      { name: 'সুতি শাড়ি - হলুদ', price: 950, oldPrice: 1200, saving: 250, category: 'saree', description: 'আরামদায়ক সুতি শাড়ি, দৈনন্দিন পরিধানের জন্য উপযুক্ত।', onSale: true, stock: 40, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/saree-yellow', sortOrder: 4 },
+      { name: 'জর্জেট শাড়ি - গোলাপি', price: 1450, oldPrice: 1700, saving: 250, category: 'saree', description: 'হালকা ও স্বাচ্ছন্দ্যময় জর্জেট শাড়ি।', onSale: false, stock: 30, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/saree-pink', sortOrder: 5 },
+
+      // থ্রি-পিস
+      { name: 'প্রিন্টেড থ্রি-পিস - বেগুনি', price: 1200, oldPrice: 1500, saving: 300, category: 'three-piece', description: 'সুন্দর প্রিন্টেড থ্রি-পিস সেট, সহজ পরিধান।', onSale: true, featured: true, stock: 20, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/threepiece-purple', sortOrder: 1 },
+      { name: 'এমব্রয়ডারি থ্রি-পিস - সাদা', price: 1800, oldPrice: 2100, saving: 300, category: 'three-piece', description: 'হাতে কাজ করা এমব্রয়ডারি থ্রি-পিস।', onSale: false, featured: true, stock: 18, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/threepiece-white', sortOrder: 2 },
+      { name: 'লিনেন থ্রি-পিস - আকাশি', price: 1350, oldPrice: 1600, saving: 250, category: 'three-piece', description: 'লিনেন কাপড়ের থ্রি-পিস, গরমের জন্য আদর্শ।', onSale: true, stock: 22, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/threepiece-sky', sortOrder: 3 },
+
+      // কামিজ ও সালোয়ার
+      { name: 'ঈদ স্পেশাল কামিজ সেট', price: 1100, oldPrice: 1400, saving: 300, category: 'kamiz-salwar', description: 'ঈদ উপলক্ষে বিশেষ কামিজ সেট, সুতি মিক্স কাপড়।', onSale: true, featured: true, stock: 35, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kamiz-eid', sortOrder: 1 },
+      { name: 'সিম্পল ডেইলি কামিজ - সবুজ', price: 750, oldPrice: 900, saving: 150, category: 'kamiz-salwar', description: 'দৈনন্দিন পরিধানের জন্য আরামদায়ক কামিজ।', onSale: false, stock: 50, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kamiz-green', sortOrder: 2 },
+      { name: 'এক্সক্লুসিভ সালোয়ার কামিজ - কমলা', price: 1300, oldPrice: 1550, saving: 250, category: 'kamiz-salwar', description: 'এক্সক্লুসিভ ডিজাইনের সালোয়ার কামিজ।', onSale: true, stock: 28, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kamiz-orange', sortOrder: 3 },
+
+      // পাঞ্জাবি
+      { name: 'ঈদ স্পেশাল পাঞ্জাবি - সাদা', price: 1200, oldPrice: 1500, saving: 300, category: 'panjabi', description: 'ঈদের জন্য বিশেষ পাঞ্জাবি, উচ্চমানের কাপড়।', onSale: true, featured: true, stock: 30, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/panjabi-white', sortOrder: 1 },
+      { name: 'ক্যাজুয়াল পাঞ্জাবি - নীল', price: 850, oldPrice: 1050, saving: 200, category: 'panjabi', description: 'ক্যাজুয়াল ওয়্যার পাঞ্জাবি, আরামদায়ক ফ্যাব্রিক।', onSale: false, stock: 40, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/panjabi-blue', sortOrder: 2 },
+      { name: 'সিল্ক পাঞ্জাবি - ক্রিম', price: 1800, oldPrice: 2200, saving: 400, category: 'panjabi', description: 'বিশেষ অনুষ্ঠানের জন্য সিল্ক পাঞ্জাবি।', onSale: true, featured: true, stock: 15, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/panjabi-cream', sortOrder: 3 },
+      { name: 'কটন পাঞ্জাবি - হালকা বাদামি', price: 700, oldPrice: 850, saving: 150, category: 'panjabi', description: 'সুতি পাঞ্জাবি, গরম আবহাওয়ার জন্য উপযুক্ত।', onSale: false, stock: 45, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/panjabi-brown', sortOrder: 4 },
+
+      // কিডস
+      { name: 'বাচ্চাদের ফ্রক - গোলাপি', price: 550, oldPrice: 700, saving: 150, category: 'kids', description: 'মেয়ে শিশুদের জন্য সুন্দর ফ্রক, নরম কাপড়।', onSale: true, featured: true, stock: 35, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kids-frock', sortOrder: 1 },
+      { name: 'ছেলেদের পাঞ্জাবি সেট - হলুদ', price: 700, oldPrice: 900, saving: 200, category: 'kids', description: 'ছেলে শিশুদের পাঞ্জাবি সেট, ঈদের জন্য আদর্শ।', onSale: true, stock: 28, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kids-panjabi', sortOrder: 2 },
+      { name: 'মেয়েদের সালোয়ার কামিজ - লাল', price: 650, oldPrice: 800, saving: 150, category: 'kids', description: 'মেয়ে শিশুদের সালোয়ার কামিজ, টেকসই ও আরামদায়ক।', onSale: false, stock: 30, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kids-kamiz', sortOrder: 3 },
+
+      // লেহেঙ্গা
+      { name: 'পার্টি লেহেঙ্গা - মেরুন', price: 3500, oldPrice: 4200, saving: 700, category: 'lehenga', description: 'বিয়ে ও পার্টির জন্য বিশেষ লেহেঙ্গা।', onSale: true, featured: true, stock: 12, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/lehenga-maroon', sortOrder: 1 },
+      { name: 'ব্রাইডাল লেহেঙ্গা - গোল্ডেন', price: 5500, oldPrice: 6500, saving: 1000, category: 'lehenga', description: 'বিয়ের অনুষ্ঠানের জন্য বিশেষ ব্রাইডাল লেহেঙ্গা।', onSale: false, featured: true, stock: 8, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/lehenga-golden', sortOrder: 2 },
+
+      // কুর্তি
+      { name: 'কটন কুর্তি - সাদা প্রিন্ট', price: 650, oldPrice: 800, saving: 150, category: 'kurti', description: 'হালকা সুতির কুর্তি, অফিস ও বাড়ির জন্য উপযুক্ত।', onSale: true, stock: 40, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kurti-white', sortOrder: 1 },
+      { name: 'রেয়ন কুর্তি - ফুলেল প্রিন্ট', price: 850, oldPrice: 1000, saving: 150, category: 'kurti', description: 'রঙিন ফুলের প্রিন্টের কুর্তি, ক্যাজুয়াল লুকের জন্য।', onSale: false, featured: true, stock: 35, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/kurti-floral', sortOrder: 2 },
+
+      // বোরখা ও হিজাব
+      { name: 'প্রিমিয়াম আবায়া - কালো', price: 1800, oldPrice: 2200, saving: 400, category: 'borka-hijab', description: 'উচ্চমানের নরম কাপড়ের আবায়া, আরামদায়ক।', onSale: true, featured: true, stock: 25, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/abaya-black', sortOrder: 1 },
+      { name: 'হিজাব সেট (৩ পিস)', price: 450, oldPrice: 600, saving: 150, category: 'borka-hijab', description: 'তিনটি বিভিন্ন রঙের হিজাব একসাথে।', onSale: true, stock: 60, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/hijab-set', sortOrder: 2 },
+      { name: 'ডিজাইনার বোরখা - নেভি ব্লু', price: 2200, oldPrice: 2700, saving: 500, category: 'borka-hijab', description: 'সুন্দর এমব্রয়ডারি কাজের বোরখা।', onSale: false, featured: true, stock: 20, img: 'https://res.cloudinary.com/dsiccgigh/image/upload/v1/FamilyFashionHub/borka-navy', sortOrder: 3 },
+    ];
+
+    let productsCreated = 0;
+    let productsSkipped = 0;
+    for (const prod of productsData) {
+      const existing = await Product.findOne({ name: prod.name, category: prod.category });
+      if (!existing) {
+        await Product.create({ ...prod, isActive: true, images: prod.img ? [{ url: prod.img, publicId: '' }] : [] });
+        productsCreated++;
+      } else {
+        productsSkipped++;
+      }
+    }
+
+    const catCount = await Category.countDocuments();
+    const prodCount = await Product.countDocuments({ isActive: true });
+
+    res.json({
+      success: true,
+      message: `Seed সম্পন্ন! ${productsCreated} পণ্য তৈরি, ${productsSkipped} টি ইতিমধ্যে ছিল।`,
+      stats: { totalCategories: catCount, totalProducts: prodCount, productsCreated, productsSkipped },
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
