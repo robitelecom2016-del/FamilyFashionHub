@@ -4620,12 +4620,12 @@ else if (product.category === 'artificial-flowers') catName = 'Artificial Flower
           if (!validateForm()) return;
           
           // API দিয়ে অর্ডার দিন
-          const nameVal = document.getElementById('customerName')?.value || '';
-          const phoneVal = document.getElementById('customerPhone')?.value || '';
-          const addressVal = document.getElementById('customerAddress')?.value || '';
+          const nameVal = document.getElementById('orderName')?.value?.trim() || '';
+          const phoneVal = document.getElementById('orderPhone')?.value?.trim() || '';
+          const addressVal = document.getElementById('orderAddress')?.value?.trim() || '';
           const deliveryArea = document.querySelector('input[name="deliveryArea"]:checked')?.value || 'inside';
           const deliveryCharge = deliveryArea === 'outside' ? 120 : 60;
-          const subtotal = cart.reduce((s,i) => s + i.price * i.quantity, 0);
+          const subtotal = cart.reduce((s,i) => s + i.price * (i.qty || i.quantity || 1), 0);
           const total = subtotal + deliveryCharge;
           
           const orderData = {
@@ -4633,7 +4633,7 @@ else if (product.category === 'artificial-flowers') catName = 'Artificial Flower
             phone: phoneVal,
             address: addressVal,
             deliveryArea,
-            items: cart.map(i => ({ productId: String(i.id), name: i.name, price: i.price, quantity: i.quantity, img: i.img, category: i.category||'' })),
+            items: cart.map(i => ({ productId: String(i.id), name: i.name, price: i.price, quantity: i.qty || i.quantity || 1, img: i.img, category: i.category||'' })),
             subtotal, total,
             note: document.getElementById('orderNote')?.value || '',
           };
