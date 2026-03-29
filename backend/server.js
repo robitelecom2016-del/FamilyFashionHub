@@ -68,9 +68,15 @@ async function uploadMultiple(files, folder) {
 
 // ===== MONGODB CONNECTION =====
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ MongoDB Connected');
-    // DB connect হওয়ার পর auto admin setup চেক করো
+    // Bad unique index on orderId drop করো (যদি থাকে)
+    try {
+      await mongoose.connection.collection('orders').dropIndex('orderId_1');
+      console.log('🔧 Bad orderId index dropped');
+    } catch(e) {
+      // index নেই — no problem
+    }
     autoSetupAdmin();
   })
   .catch(err => console.error('❌ MongoDB Error:', err));
@@ -129,10 +135,11 @@ const orderSchema = new mongoose.Schema({
     quantity:  Number,
     img:       String,
   }],
-  total:     { type: Number, default: 0 },
-  status:    { type: String, default: 'pending', enum: ['pending','processing','shipped','delivered','cancelled'] },
-  note:      { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now },
+  total:        { type: Number, default: 0 },
+  deliveryArea: { type: String, default: 'inside' },
+  status:       { type: String, default: 'pending', enum: ['pending','processing','shipped','delivered','cancelled'] },
+  note:         { type: String, default: '' },
+  createdAt:    { type: Date, default: Date.now },
 });
 
 const Product  = mongoose.model('Product',  productSchema);

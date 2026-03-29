@@ -2945,6 +2945,20 @@
     </div>
   </div>
 
+  <!-- ===== ERROR POPUP ===== -->
+  <div id="errorPopup" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center invisible opacity-0 transition-all duration-300 p-4">
+    <div id="errorPopupBox" style="background:#fff;max-width:360px;width:100%;border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.2);transform:scale(0.9);transition:transform 0.3s ease;">
+      <div style="width:80px;height:80px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:38px;">❌</div>
+      <h3 style="font-size:20px;font-weight:800;color:#991b1b;margin-bottom:10px;">অর্ডার হয়নি!</h3>
+      <p id="errorPopupMsg" style="font-size:14px;color:#6b7280;margin-bottom:24px;line-height:1.6;"></p>
+      <button id="closeErrorBtn"
+        style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;"
+        onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+        ঠিক আছে, আবার চেষ্টা করব
+      </button>
+    </div>
+  </div>
+
   <script>
     (function() {
       // ---------- অর্গানিক প্রোডাক্ট ডাটা ----------
@@ -3018,6 +3032,8 @@
       const mobileSearchBar = document.getElementById('mobileSearchBar');
       const successPopup = document.getElementById('successPopup');
       const closeSuccessBtn = document.getElementById('closeSuccessBtn');
+      const errorPopup = document.getElementById('errorPopup');
+      const closeErrorBtn = document.getElementById('closeErrorBtn');
       const categoryTitle = document.getElementById('categoryTitle');
       
       // ডিটেইল পেজ এলিমেন্ট
@@ -4610,6 +4626,15 @@ else if (product.category === 'artificial-flowers') catName = 'Artificial Flower
           successPopup.classList.add('invisible', 'opacity-0');
         });
 
+        if (closeErrorBtn) {
+          closeErrorBtn.addEventListener('click', () => {
+            errorPopup.classList.add('invisible', 'opacity-0');
+          });
+          errorPopup.addEventListener('click', (e) => {
+            if (e.target === errorPopup) errorPopup.classList.add('invisible', 'opacity-0');
+          });
+        }
+
         deliveryRadios.forEach(radio => radio.addEventListener('change', () => {
           const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
           updateFinalTotal(subtotal);
@@ -4642,6 +4667,17 @@ else if (product.category === 'artificial-flowers') catName = 'Artificial Flower
           const submitBtn = paymentForm.querySelector('button[type="submit"]');
           if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'অর্ডার দেওয়া হচ্ছে...'; }
 
+          function showErrorPopup(msg) {
+            const ep = document.getElementById('errorPopup');
+            const em = document.getElementById('errorPopupMsg');
+            if (em) em.textContent = msg;
+            if (ep) {
+              ep.classList.remove('invisible', 'opacity-0');
+              const box = document.getElementById('errorPopupBox');
+              if (box) { box.style.transform = 'scale(0.85)'; setTimeout(() => { box.style.transform = 'scale(1)'; }, 10); }
+            }
+          }
+
           try {
             const API = window.FFH_API || 'https://familyfashionhub-backend.onrender.com/api';
             const res = await fetch(API + '/orders', {
@@ -4659,17 +4695,19 @@ else if (product.category === 'artificial-flowers') catName = 'Artificial Flower
               if (oidEl) oidEl.textContent = orderId ? '#' + orderId.slice(-8).toUpperCase() : '';
               const phoneEl = document.getElementById('successPhone');
               if (phoneEl) phoneEl.textContent = phoneVal;
-              // Success popup দেখাও
+              // Success popup অ্যানিমেশন সহ দেখাও
               successPopup.classList.remove('invisible', 'opacity-0');
+              const sbox = document.getElementById('successPopupBox');
+              if (sbox) { sbox.style.transform = 'scale(0.85)'; setTimeout(() => { sbox.style.transform = 'scale(1)'; sbox.style.transition = 'transform 0.3s ease'; }, 10); }
               // কার্ট খালি করো
               cart = [];
               updateCartUI();
             } else {
-              alert('অর্ডার দেওয়া সম্ভব হয়নি:\n' + (data.message || 'সার্ভার ত্রুটি'));
+              showErrorPopup(data.message || 'অজানা সার্ভার ত্রুটি। আবার চেষ্টা করুন।');
             }
           } catch(err) {
             console.error('Order error:', err);
-            alert('সার্ভারের সাথে সংযোগ হচ্ছে না। আবার চেষ্টা করুন।');
+            showErrorPopup('সার্ভারের সাথে সংযোগ হচ্ছে না। ইন্টারনেট চেক করে আবার চেষ্টা করুন।');
           }
 
           if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'অর্ডার দিন'; }
