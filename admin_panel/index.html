@@ -277,8 +277,8 @@ tr:hover td { background: var(--bg); }
     </div>
     <div id="loginError" style="display:none; background:#fee2e2; color:#991b1b; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px;"></div>
     <div class="form-group">
-      <label class="form-label">ফোন নম্বর</label>
-      <input type="tel" class="form-control" id="loginPhone" placeholder="01XXXXXXXXX">
+      <label class="form-label">ইউজার নেম</label>
+      <input type="text" class="form-control" id="loginPhone" placeholder="ইউজার নেম লিখুন">
     </div>
     <div class="form-group">
       <label class="form-label">পাসওয়ার্ড</label>
@@ -369,10 +369,6 @@ tr:hover td { background: var(--bg); }
           <div class="search-input"><i class="fas fa-search"></i><input type="text" placeholder="পণ্য খুঁজুন..." id="productSearch" oninput="filterProducts()"></div>
           <select class="form-control form-control-sm" id="productCategoryFilter" onchange="filterProducts()" style="width:auto;">
             <option value="">সব ক্যাটাগরি</option>
-            <option value="men">পুরুষ</option>
-            <option value="women">মহিলা</option>
-            <option value="kids">শিশু</option>
-            <option value="accessories">অ্যাক্সেসরিজ</option>
           </select>
           <button class="btn btn-primary btn-sm" onclick="openProductModal()"><i class="fas fa-plus"></i> নতুন পণ্য</button>
         </div>
@@ -431,6 +427,33 @@ tr:hover td { background: var(--bg); }
           <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> সেভ করুন</button>
         </div>
       </div>
+
+      <!-- ===== CATEGORY & SUBCATEGORY MANAGEMENT ===== -->
+      <div class="settings-section">
+        <div class="card-header">
+          <h3><i class="fas fa-tags" style="color:var(--success)"></i> ক্যাটাগরি ও সাব-ক্যাটাগরি</h3>
+        </div>
+        <div class="card-body">
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">এখান থেকে মেইন ক্যাটাগরি এবং প্রতিটির সাব-ক্যাটাগরি যোগ, সম্পাদনা ও মুছে ফেলা যাবে।</p>
+
+          <!-- Add Main Category -->
+          <div style="display:flex;gap:8px;margin-bottom:20px;align-items:flex-end;">
+            <div class="form-group" style="flex:1;margin-bottom:0;">
+              <label class="form-label">নতুন মেইন ক্যাটাগরি</label>
+              <input type="text" class="form-control" id="newCatName" placeholder="যেমন: shoes">
+            </div>
+            <div class="form-group" style="flex:1;margin-bottom:0;">
+              <label class="form-label">লেবেল (বাংলা)</label>
+              <input type="text" class="form-control" id="newCatLabel" placeholder="যেমন: জুতা">
+            </div>
+            <button class="btn btn-success btn-sm" onclick="addMainCategory()" style="height:40px;white-space:nowrap;"><i class="fas fa-plus"></i> যোগ করুন</button>
+          </div>
+
+          <!-- Categories List -->
+          <div id="categoryManagerList"></div>
+        </div>
+      </div>
+
       <div class="settings-section">
         <div class="card-header"><h3><i class="fas fa-key" style="color:var(--warning)"></i> পাসওয়ার্ড পরিবর্তন</h3></div>
         <div class="card-body">
@@ -471,12 +494,14 @@ tr:hover td { background: var(--bg); }
         </div>
         <div class="form-group">
           <label class="form-label">ক্যাটাগরি *</label>
-          <select class="form-control" id="productCategory">
+          <select class="form-control" id="productCategory" onchange="updateSubcategoryOptions()">
             <option value="">বেছে নিন</option>
-            <option value="men">পুরুষ</option>
-            <option value="women">মহিলা</option>
-            <option value="kids">শিশু</option>
-            <option value="accessories">অ্যাক্সেসরিজ</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">সাব-ক্যাটাগরি</label>
+          <select class="form-control" id="productSubcategory">
+            <option value="">-- নির্বাচন করুন --</option>
           </select>
         </div>
         <div class="form-group" style="grid-column: 1/-1;">
@@ -579,7 +604,7 @@ async function adminLogin() {
   const password = document.getElementById('loginPassword').value;
   const btn = document.getElementById('loginBtn');
   const errEl = document.getElementById('loginError');
-  if (!phone || !password) return showError('ফোন ও পাসওয়ার্ড দিন', errEl);
+  if (!phone || !password) return showError('ইউজার নেম ও পাসওয়ার্ড দিন', errEl);
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> লগইন হচ্ছে...';
   try {
     const res = await fetch(API_URL + '/admin/login', {
@@ -610,6 +635,7 @@ function adminLogout() {
   adminToken = ''; adminUser = null;
   localStorage.removeItem('ffh_admin_token');
   localStorage.removeItem('ffh_admin_user');
+  stopOrderPolling();
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('mainContent').style.display = 'none';
 }
@@ -622,6 +648,8 @@ function showAdminPanel() {
     document.getElementById('adminAvatar').textContent = (adminUser.name || 'A')[0].toUpperCase();
   }
   loadStats(); loadDashboard();
+  startOrderPolling();
+  loadCategoriesFromServer();
 }
 
 // ===== INIT =====
@@ -631,12 +659,19 @@ window.addEventListener('DOMContentLoaded', () => {
   if (savedApi) API_URL = savedApi;
   document.getElementById('settingApiUrl').value = API_URL;
 
+  // Category dropdowns initial populate from localStorage
+  refreshCategoryDropdowns();
+
   if (adminToken && adminUser) {
     showAdminPanel();
+    // Server-dan category load kore refresh koro
+    loadCategoriesFromServer();
   }
   updateClock();
   setInterval(updateClock, 1000);
   document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
+  // Enter key for username field too
+  document.getElementById('loginPhone').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
 });
 
 function updateClock() {
@@ -828,6 +863,7 @@ function openProductModal(product = null) {
   document.getElementById('productOldPrice').value = '';
   document.getElementById('productSaving').value = '';
   document.getElementById('productCategory').value = '';
+  document.getElementById('productSubcategory').innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
   document.getElementById('productDescription').value = '';
   document.getElementById('productOnSale').checked = false;
   document.getElementById('productSoldOut').checked = false;
@@ -847,6 +883,11 @@ async function editProduct(id) {
   document.getElementById('productOldPrice').value = p.oldPrice || '';
   document.getElementById('productSaving').value = p.saving || '';
   document.getElementById('productCategory').value = p.category;
+  updateSubcategoryOptions();
+  // subcategory set koro (slight delay so options are populated)
+  setTimeout(() => {
+    if (p.subcategory) document.getElementById('productSubcategory').value = p.subcategory;
+  }, 50);
   document.getElementById('productDescription').value = p.description || '';
   document.getElementById('productOnSale').checked = p.onSale;
   document.getElementById('productSoldOut').checked = p.soldOut;
@@ -863,6 +904,7 @@ async function saveProduct() {
   const name = document.getElementById('productName').value.trim();
   const price = document.getElementById('productPrice').value;
   const category = document.getElementById('productCategory').value;
+  const subcategory = document.getElementById('productSubcategory').value;
   if (!name || !price || !category) return toast('নাম, মূল্য ও ক্যাটাগরি আবশ্যিক', 'error');
 
   const btn = document.getElementById('saveProductBtn');
@@ -874,6 +916,7 @@ async function saveProduct() {
   form.append('oldPrice', document.getElementById('productOldPrice').value || 0);
   form.append('saving', document.getElementById('productSaving').value || 0);
   form.append('category', category);
+  form.append('subcategory', subcategory);
   form.append('description', document.getElementById('productDescription').value);
   form.append('onSale', document.getElementById('productOnSale').checked);
   form.append('soldOut', document.getElementById('productSoldOut').checked);
@@ -1114,9 +1157,16 @@ async function loadSettings() {
       document.getElementById('settingSiteName').value = d.siteName || '';
       document.getElementById('settingPhone').value = d.phone || '';
       document.getElementById('settingFacebook').value = d.facebook || '';
+      // Categories from server
+      if (d.categories && Array.isArray(d.categories)) {
+        allCategories = d.categories;
+        saveCategoriesToLocal();
+      }
     }
   } catch {}
   document.getElementById('settingApiUrl').value = API_URL;
+  refreshCategoryDropdowns();
+  renderCategoryManager();
 }
 
 async function saveSettings() {
@@ -1146,7 +1196,233 @@ function statusLabel(s) {
   return { pending: 'পেন্ডিং', processing: 'প্রসেসিং', shipped: 'শিপড', delivered: 'ডেলিভার্ড', cancelled: 'বাতিল' }[s] || s;
 }
 function catLabel(c) {
-  return { men: 'পুরুষ', women: 'মহিলা', kids: 'শিশু', accessories: 'অ্যাক্সেসরিজ' }[c] || c;
+  const found = allCategories.find(cat => cat.value === c);
+  return found ? found.label : c;
+}
+
+// ===== CATEGORY MANAGER (Local + Server via Settings) =====
+// Default categories
+const DEFAULT_CATEGORIES = [
+  { value: 'men',         label: 'পুরুষ',         subcategories: [] },
+  { value: 'women',       label: 'মহিলা',          subcategories: [] },
+  { value: 'kids',        label: 'শিশু',           subcategories: [] },
+  { value: 'accessories', label: 'অ্যাক্সেসরিজ',   subcategories: [] },
+];
+
+let allCategories = JSON.parse(localStorage.getItem('ffh_categories') || 'null') || DEFAULT_CATEGORIES;
+
+function saveCategoriesToLocal() {
+  localStorage.setItem('ffh_categories', JSON.stringify(allCategories));
+}
+
+async function saveCategoriesToServer() {
+  saveCategoriesToLocal();
+  await api('/settings', 'POST', { categories: allCategories });
+}
+
+async function loadCategoriesFromServer() {
+  try {
+    const data = await api('/settings');
+    if (data.success && data.data.categories && Array.isArray(data.data.categories)) {
+      allCategories = data.data.categories;
+      saveCategoriesToLocal();
+    }
+  } catch {}
+  refreshCategoryDropdowns();
+}
+
+function refreshCategoryDropdowns() {
+  // Product form category dropdown
+  const catSel = document.getElementById('productCategory');
+  if (catSel) {
+    const cur = catSel.value;
+    catSel.innerHTML = '<option value="">বেছে নিন</option>' +
+      allCategories.map(c => `<option value="${c.value}" ${cur===c.value?'selected':''}>${c.label}</option>`).join('');
+    updateSubcategoryOptions();
+  }
+  // Filter dropdown
+  const filterSel = document.getElementById('productCategoryFilter');
+  if (filterSel) {
+    const cur = filterSel.value;
+    filterSel.innerHTML = '<option value="">সব ক্যাটাগরি</option>' +
+      allCategories.map(c => `<option value="${c.value}" ${cur===c.value?'selected':''}>${c.label}</option>`).join('');
+  }
+}
+
+function updateSubcategoryOptions() {
+  const catVal = document.getElementById('productCategory')?.value;
+  const subSel = document.getElementById('productSubcategory');
+  if (!subSel) return;
+  const cat = allCategories.find(c => c.value === catVal);
+  const subs = cat?.subcategories || [];
+  subSel.innerHTML = '<option value="">-- নির্বাচন করুন --</option>' +
+    subs.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+}
+
+function addMainCategory() {
+  const name  = document.getElementById('newCatName').value.trim().toLowerCase().replace(/\s+/g, '_');
+  const label = document.getElementById('newCatLabel').value.trim();
+  if (!name || !label) return toast('নাম ও লেবেল দিন', 'error');
+  if (allCategories.find(c => c.value === name)) return toast('এই ক্যাটাগরি ইতিমধ্যে আছে', 'error');
+  allCategories.push({ value: name, label, subcategories: [] });
+  document.getElementById('newCatName').value = '';
+  document.getElementById('newCatLabel').value = '';
+  saveCategoriesToServer();
+  renderCategoryManager();
+  refreshCategoryDropdowns();
+  toast('ক্যাটাগরি যোগ হয়েছে');
+}
+
+function deleteMainCategory(val) {
+  confirm(`"${val}" ক্যাটাগরি মুছে ফেলবেন?`, () => {
+    allCategories = allCategories.filter(c => c.value !== val);
+    saveCategoriesToServer();
+    renderCategoryManager();
+    refreshCategoryDropdowns();
+    toast('ক্যাটাগরি মুছে ফেলা হয়েছে');
+  });
+}
+
+function addSubcategory(catVal) {
+  const nameEl  = document.getElementById('subName_' + catVal);
+  const labelEl = document.getElementById('subLabel_' + catVal);
+  const name  = nameEl.value.trim().toLowerCase().replace(/\s+/g, '_');
+  const label = labelEl.value.trim();
+  if (!name || !label) return toast('সাব-ক্যাটাগরির নাম ও লেবেল দিন', 'error');
+  const cat = allCategories.find(c => c.value === catVal);
+  if (!cat) return;
+  if (!cat.subcategories) cat.subcategories = [];
+  if (cat.subcategories.find(s => s.value === name)) return toast('এই সাব-ক্যাটাগরি ইতিমধ্যে আছে', 'error');
+  cat.subcategories.push({ value: name, label });
+  nameEl.value = ''; labelEl.value = '';
+  saveCategoriesToServer();
+  renderCategoryManager();
+  toast('সাব-ক্যাটাগরি যোগ হয়েছে');
+}
+
+function deleteSubcategory(catVal, subVal) {
+  const cat = allCategories.find(c => c.value === catVal);
+  if (!cat) return;
+  cat.subcategories = cat.subcategories.filter(s => s.value !== subVal);
+  saveCategoriesToServer();
+  renderCategoryManager();
+  toast('সাব-ক্যাটাগরি মুছে ফেলা হয়েছে');
+}
+
+function renderCategoryManager() {
+  const el = document.getElementById('categoryManagerList');
+  if (!el) return;
+  if (!allCategories.length) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">কোনো ক্যাটাগরি নেই।</p>';
+    return;
+  }
+  el.innerHTML = allCategories.map(cat => `
+    <div style="border:1.5px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="background:var(--primary-light);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <span style="font-weight:700;color:var(--primary-dark);font-size:14px;">${cat.label}</span>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">(${cat.value})</span>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deleteMainCategory('${cat.value}')"><i class="fas fa-trash"></i></button>
+      </div>
+      <div style="padding:12px 16px;">
+        <!-- Existing subcategories -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+          ${(cat.subcategories||[]).length === 0
+            ? '<span style="font-size:12px;color:var(--text-muted);">কোনো সাব-ক্যাটাগরি নেই</span>'
+            : (cat.subcategories||[]).map(s => `
+              <span style="background:#f3f4f6;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                ${s.label} <span style="color:var(--text-muted);font-size:10px;">(${s.value})</span>
+                <button onclick="deleteSubcategory('${cat.value}','${s.value}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:0;line-height:1;"><i class="fas fa-times"></i></button>
+              </span>`).join('')
+          }
+        </div>
+        <!-- Add subcategory -->
+        <div style="display:flex;gap:6px;align-items:flex-end;">
+          <input type="text" class="form-control" id="subName_${cat.value}" placeholder="value (ইংরেজি)" style="font-size:12px;padding:6px 10px;">
+          <input type="text" class="form-control" id="subLabel_${cat.value}" placeholder="লেবেল (বাংলা)" style="font-size:12px;padding:6px 10px;">
+          <button class="btn btn-success btn-sm" onclick="addSubcategory('${cat.value}')" style="white-space:nowrap;height:34px;"><i class="fas fa-plus"></i> সাব যোগ</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ===== REALTIME ORDER NOTIFICATION (Polling) =====
+let lastOrderId = null;
+let orderPollingInterval = null;
+
+function startOrderPolling() {
+  if (orderPollingInterval) return; // already running
+  // প্রথমে একবার রান করে latest order ID সেট করি
+  api('/admin/orders?limit=1').then(data => {
+    if (data.success && data.data.length) {
+      lastOrderId = data.data[0]._id;
+    }
+  }).catch(() => {});
+
+  orderPollingInterval = setInterval(async () => {
+    try {
+      const data = await api('/admin/orders?limit=1');
+      if (!data.success || !data.data.length) return;
+      const newest = data.data[0];
+      if (lastOrderId && newest._id !== lastOrderId) {
+        lastOrderId = newest._id;
+        // নতুন অর্ডার এসেছে!
+        showNewOrderNotification(newest);
+        // যদি অর্ডার পেজ খোলা থাকে, রিফ্রেশ করো
+        if (document.getElementById('page-orders').classList.contains('active')) {
+          loadOrders();
+        }
+        // Stats আপডেট
+        loadStats();
+        // Dashboard আপডেট
+        if (document.getElementById('page-dashboard').classList.contains('active')) {
+          loadDashboard();
+        }
+      }
+    } catch {}
+  }, 8000); // ৮ সেকেন্ড পর পর চেক
+}
+
+function stopOrderPolling() {
+  if (orderPollingInterval) {
+    clearInterval(orderPollingInterval);
+    orderPollingInterval = null;
+  }
+}
+
+function showNewOrderNotification(order) {
+  // Sound
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+  } catch {}
+
+  // Toast notification
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast success';
+  t.style.cssText = 'min-width:280px;cursor:pointer;';
+  t.innerHTML = `<i class="fas fa-bell"></i> <div><strong>নতুন অর্ডার!</strong><br><span style="font-size:12px;">${order.customerName} · ৳${order.total}</span></div>`;
+  t.onclick = () => {
+    t.remove();
+    // অর্ডার পেজে নিয়ে যাও
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[onclick*="orders"]')?.classList.add('active');
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('page-orders').classList.add('active');
+    document.getElementById('pageTitle').textContent = 'অর্ডার সমূহ';
+    loadOrders();
+  };
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 8000);
 }
 
 // Close modals on overlay click

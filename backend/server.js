@@ -86,6 +86,7 @@ const productSchema = new mongoose.Schema({
   img:         { type: String, default: '' },
   images:      [{ url: String, public_id: String }],
   category:    { type: String, required: true },
+  subcategory: { type: String, default: '' },
   onSale:      { type: Boolean, default: false },
   soldOut:     { type: Boolean, default: false },
   featured:    { type: Boolean, default: false },
@@ -196,9 +197,10 @@ function adminMiddleware(req, res, next) {
 
 app.get('/api/products', async (req, res) => {
   try {
-    const { category, onSale, featured, limit = 100, page = 1, search } = req.query;
+    const { category, subcategory, onSale, featured, limit = 100, page = 1, search } = req.query;
     const filter = {};
     if (category && category !== 'all') filter.category = category;
+    if (subcategory) filter.subcategory = subcategory;
     if (onSale   === 'true') filter.onSale   = true;
     if (featured === 'true') filter.featured = true;
     if (search) filter.name = { $regex: search, $options: 'i' };
@@ -221,7 +223,7 @@ app.get('/api/products/:id', async (req, res) => {
 
 app.post('/api/products', adminMiddleware, upload.array('images', 10), async (req, res) => {
   try {
-    const { name, description, price, oldPrice, saving, category, onSale, soldOut, featured } = req.body;
+    const { name, description, price, oldPrice, saving, category, subcategory, onSale, soldOut, featured } = req.body;
     let images = [];
     if (req.files && req.files.length > 0) {
       const results = await uploadMultiple(req.files);
@@ -230,10 +232,12 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
     const img = images.length > 0 ? images[0].url : '';
     const product = await Product.create({
       name, description,
-      price:    +price,
-      oldPrice: +(oldPrice || 0),
-      saving:   +(saving   || 0),
-      category, img, images,
+      price:       +price,
+      oldPrice:    +(oldPrice || 0),
+      saving:      +(saving   || 0),
+      category,
+      subcategory: subcategory || '',
+      img, images,
       onSale:   onSale   === 'true',
       soldOut:  soldOut  === 'true',
       featured: featured === 'true',
@@ -244,13 +248,14 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
 
 app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async (req, res) => {
   try {
-    const { name, description, price, oldPrice, saving, category, onSale, soldOut, featured } = req.body;
+    const { name, description, price, oldPrice, saving, category, subcategory, onSale, soldOut, featured } = req.body;
     const update = {
       name, description,
-      price:    +price,
-      oldPrice: +(oldPrice || 0),
-      saving:   +(saving   || 0),
+      price:       +price,
+      oldPrice:    +(oldPrice || 0),
+      saving:      +(saving   || 0),
       category,
+      subcategory: subcategory || '',
       onSale:   onSale   === 'true',
       soldOut:  soldOut  === 'true',
       featured: featured === 'true',
@@ -448,6 +453,27 @@ app.delete('/api/admin/orders/:id', adminMiddleware, async (req, res) => {
   try {
     await Order.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'অর্ডার মুছে ফেলা হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== CATEGORIES API =====
+// Frontend এই route থেকে categories ও subcategories পাবে
+app.get('/api/categories', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'categories' });
+    if (setting && Array.isArray(setting.value) && setting.value.length) {
+      return res.json({ success: true, data: setting.value });
+    }
+    // Default fallback
+    res.json({
+      success: true,
+      data: [
+        { value: 'men',         label: 'পুরুষ',        subcategories: [] },
+        { value: 'women',       label: 'মহিলা',         subcategories: [] },
+        { value: 'kids',        label: 'শিশু',          subcategories: [] },
+        { value: 'accessories', label: 'অ্যাক্সেসরিজ', subcategories: [] },
+      ]
+    });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
