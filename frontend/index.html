@@ -2987,6 +2987,14 @@
         div.addEventListener('mousedown', (e) => {
           e.preventDefault();
           hideSuggestions();
+          // API পণ্য হলে _ffhShowApiDetail ব্যবহার করো, নাহলে fallback
+          if (typeof _ffhShowApiDetail === 'function' && window._ffhApiProducts && window._ffhApiProducts.length) {
+            var apiProd = window._ffhApiProducts.find(function(pp){ return pp.id === product.id || pp._apiId === product.id; });
+            if (apiProd) {
+              _ffhShowApiDetail(apiProd);
+              return;
+            }
+          }
           showProductDetailPage(product.id);
         });
         return div;
@@ -3993,6 +4001,48 @@ function _ffhShowApiDetail(p) {
 
   if (homePage) homePage.classList.add('hidden');
   if (catPage)  { catPage.classList.remove('active'); catPage.classList.add('detail-page'); }
+
+  // অন্যান্য পেজ hide করো
+  var _lp  = document.getElementById('loginPage');
+  var _rp  = document.getElementById('registerPage');
+  var _acp = document.getElementById('allCategoriesPage');
+  var _sbp = document.getElementById('signInBreadcrumbPage');
+  var _dp2 = document.getElementById('dashboardPage');
+  if (_lp)  { _lp.classList.remove('active');  _lp.classList.add('detail-page'); }
+  if (_rp)  { _rp.classList.remove('active');  _rp.classList.add('detail-page'); }
+  if (_acp) { _acp.classList.remove('active'); _acp.classList.add('detail-page'); }
+  if (_sbp) { _sbp.classList.remove('active'); _sbp.classList.add('detail-page'); }
+  if (_dp2) { _dp2.classList.remove('active'); _dp2.classList.add('detail-page'); }
+
+  // Home sections hide
+  var _crs = document.getElementById('customerReviewSection');
+  if (_crs) _crs.style.display = 'none';
+  var _mf  = document.getElementById('mainFooter');
+  if (_mf)  _mf.style.display  = 'none';
+  var _aps = document.getElementById('allProductsSection');
+  if (_aps) _aps.style.display  = 'none';
+  var _ocs = document.getElementById('ourCollectionSection');
+  if (_ocs) _ocs.style.display  = 'none';
+  var _ofs = document.getElementById('organicFeatureSection');
+  if (_ofs) _ofs.style.display  = 'none';
+
+  // Save badge
+  var saveBadge = document.getElementById('detailSaveBadge');
+  if (saveBadge && p.oldPrice && p.price) {
+    var pct = Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
+    saveBadge.innerText = pct > 0 ? 'Save ' + pct + '%' : '';
+  }
+
+  // Saving amount
+  var savingEl = document.getElementById('detailPageSaving');
+  if (savingEl) savingEl.textContent = p.saving || (p.oldPrice && p.price ? p.oldPrice - p.price : '') || '';
+
+  // Qty reset
+  var qtyEl = document.getElementById('detailPageQty');
+  if (qtyEl) qtyEl.value = 1;
+
+  if (typeof setMobileNavActive === 'function') setMobileNavActive('home');
+
   detailPage.classList.add('active');
   detailPage.classList.remove('detail-page');
   window.scrollTo({ top: 0 });
