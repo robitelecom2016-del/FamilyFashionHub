@@ -3383,356 +3383,236 @@ window.addToCart = addToCart;
     });
   })();
   </script>
-  <script>
+   <script>
     (function() {
-      // ========== GLOBAL API CONFIG ==========
+      // ---------- API CONFIG ----------
       window.FFH_API = (function() {
-        var h = window.location.hostname;
-        if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
+        let host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:5000/api';
         return 'https://familyfashionhub.onrender.com/api';
       })();
 
-      // ========== FRESH DATA FETCH HELPERS ==========
-      let cachedProducts = [];      // always sync with server
+      let allProducts = [];       // will hold products from API
+      let cart = [];
+      let isLoggedIn = false;
+      let loggedInUser = {};
 
-      async function fetchFreshProducts(limit = 200) {
+      // ---------- FETCH PRODUCTS FROM API ----------
+      async function fetchProducts() {
         try {
-          const res = await fetch(window.FFH_API + '/products?limit=' + limit);
+          const res = await fetch(window.FFH_API + '/products?limit=200');
           const data = await res.json();
           if (data.success && data.data) {
-            cachedProducts = data.data.map(p => ({
+            allProducts = data.data.map(p => ({
               id: p._id,
-              _apiId: p._id,
               name: p.name,
               price: p.price,
               oldPrice: p.oldPrice || 0,
-              saving: p.saving || 0,
               img: p.img || (p.images && p.images[0] && (p.images[0].url || p.images[0])) || 'https://placehold.co/300x300?text=No+Image',
-              images: (p.images || []).map(i => i.url || i),
               description: p.description || '',
               category: p.category || 'all',
-              subcategory: p.subcategory || '',
               onSale: !!p.onSale,
-              soldOut: !!p.soldOut,
-              featured: !!p.featured,
-              stock: p.stock || 0
+              soldOut: !!p.soldOut
             }));
-            window._ffhApiProducts = cachedProducts;
-            return cachedProducts;
+            return allProducts;
           }
           return [];
-        } catch(e) { console.warn('API fetch error:', e); return []; }
+        } catch(e) { console.warn(e); return []; }
       }
 
-      // Render home grid
-      function renderHomeGrid(productsArray) {
+      // ---------- RENDER HOME GRID ----------
+      function renderHomeGrid(products) {
         const grid = document.getElementById('productGrid');
         if (!grid) return;
-        if (!productsArray.length) {
-          grid.innerHTML = '<p class="col-span-full text-center py-8 text-gray-500">কোনো পণ্য পাওয়া যায়নি</p>';
-          return;
-        }
+        if (!products.length) { grid.innerHTML = '<p class="col-span-full text-center py-8">কোনো পণ্য নেই</p>'; return; }
         grid.innerHTML = '';
-        productsArray.forEach(p => {
+        products.forEach(p => {
           const card = document.createElement('div');
           card.className = 'product-card bg-white border border-gray-100 shadow-sm';
           card.dataset.id = p.id;
-          let badgeHtml = '';
-          if (p.soldOut) badgeHtml = '<div class="soldout-badge">Sold Out</div>';
-          else if (p.onSale) badgeHtml = '<div class="sale-badge">ছাড়!</div>';
-          let discHtml = '';
-          if (p.oldPrice && p.price && p.oldPrice > p.price) {
-            const disc = Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
-            if (disc > 0) discHtml = `<div class="discount-badge">Save: ${p.oldPrice - p.price}ট (-${disc}%)</div>`;
-          }
           card.innerHTML = `
             <div class="card-container">
-              ${discHtml}${badgeHtml}
-              <div class="card-image-wrapper"><img src="${p.img}" class="card-image" alt="${p.name}" onerror="this.src='https://placehold.co/300x300?text=No+Image'"></div>
+              ${p.onSale ? '<div class="sale-badge">ছাড়!</div>' : ''}
+              <div class="card-image-wrapper"><img src="${p.img}" class="card-image" onerror="this.src='https://placehold.co/300x300?text=No+Image'"></div>
               <div class="card-content">
                 <h3 class="card-title">${p.name}</h3>
                 <div class="card-price"><span class="price-new">${p.price}ট</span>${p.oldPrice ? `<span class="price-old">${p.oldPrice}ট</span>` : ''}</div>
                 <button data-id="${p.id}" class="quick-add-btn" ${p.soldOut ? 'disabled' : ''}>🛒 Add To Cart</button>
               </div>
             </div>`;
-          card.querySelector('.quick-add-btn:not([disabled])')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (typeof addToCart === 'function') addToCart(p);
-          });
-          card.addEventListener('click', (e) => {
-            if (e.target.closest('.quick-add-btn')) return;
-            window._ffhCurrentDetailProduct = p;
-            if (typeof showProductDetailPage === 'function') showProductDetailPage(p.id);
-            else _ffhShowApiDetail(p);
-          });
+          card.querySelector('.quick-add-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(p); });
+          card.addEventListener('click', () => showProductDetail(p.id));
           grid.appendChild(card);
         });
       }
 
-      // Refresh home page with fresh data
-      async function refreshHomePage() {
-        const home = document.getElementById('homePage');
-        if (!home || home.classList.contains('hidden')) return;
-        const fresh = await fetchFreshProducts();
-        const searchTerm = document.getElementById('searchInput')?.value.trim() || '';
-        let filtered = fresh;
-        if (searchTerm) {
-          const q = searchTerm.toLowerCase();
-          filtered = fresh.filter(p => p.name.toLowerCase().includes(q));
-        }
-        renderHomeGrid(filtered);
+      // ---------- SEARCH SUGGESTIONS (LIVE FROM API PRODUCTS) ----------
+      let activeInput = null;
+      const suggestBox = document.createElement('div');
+      suggestBox.id = 'searchSuggestions';
+      suggestBox.style.cssText = `display:none; position:fixed; background:white; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,0.18); z-index:99999; max-height:400px; overflow-y:auto; width:300px;`;
+      document.body.appendChild(suggestBox);
+
+      function positionSuggestBox(inputEl) {
+        const rect = inputEl.getBoundingClientRect();
+        suggestBox.style.top = (rect.bottom + 6) + 'px';
+        suggestBox.style.left = rect.left + 'px';
+        suggestBox.style.width = rect.width + 'px';
       }
 
-      // Refresh category page with fresh data
-      async function refreshCategoryPage(cat) {
-        const fresh = await fetchFreshProducts();
-        const filtered = cat === 'all' ? fresh : fresh.filter(p => p.category === cat);
-        if (typeof applyCatFilters === 'function') {
-          // update the global product list and re-apply filters
-          if (window.catCurrentProducts) window.catCurrentProducts = filtered;
-          applyCatFilters();
+      function buildSuggestionItem(product) {
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; border-bottom:1px solid #f3f4f6; background:white;';
+        div.innerHTML = `
+          <img src="${product.img}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${product.name}</div>
+            <div style="font-size:12px;color:#f97316;">৳ ${product.price.toLocaleString()}</div>
+          </div>
+          ${product.soldOut ? '<span style="font-size:10px;background:#e5e7eb;padding:2px 6px;border-radius:4px;">স্টক নেই</span>' : ''}
+        `;
+        div.addEventListener('mouseover', () => div.style.background = '#fff7ed');
+        div.addEventListener('mouseout', () => div.style.background = 'white');
+        div.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          hideSuggestions();
+          showProductDetail(product.id);
+        });
+        return div;
+      }
+
+      function hideSuggestions() { suggestBox.style.display = 'none'; }
+
+      async function showSuggestions(term, inputEl) {
+        activeInput = inputEl;
+        if (!term || term.length < 1) { hideSuggestions(); return; }
+        // ensure we have latest products
+        let products = allProducts.length ? allProducts : await fetchProducts();
+        const lower = term.toLowerCase();
+        const matched = products.filter(p => p.name.toLowerCase().includes(lower));
+        suggestBox.innerHTML = '';
+        if (matched.length === 0) {
+          suggestBox.innerHTML = '<div style="padding:14px 16px;color:#9ca3af;font-size:13px;">কোনো পণ্য খুঁজে পাওয়া যায়নি</div>';
         } else {
-          // fallback render
-          const grid = document.getElementById('catProductGrid');
-          const mGrid = document.getElementById('catProductGridMobile');
-          if (grid) _ffhRenderCatGrid(filtered, grid, mGrid, document.getElementById('catEmptyState'), document.getElementById('catEmptyStateMobile'));
+          matched.slice(0, 8).forEach(p => suggestBox.appendChild(buildSuggestionItem(p)));
+          if (matched.length > 8) {
+            const more = document.createElement('div');
+            more.style.cssText = 'padding:9px 14px;font-size:12px;color:#6b7280;text-align:center;cursor:pointer;background:#f9fafb;';
+            more.textContent = `আরও ${matched.length - 8}টি ফলাফল দেখতে Enter চাপুন`;
+            more.addEventListener('mousedown', (e) => { e.preventDefault(); performSearch(); });
+            suggestBox.appendChild(more);
+          }
         }
+        positionSuggestBox(inputEl);
+        suggestBox.style.display = 'block';
       }
 
-      // Override search function to always fetch fresh data
-      const originalPerformSearch = window.performSearch;
-      window.performSearch = async function() {
+      // ---------- SEARCH FUNCTION (uses fresh data) ----------
+      async function performSearch() {
         const term = document.getElementById('searchInput')?.value.trim() || '';
-        const fresh = await fetchFreshProducts();
-        let filtered = fresh;
-        if (term) {
-          const q = term.toLowerCase();
-          filtered = fresh.filter(p => p.name.toLowerCase().includes(q));
-        }
-        // update home page grid
+        const mobileTerm = document.getElementById('mobileSearchInput')?.value.trim() || '';
+        const searchTerm = term || mobileTerm;
+        const products = allProducts.length ? allProducts : await fetchProducts();
+        const filtered = searchTerm ? products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())) : products;
         renderHomeGrid(filtered);
-        // if we are on home page, also update category title? no need
-        // but ensure the home page is visible
-        if (typeof goToHome === 'function') goToHome();
-        else {
-          document.getElementById('homePage')?.classList.remove('hidden');
-          document.getElementById('productDetailPage')?.classList.remove('active');
-          document.getElementById('categoryPage')?.classList.remove('active');
-        }
-        if (typeof hideSuggestions === 'function') hideSuggestions();
-      };
-
-      // Override category filter (for both "all" and specific)
-      const originalFilterByCategory = window.filterByCategory;
-      window.filterByCategory = async function(cat) {
-        if (cat === 'all') {
-          // home page all products
-          const fresh = await fetchFreshProducts();
-          renderHomeGrid(fresh);
-          if (typeof goToHome === 'function') goToHome();
-          else document.getElementById('homePage')?.classList.remove('hidden');
-          const title = document.getElementById('categoryTitle');
-          if (title) title.innerText = '🌿 All Products';
-        } else {
-          // category page
-          const fresh = await fetchFreshProducts();
-          const filtered = fresh.filter(p => p.category === cat);
-          if (window.catCurrentProducts) window.catCurrentProducts = filtered;
-          if (typeof showCategoryPage === 'function') showCategoryPage(cat);
-          else {
-            // manual render category page
-            const cp = document.getElementById('categoryPage');
-            const home = document.getElementById('homePage');
-            if (home) home.classList.add('hidden');
-            if (cp) {
-              cp.classList.remove('detail-page');
-              cp.classList.add('active');
-              const meta = { title: cat, icon: '📦', desc: '' };
-              document.getElementById('catPageName').innerText = meta.title;
-              document.getElementById('catPageIcon').innerText = meta.icon;
-              document.getElementById('catPageTitle').innerText = meta.title;
-              document.getElementById('catPageDesc').innerText = meta.desc;
-              const grid = document.getElementById('catProductGrid');
-              const mGrid = document.getElementById('catProductGridMobile');
-              if (grid) _ffhRenderCatGrid(filtered, grid, mGrid, document.getElementById('catEmptyState'), document.getElementById('catEmptyStateMobile'));
-            }
-          }
-        }
-        // close mobile menu if open
-        const menu = document.getElementById('mobileMenu');
-        const overlay = document.getElementById('menuOverlay');
-        if (menu) menu.classList.remove('open');
-        if (overlay) overlay.classList.add('hidden');
-        const closeBtn = document.getElementById('closeMenuBtn');
-        if (closeBtn) { closeBtn.style.opacity = '0'; closeBtn.style.pointerEvents = 'none'; }
-        if (typeof resetAllAccordions === 'function') resetAllAccordions();
-        window.scrollTo({ top: 0 });
-      };
-
-      // Helper to render category grid
-      function _ffhRenderCatGrid(list, grid, mGrid, empty, mEmpty) {
-        if (!grid) return;
-        grid.innerHTML = '';
-        if (mGrid) mGrid.innerHTML = '';
-        if (!list.length) {
-          if (empty) { empty.style.display = 'block'; grid.style.display = 'none'; }
-          if (mEmpty) mEmpty.style.display = 'block';
-          if (mGrid) mGrid.style.display = 'none';
-          return;
-        }
-        if (empty) { empty.style.display = 'none'; grid.style.display = 'grid'; }
-        if (mEmpty) mEmpty.style.display = 'none';
-        if (mGrid) mGrid.style.display = 'grid';
-        list.forEach(p => {
-          const card = document.createElement('div');
-          card.className = 'product-card bg-white border border-gray-100 shadow-sm';
-          card.dataset.id = p.id;
-          let badgeHtml = '';
-          if (p.soldOut) badgeHtml = '<div class="soldout-badge">Sold Out</div>';
-          else if (p.onSale) badgeHtml = '<div class="sale-badge">ছাড়!</div>';
-          let discHtml = '';
-          if (p.oldPrice && p.price && p.oldPrice > p.price) {
-            const disc = Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
-            if (disc > 0) discHtml = `<div class="discount-badge">Save: ${p.oldPrice - p.price}ট (-${disc}%)</div>`;
-          }
-          card.innerHTML = `
-            <div class="card-container">
-              ${discHtml}${badgeHtml}
-              <div class="card-image-wrapper"><img src="${p.img}" class="card-image" alt="${p.name}" onerror="this.src='https://placehold.co/300x300?text=No+Image'"></div>
-              <div class="card-content">
-                <h3 class="card-title">${p.name}</h3>
-                <div class="card-price"><span class="price-new">${p.price}ট</span>${p.oldPrice ? `<span class="price-old">${p.oldPrice}ট</span>` : ''}</div>
-                <button data-id="${p.id}" class="cat-quick-add-btn quick-add-btn" ${p.soldOut ? 'disabled' : ''}>🛒 Add To Cart</button>
-              </div>
-            </div>`;
-          card.querySelector('.cat-quick-add-btn:not([disabled])')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (typeof addToCart === 'function') addToCart(p);
-          });
-          card.addEventListener('click', (e) => {
-            if (e.target.closest('.quick-add-btn')) return;
-            if (typeof showProductDetailPage === 'function') showProductDetailPage(p.id);
-            else _ffhShowApiDetail(p);
-          });
-          grid.appendChild(card);
-          if (mGrid) mGrid.appendChild(card.cloneNode(true));
-        });
-        if (mGrid) {
-          mGrid.querySelectorAll('.cat-quick-add-btn:not([disabled])').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const prod = list.find(pp => pp.id === btn.closest('.product-card')?.dataset.id);
-              if (prod && typeof addToCart === 'function') addToCart(prod);
-            });
-          });
-          mGrid.querySelectorAll('.product-card').forEach(c => {
-            c.addEventListener('click', (e) => {
-              if (e.target.closest('.quick-add-btn')) return;
-              const prod = list.find(pp => pp.id === c.dataset.id);
-              if (prod && typeof showProductDetailPage === 'function') showProductDetailPage(prod.id);
-              else if (prod) _ffhShowApiDetail(prod);
-            });
-          });
-        }
-      }
-
-      function _ffhShowApiDetail(p) {
-        const detailPage = document.getElementById('productDetailPage');
-        const homePage = document.getElementById('homePage');
-        const catPage = document.getElementById('categoryPage');
-        if (!detailPage) return;
-        const nameEl = document.getElementById('detailPageTitle');
-        const priceEl = document.getElementById('detailPagePrice');
-        const oldPriceEl = document.getElementById('detailPageOldPrice');
-        const descEl = document.getElementById('detailPageDescription');
-        const mainImg = document.getElementById('detailPageImg');
-        if (nameEl) nameEl.textContent = p.name;
-        if (priceEl) priceEl.textContent = p.price;
-        if (oldPriceEl && p.oldPrice) { oldPriceEl.textContent = p.oldPrice; oldPriceEl.parentElement.style.display = ''; }
-        if (descEl) descEl.textContent = p.description || '';
-        if (mainImg) { mainImg.src = p.img; mainImg.alt = p.name; }
-        const thumbContainer = document.getElementById('detailThumbStrip');
-        if (thumbContainer && p.images && p.images.length) {
-          thumbContainer.innerHTML = p.images.map((imgUrl, i) => `
-            <div style="width:56px;height:56px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#f9fafb;border:2px solid ${i===0?'#f97316':'#e5e7eb'};flex-shrink:0;transition:border-color 0.2s;">
-              <img src="${imgUrl}" style="width:100%;height:100%;object-fit:contain;" onclick="document.getElementById('detailPageImg').src='${imgUrl}'; this.parentNode.parentNode.querySelectorAll('div').forEach(d=>d.style.borderColor='#e5e7eb'); this.parentNode.style.borderColor='#f97316';">
-            </div>
-          `).join('');
-        }
-        const cartBtn = document.getElementById('detailPageAddToCart');
-        if (cartBtn) cartBtn.onclick = () => { if (typeof addToCart === 'function') addToCart(p); };
-        if (homePage) homePage.classList.add('hidden');
-        if (catPage) { catPage.classList.remove('active'); catPage.classList.add('detail-page'); }
-        detailPage.classList.add('active');
-        detailPage.classList.remove('detail-page');
+        // ensure home page is visible
+        document.getElementById('homePage')?.classList.remove('hidden');
+        document.getElementById('categoryPage')?.classList.remove('active');
+        document.getElementById('productDetailPage')?.classList.remove('active');
+        hideSuggestions();
+        // close mobile search bar
+        const mobileBar = document.getElementById('mobileSearchBar');
+        if (mobileBar) mobileBar.classList.add('hidden');
         window.scrollTo({ top: 0 });
       }
 
-      // Intercept product detail page opening to fetch fresh product data
-      const originalShowProductDetail = window.showProductDetailPage;
-      window.showProductDetailPage = async function(productId) {
-        const fresh = await fetchFreshProducts();
-        const product = fresh.find(p => p.id === productId);
+      // ---------- PRODUCT DETAIL ----------
+      async function showProductDetail(productId) {
+        let product = allProducts.find(p => p.id === productId);
+        if (!product) {
+          await fetchProducts();
+          product = allProducts.find(p => p.id === productId);
+        }
         if (!product) return;
-        window._ffhCurrentDetailProduct = product;
-        _ffhShowApiDetail(product);
-      };
-
-      // Also override any other functions that might rely on static products array
-      // Re-initialize by fetching fresh data on page load and every 30 seconds
-      async function initialLoad() {
-        await fetchFreshProducts();
-        refreshHomePage();
-        // also update category dropdowns and nav if needed
-        if (typeof loadNavCategories === 'function') loadNavCategories();
+        // very basic detail view (you can extend)
+        alert(`পণ্য: ${product.name}\nদাম: ${product.price} টাকা\nবিস্তারিত দেখতে এডমিন প্যানেল থেকে ডিজাইন করুন।`);
       }
 
-      // Auto-refresh every 30 seconds to catch newly added products from admin
-      setInterval(async () => {
-        const fresh = await fetchFreshProducts();
-        // if home page is active, refresh grid
-        const home = document.getElementById('homePage');
-        if (home && !home.classList.contains('hidden')) {
-          const searchTerm = document.getElementById('searchInput')?.value.trim() || '';
-          let filtered = fresh;
-          if (searchTerm) filtered = fresh.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-          renderHomeGrid(filtered);
-        }
-        // if category page active, refresh category products
-        const catPage = document.getElementById('categoryPage');
-        if (catPage && catPage.classList.contains('active')) {
-          const currentCat = window.currentCategory || 'all';
-          const filtered = currentCat === 'all' ? fresh : fresh.filter(p => p.category === currentCat);
-          if (window.catCurrentProducts) window.catCurrentProducts = filtered;
-          if (typeof applyCatFilters === 'function') applyCatFilters();
-          else {
-            const grid = document.getElementById('catProductGrid');
-            const mGrid = document.getElementById('catProductGridMobile');
-            if (grid) _ffhRenderCatGrid(filtered, grid, mGrid, document.getElementById('catEmptyState'), document.getElementById('catEmptyStateMobile'));
-          }
-        }
-      }, 30000);
+      // ---------- ADD TO CART ----------
+      function addToCart(product, qty = 1) {
+        const existing = cart.find(item => item.id === product.id);
+        if (existing) existing.qty += qty;
+        else cart.push({ ...product, qty });
+        updateCartUI();
+        alert(`${product.name} কার্টে যোগ হয়েছে!`);
+      }
+      function updateCartUI() {
+        const totalItems = cart.reduce((s, i) => s + i.qty, 0);
+        document.getElementById('cartCount').innerText = totalItems;
+        document.getElementById('cartCountMobile').innerText = totalItems;
+      }
 
-      // Override global product arrays
-      window._ffhApiProducts = [];
-      window.apiProducts = [];
-      window.products = []; // static fallback empty
-
-      // Replace the original renderProductsByCategory
-      const originalRender = window.renderProductsByCategory;
-      window.renderProductsByCategory = async function(cat, searchTerm) {
-        const fresh = await fetchFreshProducts();
-        let filtered = fresh;
-        if (cat && cat !== 'all') filtered = fresh.filter(p => p.category === cat);
-        if (searchTerm) {
-          const q = searchTerm.toLowerCase();
-          filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
-        }
+      // ---------- CATEGORY FILTER (using API data) ----------
+      window.filterByCategory = async function(cat) {
+        const products = allProducts.length ? allProducts : await fetchProducts();
+        const filtered = cat === 'all' ? products : products.filter(p => p.category === cat);
         renderHomeGrid(filtered);
+        document.getElementById('homePage')?.classList.remove('hidden');
+        document.getElementById('categoryPage')?.classList.remove('active');
+        document.getElementById('productDetailPage')?.classList.remove('active');
+        if (cat !== 'all') document.getElementById('categoryTitle').innerText = `🛍️ ${cat} পণ্য`;
+        else document.getElementById('categoryTitle').innerText = '🌿 All Products';
+        window.scrollTo({ top: 0 });
       };
 
-      // start
-      initialLoad();
+      // ---------- INITIAL LOAD ----------
+      async function init() {
+        await fetchProducts();
+        renderHomeGrid(allProducts);
+        // attach search events
+        const searchInput = document.getElementById('searchInput');
+        const mobileSearchInput = document.getElementById('mobileSearchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+        if (searchInput) {
+          searchInput.addEventListener('input', () => showSuggestions(searchInput.value.trim(), searchInput));
+          searchInput.addEventListener('focus', () => { if (searchInput.value.trim()) showSuggestions(searchInput.value.trim(), searchInput); });
+          searchInput.addEventListener('blur', () => setTimeout(hideSuggestions, 180));
+          searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); if (e.key === 'Escape') hideSuggestions(); });
+        }
+        if (mobileSearchInput) {
+          mobileSearchInput.addEventListener('input', () => showSuggestions(mobileSearchInput.value.trim(), mobileSearchInput));
+          mobileSearchInput.addEventListener('focus', () => { if (mobileSearchInput.value.trim()) showSuggestions(mobileSearchInput.value.trim(), mobileSearchInput); });
+          mobileSearchInput.addEventListener('blur', () => setTimeout(hideSuggestions, 180));
+          mobileSearchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
+        }
+        if (searchBtn) searchBtn.addEventListener('click', performSearch);
+        if (mobileSearchBtn) mobileSearchBtn.addEventListener('click', performSearch);
+        // mobile search toggle
+        const mobileSearchIcon = document.getElementById('mobileSearchIcon');
+        if (mobileSearchIcon) mobileSearchIcon.addEventListener('click', () => document.getElementById('mobileSearchBar')?.classList.toggle('hidden'));
+        document.getElementById('mobileSearchCancelBtn')?.addEventListener('click', () => {
+          document.getElementById('mobileSearchBar')?.classList.add('hidden');
+          if (mobileSearchInput) mobileSearchInput.value = '';
+          hideSuggestions();
+        });
+        // cart icons
+        document.getElementById('cartIconBtn')?.addEventListener('click', () => alert('কার্ট দেখানো হবে'));
+        document.getElementById('cartIconBtnMobile')?.addEventListener('click', () => alert('কার্ট দেখানো হবে'));
+        // simple goTop
+        const goTop = document.getElementById('goTopBtn');
+        if (goTop) goTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        // periodic refresh (every 30 sec) to get new products from admin
+        setInterval(async () => {
+          await fetchProducts();
+          if (!document.getElementById('homePage')?.classList.contains('hidden')) {
+            const searchVal = document.getElementById('searchInput')?.value.trim() || '';
+            const filtered = searchVal ? allProducts.filter(p => p.name.toLowerCase().includes(searchVal.toLowerCase())) : allProducts;
+            renderHomeGrid(filtered);
+          }
+        }, 30000);
+      }
+      init();
     })();
   </script>
 </body>
