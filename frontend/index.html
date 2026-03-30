@@ -3885,12 +3885,10 @@ function _ffhRenderHomeGrid(productList, gridEl) {
       if (typeof addToCart === 'function') addToCart(p);
     });
     card.addEventListener('click', function(e) {
-      if (e.target.closest('.quick-add-btn')) return;
-      if (typeof showProductDetailPage === 'function') {
-        window._ffhCurrentDetailProduct = p;
-        _ffhShowApiDetail(p);
-      }
-    });
+  if (e.target.closest('.quick-add-btn')) return;
+  window._ffhCurrentDetailProduct = p;
+  _ffhShowApiDetail(p);
+});
     gridEl.appendChild(card);
   });
 }
