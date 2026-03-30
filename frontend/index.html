@@ -2987,7 +2987,6 @@
         div.addEventListener('mousedown', (e) => {
           e.preventDefault();
           hideSuggestions();
-          // API পণ্য হলে _ffhShowApiDetail ব্যবহার করো, নাহলে fallback
           if (typeof _ffhShowApiDetail === 'function' && window._ffhApiProducts && window._ffhApiProducts.length) {
             var apiProd = window._ffhApiProducts.find(function(pp){ return pp.id === product.id || pp._apiId === product.id; });
             if (apiProd) {
@@ -3799,6 +3798,29 @@ async function loadProductsFromAPI() {
 
     window.apiProducts = apiMapped;
     window._ffhApiProducts = apiMapped;
+    // IMPORTANT: also update the global 'products' variable used by category page filters
+    window.products = apiMapped; // make sure category page uses this
+    // Also set the local products variable in the main scope
+    if (typeof products !== 'undefined') {
+      // Override the products array
+      window.products = apiMapped;
+      // Also update the products variable inside the closure? Not needed because we use window.products in showCategoryPage
+    }
+
+    // update category page product list if category page is active
+    var cp = document.getElementById('categoryPage');
+    if (cp && cp.classList.contains('active')) {
+      var currentCat = document.getElementById('catPageName')?.innerText || '';
+      var foundCat = Object.keys(categoryMeta).find(k => categoryMeta[k].title === currentCat);
+      if (foundCat) {
+        catCurrentProducts = foundCat === 'all' ? apiMapped : apiMapped.filter(p => p.category === foundCat);
+        var prices = catCurrentProducts.map(p => p.price);
+        var pMin = prices.length ? Math.min(...prices) : 0;
+        var pMax = prices.length ? Math.max(...prices) : 0;
+        initPriceSlider(pMin, pMax);
+        applyCatFilters();
+      }
+    }
 
     var _origFilter = window.filterByCategory;
     window.filterByCategory = function(cat) {
@@ -4040,7 +4062,6 @@ function _ffhShowApiDetail(p) {
   if (qtyEl) qtyEl.value = 1;
 
   // ★★★★★ সংশ্লিষ্ট পণ্য লোড করুন ★★★★★
-  // API পণ্য তালিকা থেকে একই ক্যাটাগরির পণ্য বাদে বর্তমান পণ্যটি বাদ দিয়ে দেখান
   var allProductsList = (window._ffhApiProducts && window._ffhApiProducts.length) ? window._ffhApiProducts : (typeof products !== 'undefined' ? products : []);
   var related = allProductsList.filter(function(item) {
     return item.category === p.category && item.id !== p.id;
