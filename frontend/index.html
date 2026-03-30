@@ -3973,6 +3973,7 @@ function _ffhShowApiDetail(p) {
   var catPage    = document.getElementById('categoryPage');
   if (!detailPage) return;
 
+  // মূল তথ্য সেট করা
   var nameEl   = document.getElementById('detailPageTitle');
   var priceEl  = document.getElementById('detailPagePrice');
   var oldPriceEl = document.getElementById('detailPageOldPrice');
@@ -3985,6 +3986,7 @@ function _ffhShowApiDetail(p) {
   if (descEl)    descEl.textContent    = p.description || '';
   if (mainImg)   { mainImg.src = p.img; mainImg.alt = p.name; }
 
+  // থাম্বনেইল গ্যালারি
   var thumbContainer = document.getElementById('detailThumbStrip');
   if (thumbContainer && p.images && p.images.length) {
     thumbContainer.innerHTML = p.images.map(function(imgUrl, i) {
@@ -3992,6 +3994,7 @@ function _ffhShowApiDetail(p) {
     }).join('');
   }
 
+  // কার্ট বাটন
   var cartBtn = document.getElementById('detailPageAddToCart');
   if (cartBtn) {
     cartBtn.onclick = function() {
@@ -3999,10 +4002,10 @@ function _ffhShowApiDetail(p) {
     };
   }
 
+  // পৃষ্ঠা লুকানো/দেখানো
   if (homePage) homePage.classList.add('hidden');
   if (catPage)  { catPage.classList.remove('active'); catPage.classList.add('detail-page'); }
 
-  // অন্যান্য পেজ hide করো
   var _lp  = document.getElementById('loginPage');
   var _rp  = document.getElementById('registerPage');
   var _acp = document.getElementById('allCategoriesPage');
@@ -4014,7 +4017,6 @@ function _ffhShowApiDetail(p) {
   if (_sbp) { _sbp.classList.remove('active'); _sbp.classList.add('detail-page'); }
   if (_dp2) { _dp2.classList.remove('active'); _dp2.classList.add('detail-page'); }
 
-  // Home sections hide
   var _crs = document.getElementById('customerReviewSection');
   if (_crs) _crs.style.display = 'none';
   var _mf  = document.getElementById('mainFooter');
@@ -4026,28 +4028,78 @@ function _ffhShowApiDetail(p) {
   var _ofs = document.getElementById('organicFeatureSection');
   if (_ofs) _ofs.style.display  = 'none';
 
-  // Save badge
+  // সেভিং ব্যাজ
   var saveBadge = document.getElementById('detailSaveBadge');
   if (saveBadge && p.oldPrice && p.price) {
     var pct = Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
     saveBadge.innerText = pct > 0 ? 'Save ' + pct + '%' : '';
   }
-
-  // Saving amount
   var savingEl = document.getElementById('detailPageSaving');
   if (savingEl) savingEl.textContent = p.saving || (p.oldPrice && p.price ? p.oldPrice - p.price : '') || '';
-
-  // Qty reset
   var qtyEl = document.getElementById('detailPageQty');
   if (qtyEl) qtyEl.value = 1;
 
-  if (typeof setMobileNavActive === 'function') setMobileNavActive('home');
+  // ★★★★★ সংশ্লিষ্ট পণ্য লোড করুন ★★★★★
+  // API পণ্য তালিকা থেকে একই ক্যাটাগরির পণ্য বাদে বর্তমান পণ্যটি বাদ দিয়ে দেখান
+  var allProductsList = (window._ffhApiProducts && window._ffhApiProducts.length) ? window._ffhApiProducts : (typeof products !== 'undefined' ? products : []);
+  var related = allProductsList.filter(function(item) {
+    return item.category === p.category && item.id !== p.id;
+  }).slice(0, 8);
 
+  // সাইডবারের "More Products" কলাম
+  var sidebarGrid = document.getElementById('relatedProductsGrid');
+  if (sidebarGrid) {
+    if (related.length === 0) {
+      sidebarGrid.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:13px;text-align:center;">কোনো সম্পর্কিত পণ্য নেই</div>';
+    } else {
+      sidebarGrid.innerHTML = '';
+      related.forEach(function(rp) {
+        var itemDiv = document.createElement('div');
+        itemDiv.dataset.id = rp.id;
+        itemDiv.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;background:white;transition:background 0.15s;';
+        itemDiv.onmouseover = function() { this.style.background = '#fff7ed'; };
+        itemDiv.onmouseout = function() { this.style.background = 'white'; };
+        itemDiv.innerHTML = '<img src="'+rp.img+'" style="width:52px;height:52px;object-fit:contain;background:#f9fafb;flex-shrink:0;border:1px solid #f3f4f6;">' +
+          '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:#111827;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+rp.name+'</div>' +
+          '<div style="margin-top:3px;display:flex;align-items:baseline;gap:5px;"><span style="font-size:13px;font-weight:700;color:#f97316;">৳'+rp.price+'</span>' +
+          (rp.oldPrice ? '<span style="font-size:11px;color:#9ca3af;text-decoration:line-through;">৳'+rp.oldPrice+'</span>' : '')+'</div></div>';
+        itemDiv.addEventListener('click', function() { _ffhShowApiDetail(rp); });
+        sidebarGrid.appendChild(itemDiv);
+      });
+    }
+  }
+
+  // নিচের "Related Products" গ্রিড
+  var bottomGrid = document.getElementById('detailRelatedGrid');
+  if (bottomGrid) {
+    if (related.length === 0) {
+      bottomGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af;">কোনো সম্পর্কিত পণ্য নেই</div>';
+    } else {
+      bottomGrid.innerHTML = '';
+      related.forEach(function(rp) {
+        var card = document.createElement('div');
+        card.style.cssText = 'background:white;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow 0.2s;';
+        card.onmouseover = function() { this.style.boxShadow = '0 4px 14px rgba(0,0,0,0.1)'; };
+        card.onmouseout = function() { this.style.boxShadow = 'none'; };
+        var savePct = (rp.oldPrice > rp.price) ? Math.round(((rp.oldPrice - rp.price) / rp.oldPrice) * 100) : 0;
+        card.innerHTML = '<div style="position:relative;">' +
+          (savePct > 0 ? '<div style="position:absolute;top:8px;left:8px;background:#10b981;color:white;font-size:10px;font-weight:700;padding:3px 7px;">Save '+savePct+'%</div>' : '') +
+          '<div style="height:130px;display:flex;align-items:center;justify-content:center;background:#f9fafb;overflow:hidden;padding:8px;">' +
+          '<img src="'+rp.img+'" alt="'+rp.name+'" style="max-width:100%;max-height:110px;object-fit:contain;transition:transform 0.3s;"></div></div>' +
+          '<div style="padding:10px 12px;"><div style="font-size:13px;font-weight:600;color:#111827;line-height:1.35;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+rp.name+'</div>' +
+          '<div style="display:flex;align-items:baseline;gap:6px;"><span style="font-size:15px;font-weight:700;color:#f97316;">৳'+rp.price+'</span>' +
+          (rp.oldPrice ? '<span style="font-size:12px;color:#9ca3af;text-decoration:line-through;">৳'+rp.oldPrice+'</span>' : '')+'</div></div>';
+        card.addEventListener('click', function() { _ffhShowApiDetail(rp); });
+        bottomGrid.appendChild(card);
+      });
+    }
+  }
+
+  if (typeof setMobileNavActive === 'function') setMobileNavActive('home');
   detailPage.classList.add('active');
   detailPage.classList.remove('detail-page');
   window.scrollTo({ top: 0 });
 }
-
 async function loadSiteSettings() {
   try {
     const res = await fetch(window.FFH_API + '/settings');
