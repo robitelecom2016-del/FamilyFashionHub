@@ -128,7 +128,7 @@ const reviewSchema = new mongoose.Schema({
 
 const userSchema = new mongoose.Schema({
   name:      { type: String, required: true },
-  phone:     { type: String, required: true, unique: true },
+  email:     { type: String, required: true, unique: true, lowercase: true, trim: true },
   password:  { type: String, required: true },
   role:      { type: String, default: 'user' },
   createdAt: { type: Date, default: Date.now },
@@ -167,28 +167,28 @@ const Order    = mongoose.model('Order',    orderSchema);
 // .env-এর ADMIN_USERNAME ও ADMIN_PASSWORD দিয়ে স্বয়ংক্রিয়ভাবে admin তৈরি করবে
 async function autoSetupAdmin() {
   try {
-    const adminPhone = process.env.ADMIN_USERNAME; // username হিসেবে phone ব্যবহার
+    const adminEmail = process.env.ADMIN_USERNAME; // username হিসেবে email ব্যবহার
     const adminPass  = process.env.ADMIN_PASSWORD;
 
-    if (!adminPhone || !adminPass) {
+    if (!adminEmail || !adminPass) {
       console.log('⚠️  ADMIN_USERNAME বা ADMIN_PASSWORD .env-এ নেই — auto setup স্কিপ');
       return;
     }
 
-    const existing = await User.findOne({ phone: adminPhone, role: 'admin' });
+    const existing = await User.findOne({ email: adminEmail.toLowerCase(), role: 'admin' });
     if (existing) {
-      console.log('ℹ️  Admin ইতিমধ্যে আছে:', adminPhone);
+      console.log('ℹ️  Admin ইতিমধ্যে আছে:', adminEmail);
       return;
     }
 
     const hashed = await bcrypt.hash(adminPass, 10);
     await User.create({
       name:     'Super Admin',
-      phone:    adminPhone,
+      email:    adminEmail.toLowerCase(),
       password: hashed,
       role:     'admin',
     });
-    console.log('✅ Auto Admin তৈরি হয়েছে — Phone/Username:', adminPhone);
+    console.log('✅ Auto Admin তৈরি হয়েছে — Email/Username:', adminEmail);
   } catch (err) {
     console.error('❌ Auto admin setup error:', err.message);
   }
@@ -452,61 +452,70 @@ app.delete('/api/reviews/:id', adminMiddleware, async (req, res) => {
 
 app.post('/api/users/register', async (req, res) => {
   try {
-    const { name, phone, password } = req.body;
-    const exists = await User.findOne({ phone });
-    if (exists) return res.json({ success: false, message: 'এই ফোন নম্বর ইতিমধ্যে নিবন্ধিত' });
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.json({ success: false, message: 'নাম, ইমেইল ও পাসওয়ার্ড দিন' });
+    // Gmail / valid email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.json({ success: false, message: 'সঠিক ইমেইল ঠিকানা দিন' });
+    const normalizedEmail = email.toLowerCase().trim();
+    const exists = await User.findOne({ email: normalizedEmail });
+    if (exists) return res.json({ success: false, message: 'এই ইমেইল ইতিমধ্যে নিবন্ধিত' });
     const hashed = await bcrypt.hash(password, 10);
-    const user   = await User.create({ name, phone, password: hashed });
-    const token  = jwt.sign({ id: user._id, phone: user.phone, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ success: true, user: { id: user._id, name: user.name, phone: user.phone, role: user.role }, token });
+    const user   = await User.create({ name, email: normalizedEmail, password: hashed });
+    const token  = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: user.role }, token });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
 app.post('/api/users/login', async (req, res) => {
   try {
-    const { phone, password } = req.body;
-    const user = await User.findOne({ phone });
-    if (!user) return res.json({ success: false, message: 'ফোন নম্বর বা পাসওয়ার্ড ভুল' });
+    const { email, password } = req.body;
+    if (!email || !password) return res.json({ success: false, message: 'ইমেইল ও পাসওয়ার্ড দিন' });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) return res.json({ success: false, message: 'ইমেইল বা পাসওয়ার্ড ভুল' });
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.json({ success: false, message: 'ফোন নম্বর বা পাসওয়ার্ড ভুল' });
-    const token = jwt.sign({ id: user._id, phone: user.phone, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ success: true, user: { id: user._id, name: user.name, phone: user.phone, role: user.role }, token });
+    if (!match) return res.json({ success: false, message: 'ইমেইল বা পাসওয়ার্ড ভুল' });
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: user.role }, token });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin Login — phone অথবা ADMIN_USERNAME দিয়ে login করা যাবে
+// Admin Login — email অথবা ADMIN_USERNAME দিয়ে login করা যাবে
 app.post('/api/admin/login', async (req, res) => {
   try {
-    const { phone, password } = req.body;
+    const { email, password } = req.body;
+    if (!email || !password) return res.json({ success: false, message: 'ইমেইল ও পাসওয়ার্ড দিন' });
+    const normalizedEmail = email.toLowerCase().trim();
 
     // প্রথমে .env-এর ADMIN_USERNAME দিয়ে চেক করো
     if (
-      phone === process.env.ADMIN_USERNAME &&
+      normalizedEmail === (process.env.ADMIN_USERNAME || '').toLowerCase() &&
       password === process.env.ADMIN_PASSWORD
     ) {
       // DB-তে এই admin খোঁজো
-      let user = await User.findOne({ phone: process.env.ADMIN_USERNAME, role: 'admin' });
+      let user = await User.findOne({ email: normalizedEmail, role: 'admin' });
       if (!user) {
         // না থাকলে এখনই তৈরি করো
         const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
         user = await User.create({
           name: 'Super Admin',
-          phone: process.env.ADMIN_USERNAME,
+          email: normalizedEmail,
           password: hashed,
           role: 'admin',
         });
       }
-      const token = jwt.sign({ id: user._id, phone: user.phone, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
-      return res.json({ success: true, user: { id: user._id, name: user.name, phone: user.phone, role: 'admin' }, token });
+      const token = jwt.sign({ id: user._id, email: user.email, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+      return res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: 'admin' }, token });
     }
 
     // সাধারণ DB-based admin login
-    const user = await User.findOne({ phone, role: 'admin' });
+    const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
     if (!user) return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.json({ success: false, message: 'পাসওয়ার্ড ভুল' });
-    const token = jwt.sign({ id: user._id, phone: user.phone, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ success: true, user: { id: user._id, name: user.name, phone: user.phone, role: 'admin' }, token });
+    const token = jwt.sign({ id: user._id, email: user.email, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: 'admin' }, token });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
@@ -519,12 +528,14 @@ app.get('/api/admin/users', adminMiddleware, async (req, res) => {
 
 app.post('/api/admin/users', adminMiddleware, async (req, res) => {
   try {
-    const { name, phone, password, role } = req.body;
-    const exists = await User.findOne({ phone });
-    if (exists) return res.json({ success: false, message: 'এই ফোন নম্বর ইতিমধ্যে আছে' });
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password) return res.json({ success: false, message: 'নাম, ইমেইল ও পাসওয়ার্ড দিন' });
+    const normalizedEmail = email.toLowerCase().trim();
+    const exists = await User.findOne({ email: normalizedEmail });
+    if (exists) return res.json({ success: false, message: 'এই ইমেইল ইতিমধ্যে আছে' });
     const hashed = await bcrypt.hash(password, 10);
-    const user   = await User.create({ name, phone, password: hashed, role: role || 'user' });
-    res.json({ success: true, data: { id: user._id, name: user.name, phone: user.phone, role: user.role } });
+    const user   = await User.create({ name, email: normalizedEmail, password: hashed, role: role || 'user' });
+    res.json({ success: true, data: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
@@ -864,11 +875,12 @@ app.post('/api/setup-admin', async (req, res) => {
   try {
     const count = await User.countDocuments({ role: 'admin' });
     if (count > 0) return res.json({ success: false, message: 'Admin ইতিমধ্যে আছে' });
-    const { name, phone, password } = req.body;
-    if (!name || !phone || !password) return res.json({ success: false, message: 'সব তথ্য দিন' });
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.json({ success: false, message: 'সব তথ্য দিন' });
+    const normalizedEmail = email.toLowerCase().trim();
     const hashed = await bcrypt.hash(password, 10);
-    const user   = await User.create({ name, phone, password: hashed, role: 'admin' });
-    res.json({ success: true, message: 'Admin তৈরি হয়েছে', user: { name: user.name, phone: user.phone } });
+    const user   = await User.create({ name, email: normalizedEmail, password: hashed, role: 'admin' });
+    res.json({ success: true, message: 'Admin তৈরি হয়েছে', user: { name: user.name, email: user.email } });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
@@ -883,7 +895,7 @@ app.get('/api/admin/health', adminMiddleware, (req, res) => {
       CLOUDINARY_API_KEY:   process.env.CLOUDINARY_API_KEY ? '✅ সেট আছে' : '❌ নেই',
       CLOUDINARY_API_SECRET:process.env.CLOUDINARY_API_SECRET ? '✅ সেট আছে' : '❌ নেই',
       JWT_SECRET:           process.env.JWT_SECRET ? '✅ সেট আছে' : '❌ নেই',
-      ADMIN_USERNAME:       process.env.ADMIN_USERNAME || '❌ নেই',
+      ADMIN_USERNAME:       process.env.ADMIN_USERNAME ? '✅ সেট আছে (Email)' : '❌ নেই',
       FRONTEND_URL:         process.env.FRONTEND_URL || '❌ নেই',
       ADMIN_URL:            process.env.ADMIN_URL || '❌ নেই',
     }
