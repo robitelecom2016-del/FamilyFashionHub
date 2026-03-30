@@ -1201,7 +1201,9 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
 <script>
 'use strict';
 // ===== CONFIG =====
+// ===== 🔧 BACKEND URL — এখানে আপনার deployed server URL দিন =====
 const FFH_API = 'https://familyfashionhub-backend.vercel.app/api';
+// Local development এর জন্য: 'http://localhost:5000/api'
 
 let adminToken = localStorage.getItem('ffh_admin_token') || '';
 let adminUser  = JSON.parse(localStorage.getItem('ffh_admin_user') || 'null');
@@ -1288,8 +1290,22 @@ async function apiFetch(path, method='GET', body=null, auth=true) {
   if (auth) opts.headers['Authorization'] = 'Bearer ' + adminToken;
   if (body && !(body instanceof FormData)) opts.body = JSON.stringify(body);
   if (body instanceof FormData) { delete opts.headers['Content-Type']; opts.body = body; }
-  const r = await fetch(FFH_API + path, opts);
-  return r.json();
+  try {
+    const r = await fetch(FFH_API + path, opts);
+    const data = await r.json();
+    // Token expired হলে auto logout
+    if (data && data.success === false && data.message && 
+        (data.message.includes('Invalid token') || data.message.includes('Token নেই'))) {
+      if (auth) {
+        toast('সেশন শেষ হয়ে গেছে। আবার লগইন করুন।', 'error');
+        setTimeout(() => doLogout(), 1500);
+      }
+    }
+    return data;
+  } catch(e) {
+    console.error('API Error [' + path + ']:', e);
+    throw e;
+  }
 }
 
 async function checkApiStatus() {
@@ -1297,9 +1313,15 @@ async function checkApiStatus() {
     const r = await fetch(FFH_API.replace('/api', '/'));
     const el = document.getElementById('apiStatus');
     const txt = document.getElementById('apiStatusText');
-    if (r.ok) { el.className = 'api-status'; txt.textContent = 'Connected'; }
-    else       { el.className = 'api-status error'; txt.textContent = 'Error'; }
-  } catch { 
+    if (r.ok) {
+      el.className = 'api-status';
+      txt.textContent = 'Connected';
+      el.title = FFH_API;
+    } else {
+      el.className = 'api-status error';
+      txt.textContent = 'Server Error';
+    }
+  } catch {
     document.getElementById('apiStatus').className = 'api-status error';
     document.getElementById('apiStatusText').textContent = 'Offline';
   }
@@ -1360,10 +1382,12 @@ async function loadDashboard() {
         const b = document.getElementById('navBadgeOrders');
         b.textContent = d.pendingOrders; b.style.display = 'inline-flex';
       }
+    } else {
+      toast('স্ট্যাটস লোড ব্যর্থ: ' + (res.message||''), 'error');
     }
     loadRecentOrders();
     loadRecentProducts();
-  } catch(e) { toast('স্ট্যাটস লোড ব্যর্থ', 'error'); }
+  } catch(e) { toast('সার্ভার সংযোগ ব্যর্থ: ' + e.message, 'error'); }
 }
 async function loadRecentOrders() {
   const res = await apiFetch('/admin/orders?status=all');
@@ -1974,22 +1998,33 @@ async function loadSettings() {
   renderSliderList();
 }
 async function saveGeneralSettings() {
+  const btn = event.currentTarget;
+  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
+  btn.disabled = true;
   const res = await apiFetch('/settings', 'POST', {
     announcement: document.getElementById('settAnnouncement').value,
     siteName:     document.getElementById('settSiteName').value,
   });
-  if (res.success) toast('সেটিংস সেভ হয়েছে ✓','success');
-  else toast(res.message||'ব্যর্থ','error');
+  btn.innerHTML = '<i class="fas fa-save"></i> সেভ করুন';
+  btn.disabled = false;
+  if (res.success) toast('সাধারণ সেটিংস সেভ হয়েছে ✓','success');
+  else toast(res.message||'সেভ ব্যর্থ হয়েছে','error');
 }
 async function saveContactSettings() {
+  const btn = event.currentTarget;
+  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
+  btn.disabled = true;
   const res = await apiFetch('/settings', 'POST', {
     phone:    document.getElementById('settPhone').value,
     whatsapp: document.getElementById('settWhatsapp').value,
     email:    document.getElementById('settEmail').value,
     address:  document.getElementById('settAddress').value,
   });
+  btn.innerHTML = '<i class="fas fa-save"></i> সেভ করুন';
+  btn.disabled = false;
   if (res.success) toast('যোগাযোগ সেটিংস সেভ হয়েছে ✓','success');
-  else toast(res.message||'ব্যর্থ','error');
+  else toast(res.message||'সেভ ব্যর্থ হয়েছে','error');
+}
 }
 function renderSliderList() {
   const el = document.getElementById('sliderList');
@@ -2109,9 +2144,15 @@ async function saveLayout() {
   data.callNumber         = document.getElementById('layoutCall').value;
   data.brandLabel         = document.getElementById('layoutBrand').value;
   data.moreProductsTitle  = document.getElementById('layoutMoreTitle').value;
+  const btn = event.currentTarget;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
+  btn.disabled = true;
   const res = await apiFetch('/admin/product-layout', 'POST', data);
-  if (res.success) toast('লেআউট সেটিংস সেভ হয়েছে ✓','success');
-  else toast(res.message||'ব্যর্থ','error');
+  btn.innerHTML = origText;
+  btn.disabled = false;
+  if (res.success) { layoutData = data; toast('লেআউট সেটিংস সেভ হয়েছে ✓','success'); }
+  else toast(res.message||'সেভ ব্যর্থ','error');
 }
 
 // ===== MODAL HELPERS =====
