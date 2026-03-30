@@ -1363,43 +1363,42 @@
     </div>
 
     <div id="registerPage" class="detail-page" style="margin-top:120px;width:100%;background:#fff;min-height:100vh;">
-      <div class="mx-auto px-3 md:px-6 py-5" style="max-width:1200px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:40px;color:#6b7280;">
-          <a href="#" onclick="event.preventDefault();showHomePage();" style="color:#374151;text-decoration:none;">🏠</a>
-          <span>/</span>
-          <span style="color:#374151;">Account</span>
-          <span>/</span>
-          <span style="color:#374151;">Register</span>
-        </div>
-        <div style="max-width:400px;margin:0 auto;">
-          <h2 style="font-size:1.5rem;font-weight:700;color:#111827;margin-bottom:24px;">Register Account</h2>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-            <div>
-              <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">First Name <span style="color:#ef4444;">*</span></label>
-              <input type="text" id="regFirstName" placeholder="First Name" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#3b4fcf'" onblur="this.style.borderColor='#d1d5db'">
-            </div>
-            <div>
-              <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">Last Name <span style="color:#ef4444;">*</span></label>
-              <input type="text" id="regLastName" placeholder="Last Name" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#3b4fcf'" onblur="this.style.borderColor='#d1d5db'">
-            </div>
-          </div>
-          <div style="margin-bottom:16px;">
-            <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">E-Mail <span style="color:#ef4444;">*</span></label>
-            <input type="email" id="regEmail" placeholder="E-Mail" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#3b4fcf'" onblur="this.style.borderColor='#d1d5db'">
-          </div>
-          <div style="margin-bottom:20px;">
-            <p id="regError" style="color:#ef4444;font-size:12px;margin-top:6px;display:none;">Please fill in all fields.</p>
-          </div>
-          <button onclick="handleRegister()" style="width:100%;background:#3b4fcf;color:white;border:none;padding:13px;font-size:15px;font-weight:700;cursor:pointer;border-radius:4px;font-family:inherit;transition:background 0.2s;" onmouseover="this.style.background='#2d3db0'" onmouseout="this.style.background='#3b4fcf'">Continue</button>
-          <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px;">
-            <div style="flex:1;height:1px;background:#e5e7eb;"></div>
-            <span style="font-size:13px;color:#6b7280;white-space:nowrap;">Already have an account?</span>
-            <div style="flex:1;height:1px;background:#e5e7eb;"></div>
-          </div>
-          <p style="font-size:14px;color:#374151;line-height:1.6;">If you already have an account with us, please login at the <a href="#" onclick="event.preventDefault();showLoginPage();" style="color:#ef4444;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">login page</a>.</p>
-        </div>
-      </div>
+  <div class="mx-auto px-3 md:px-6 py-5" style="max-width:1200px;">
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:40px;color:#6b7280;">
+      <a href="#" onclick="event.preventDefault();showHomePage();" style="color:#374151;text-decoration:none;">🏠</a>
+      <span>/</span><span style="color:#374151;">Account</span><span>/</span><span style="color:#374151;">Register</span>
     </div>
+    <div style="max-width:400px;margin:0 auto;">
+      <h2 style="font-size:1.5rem;font-weight:700;color:#111827;margin-bottom:24px;">Create Account</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div><label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">First Name <span style="color:#ef4444;">*</span></label>
+          <input type="text" id="regFirstName" placeholder="First Name" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;"></div>
+        <div><label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">Last Name <span style="color:#ef4444;">*</span></label>
+          <input type="text" id="regLastName" placeholder="Last Name" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;"></div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">Phone Number <span style="color:#ef4444;">*</span></label>
+        <input type="tel" id="regPhone" placeholder="01XXXXXXXXX" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">Password <span style="color:#ef4444;">*</span></label>
+        <input type="password" id="regPassword" placeholder="••••••••" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;">
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">Confirm Password <span style="color:#ef4444;">*</span></label>
+        <input type="password" id="regConfirmPassword" placeholder="••••••••" style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:11px 14px;font-size:14px;outline:none;">
+        <p id="regError" style="color:#ef4444;font-size:12px;margin-top:6px;display:none;"></p>
+      </div>
+      <button onclick="handleRegister()" style="width:100%;background:#3b4fcf;color:white;border:none;padding:13px;font-size:15px;font-weight:700;cursor:pointer;border-radius:4px;font-family:inherit;transition:background 0.2s;" onmouseover="this.style.background='#2d3db0'" onmouseout="this.style.background='#3b4fcf'">Continue</button>
+      <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px;">
+        <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+        <span style="font-size:13px;color:#6b7280;white-space:nowrap;">Already have an account?</span>
+        <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      </div>
+      <p style="font-size:14px;color:#374151;line-height:1.6;">If you already have an account with us, please login at the <a href="#" onclick="event.preventDefault();showLoginPage();" style="color:#ef4444;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">login page</a>.</p>
+    </div>
+  </div>
+</div>
 
     <div id="dashboardPage" class="detail-page" style="margin-top:120px;width:100%;background:#f0f2f5;min-height:80vh;">
       <style>
@@ -2641,46 +2640,69 @@
       };
 
       window.handleRegister = async function() {
-        const name  = (document.getElementById('regFirstName')?.value.trim() || '') + ' ' + (document.getElementById('regLastName')?.value.trim() || '');
-        const phone = document.getElementById('regEmail')?.value.trim() || '';
-        const pass  = document.getElementById('regPassword')?.value.trim() || '';
-        const err   = document.getElementById('regError');
-        if (!name.trim() || !phone || !pass) {
-          if (err) { err.style.display = 'block'; err.textContent = 'সব তথ্য পূরণ করুন।'; }
-          return;
-        }
-        if (err) err.style.display = 'none';
-        const regBtn = document.getElementById('registerSubmitBtn');
-        if (regBtn) { regBtn.disabled = true; regBtn.textContent = 'তৈরি হচ্ছে...'; }
-        try {
-          const res  = await fetch(window.FFH_API + '/users/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name.trim(), phone, password: pass }),
-          });
-          const data = await res.json();
-          if (!data.success) {
-            if (err) { err.style.display = 'block'; err.textContent = data.message || 'রেজিস্ট্রেশন ব্যর্থ।'; }
-            if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'রেজিস্ট্রেশন'; }
-            return;
-          }
-          localStorage.setItem('ffh_user', JSON.stringify(data.user));
-          localStorage.setItem('ffh_user_token', data.token);
-          ffhUser  = data.user;
-          ffhToken = data.token;
-          isLoggedIn = true;
-          loggedInUser = { name: data.user.name, email: data.user.phone, phone: data.user.phone };
-          document.getElementById('signInLabel').textContent = data.user.name;
-          signInBtnEl.querySelector('i').className = 'fas fa-user-check text-lg text-orange-600';
-          updateMobileSignInUI();
-          if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'রেজিস্ট্রেশন'; }
-          goToHome();
-        } catch(e) {
-          if (err) { err.style.display = 'block'; err.textContent = 'সার্ভার সংযোগ ব্যর্থ।'; }
-          if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'রেজিস্ট্রেশন'; }
-        }
-      };
+  const firstName = document.getElementById('regFirstName')?.value.trim() || '';
+  const lastName  = document.getElementById('regLastName')?.value.trim() || '';
+  const name      = (firstName + ' ' + lastName).trim();
+  const phone     = document.getElementById('regPhone')?.value.trim() || '';
+  const password  = document.getElementById('regPassword')?.value.trim() || '';
+  const confirm   = document.getElementById('regConfirmPassword')?.value.trim() || '';
+  const errDiv    = document.getElementById('regError');
 
+  if (!name || !phone || !password || !confirm) {
+    if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = 'সব তথ্য পূরণ করুন।'; }
+    return;
+  }
+  if (password !== confirm) {
+    if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = 'পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড একই নয়।'; }
+    return;
+  }
+  if (!/^01[3-9]\d{8}$/.test(phone)) {
+    if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = 'সঠিক ফোন নম্বর দিন (11 ডিজিট, 01 দিয়ে শুরু)।'; }
+    return;
+  }
+  if (password.length < 6) {
+    if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = 'পাসওয়ার্ড কমপক্ষে 6 অক্ষরের হতে হবে।'; }
+    return;
+  }
+
+  if (errDiv) errDiv.style.display = 'none';
+  const regBtn = document.querySelector('#registerPage button[onclick="handleRegister()"]');
+  if (regBtn) { regBtn.disabled = true; regBtn.textContent = 'তৈরি হচ্ছে...'; }
+
+  try {
+    const res = await fetch(window.FFH_API + '/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, password }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = data.message || 'রেজিস্ট্রেশন ব্যর্থ।'; }
+      if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'Continue'; }
+      return;
+    }
+    // Auto login after registration
+    localStorage.setItem('ffh_user', JSON.stringify(data.user));
+    localStorage.setItem('ffh_user_token', data.token);
+    ffhUser  = data.user;
+    ffhToken = data.token;
+    isLoggedIn = true;
+    loggedInUser = { name: data.user.name, email: data.user.phone, phone: data.user.phone };
+    const signInLabel = document.getElementById('signInLabel');
+    if (signInLabel) signInLabel.textContent = data.user.name;
+    const signBtn = document.getElementById('signInBtn');
+    if (signBtn) {
+      const icon = signBtn.querySelector('i');
+      if (icon) icon.className = 'fas fa-user-check text-lg text-orange-600';
+    }
+    if (typeof updateMobileSignInUI === 'function') updateMobileSignInUI();
+    if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'Continue'; }
+    goToHome();  // redirect to home after successful registration
+  } catch(e) {
+    if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = 'সার্ভার সংযোগ ব্যর্থ। আবার চেষ্টা করুন।'; }
+    if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'Continue'; }
+  }
+};
       window.handleLogout = function() {
         isLoggedIn = false;
         loggedInUser = { name: '', email: '', phone: '' };
