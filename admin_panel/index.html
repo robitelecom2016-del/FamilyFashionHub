@@ -251,6 +251,32 @@ tr:hover td { background: var(--bg); }
 .settings-section { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
 .settings-section .card-header { border-radius: 12px 12px 0 0; }
 
+/* ===== CATEGORIES PAGE RESPONSIVE ===== */
+#page-categories > div[style*="grid-template-columns:340px"] {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: flex-start;
+}
+@media (max-width: 900px) {
+  #page-categories > div[style*="grid-template-columns:340px"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 600px) {
+  #page-categories .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+  #page-categories .card-header > div {
+    width: 100%;
+  }
+  #page-categories #catSearchBox {
+    width: 100% !important;
+  }
+}
+
 /* Order status colors */
 .status-pending { background: #fef3c7; color: #92400e; }
 .status-processing { background: #dbeafe; color: #1e40af; }
@@ -614,6 +640,158 @@ tr:hover td { background: var(--bg); }
     <div class="modal-footer">
       <button class="btn btn-light" onclick="closeModal('productModal')">বাতিল</button>
       <button class="btn btn-primary" id="saveProductBtn" onclick="saveProduct()"><i class="fas fa-save"></i> সেভ করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT CATEGORY MODAL ===== -->
+<style>
+/* Edit Category Modal — Responsive */
+#editCatModal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  backdrop-filter: blur(2px);
+}
+#editCatModal.show { display: flex; }
+#editCatModalBox {
+  background: var(--card);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+  animation: ecmSlideIn 0.25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes ecmSlideIn {
+  from { opacity:0; transform:scale(0.92) translateY(18px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+#editCatModal .ecm-header {
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--card); z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+#editCatModal .ecm-header h3 {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+#editCatModal .ecm-close {
+  background: none; border: none; font-size: 18px;
+  cursor: pointer; color: var(--text-muted); transition: color .2s;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+#editCatModal .ecm-close:hover { background: #fee2e2; color: var(--danger); }
+#editCatModal .ecm-body { padding: 20px 22px; }
+#editCatModal .ecm-footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  position: sticky; bottom: 0; background: var(--card);
+  border-radius: 0 0 16px 16px;
+}
+
+/* Sub-category chips */
+.ecm-sub-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #f3f4f6; border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 5px 12px;
+  font-size: 12px; transition: border-color .2s;
+}
+.ecm-sub-chip:hover { border-color: var(--primary); }
+.ecm-sub-chip .chip-label { font-weight: 600; color: var(--text); }
+.ecm-sub-chip .chip-val   { color: var(--text-muted); font-size: 10px; }
+.ecm-sub-chip .chip-edit  { background:none;border:none;cursor:pointer;color:var(--info);font-size:11px;padding:0;line-height:1; }
+.ecm-sub-chip .chip-del   { background:none;border:none;cursor:pointer;color:var(--danger);font-size:12px;padding:0;line-height:1; }
+
+/* Add sub row */
+.ecm-add-sub-row {
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end;
+  background: #f9fafb; border: 1px dashed var(--border);
+  border-radius: 8px; padding: 12px;
+}
+.ecm-add-sub-row input { flex: 1; min-width: 110px; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  #editCatModalBox { border-radius: 14px; }
+  #editCatModal .ecm-header { padding: 14px 16px 12px; }
+  #editCatModal .ecm-body   { padding: 14px 16px; }
+  #editCatModal .ecm-footer { padding: 12px 16px; }
+  #editCatModal .ecm-footer .btn { font-size: 13px; padding: 8px 14px; }
+}
+</style>
+
+<div id="editCatModal">
+  <div id="editCatModalBox">
+    <!-- Header -->
+    <div class="ecm-header">
+      <h3><i class="fas fa-edit" style="color:var(--primary);"></i> ক্যাটাগরি সম্পাদনা</h3>
+      <button class="ecm-close" onclick="closeEditCatModal()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Body -->
+    <div class="ecm-body">
+      <input type="hidden" id="ecmCatValue">
+
+      <!-- Main Category Info -->
+      <div style="background:var(--primary-light);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+        <p style="font-size:11px;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="fas fa-folder"></i> মেইন ক্যাটাগরি তথ্য</p>
+        <div class="form-grid" style="gap:12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Slug (ইংরেজি) <span style="background:#e5e7eb;color:#6b7280;font-size:10px;padding:1px 6px;border-radius:4px;">পরিবর্তন হবে না</span></label>
+            <input type="text" class="form-control" id="ecmCatSlug" readonly
+              style="background:#f3f4f6;color:var(--text-muted);cursor:not-allowed;">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">লেবেল (নাম) *</label>
+            <input type="text" class="form-control" id="ecmCatLabel" placeholder="যেমন: Baby Dress">
+          </div>
+        </div>
+      </div>
+
+      <!-- Subcategories -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <p style="font-size:13px;font-weight:700;color:var(--text);"><i class="fas fa-tags" style="color:var(--success);margin-right:5px;"></i> সাব-ক্যাটাগরি সমূহ</p>
+          <span id="ecmSubCount" style="font-size:11px;color:var(--text-muted);background:#f3f4f6;padding:2px 8px;border-radius:999px;">0 টি</span>
+        </div>
+
+        <!-- Existing subs -->
+        <div id="ecmSubList" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;min-height:32px;">
+          <span style="font-size:12px;color:var(--text-muted);">লোড হচ্ছে...</span>
+        </div>
+
+        <!-- Add new sub -->
+        <div class="ecm-add-sub-row">
+          <div style="width:100%;margin-bottom:4px;">
+            <p style="font-size:11px;font-weight:700;color:var(--success);"><i class="fas fa-plus-circle"></i> নতুন সাব-ক্যাটাগরি যোগ করুন</p>
+          </div>
+          <input type="text" class="form-control form-control-sm" id="ecmNewSubSlug"
+            placeholder="slug (ইংরেজি, underscore)">
+          <input type="text" class="form-control form-control-sm" id="ecmNewSubLabel"
+            placeholder="লেবেল (বাংলা/ইংরেজি)">
+          <button class="btn btn-success btn-sm" onclick="ecmAddSub()" style="white-space:nowrap;flex-shrink:0;">
+            <i class="fas fa-plus"></i> যোগ করুন
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="ecm-footer">
+      <button class="btn btn-light" onclick="closeEditCatModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="ecmSaveLabel()" id="ecmSaveBtn">
+        <i class="fas fa-save"></i> লেবেল সেভ করুন
+      </button>
     </div>
   </div>
 </div>
@@ -1423,7 +1601,7 @@ function renderCategoryPage() {
           <span style="font-size:11px;color:var(--primary);margin-left:6px;">${(cat.subcategories||[]).length} সাব</span>
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="btn btn-xs btn-warning" onclick="editCategoryLabel('${cat.value}','${cat.label.replace(/'/g,"\\'")}')"><i class="fas fa-edit"></i> এডিট</button>
+          <button class="btn btn-xs btn-warning" onclick="openEditCatModal('${cat.value}')"><i class="fas fa-edit"></i> এডিট</button>
           <button class="btn btn-xs btn-danger" onclick="deleteCategoryAPI('${cat.value}','${cat.label.replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
         </div>
       </div>
@@ -1678,6 +1856,141 @@ function showNewOrderNotification(order) {
   c.appendChild(t);
   setTimeout(() => t.remove(), 8000);
 }
+
+// ===== EDIT CATEGORY MODAL =====
+
+var _ecmCatValue = '';
+
+function openEditCatModal(catValue) {
+  var cat = allCategories.find(function(c){ return c.value === catValue; });
+  if (!cat) return toast('ক্যাটাগরি পাওয়া যায়নি', 'error');
+
+  _ecmCatValue = catValue;
+  document.getElementById('ecmCatValue').value   = catValue;
+  document.getElementById('ecmCatSlug').value    = catValue;
+  document.getElementById('ecmCatLabel').value   = cat.label;
+  document.getElementById('ecmNewSubSlug').value  = '';
+  document.getElementById('ecmNewSubLabel').value = '';
+
+  _ecmRenderSubs(cat.subcategories || []);
+
+  document.getElementById('editCatModal').classList.add('show');
+  document.getElementById('ecmCatLabel').focus();
+}
+
+function closeEditCatModal() {
+  document.getElementById('editCatModal').classList.remove('show');
+  _ecmCatValue = '';
+}
+
+function _ecmRenderSubs(subs) {
+  var el = document.getElementById('ecmSubList');
+  var countEl = document.getElementById('ecmSubCount');
+  if (countEl) countEl.textContent = subs.length + ' টি';
+
+  if (!subs.length) {
+    el.innerHTML = '<span style="font-size:12px;color:var(--text-muted);padding:4px 0;">কোনো সাব-ক্যাটাগরি নেই</span>';
+    return;
+  }
+
+  el.innerHTML = subs.map(function(s) {
+    var safeLabel = s.label.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    var safeVal   = s.value.replace(/'/g, "\\'");
+    return '<span class="ecm-sub-chip">'
+      + '<span class="chip-label">' + s.label + '</span>'
+      + '<span class="chip-val">(' + s.value + ')</span>'
+      + '<button class="chip-edit" title="এডিট" onclick="ecmEditSub(\'' + safeVal + '\',\'' + safeLabel + '\')">'
+      +   '<i class="fas fa-pen"></i></button>'
+      + '<button class="chip-del" title="মুছুন" onclick="ecmDelSub(\'' + safeVal + '\',\'' + safeLabel + '\')">'
+      +   '<i class="fas fa-times"></i></button>'
+      + '</span>';
+  }).join('');
+}
+
+// Save main label
+async function ecmSaveLabel() {
+  var label = document.getElementById('ecmCatLabel').value.trim();
+  if (!label) return toast('লেবেল দিন', 'error');
+  var btn = document.getElementById('ecmSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> সেভ হচ্ছে...';
+
+  var data = await api('/admin/categories/' + _ecmCatValue, 'PUT', { label: label });
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-save"></i> লেবেল সেভ করুন';
+
+  if (data.success) {
+    allCategories = data.data; saveCategoriesToLocal();
+    toast('লেবেল আপডেট হয়েছে ✓');
+    refreshCategoryDropdowns(); renderCategoryPage(); renderCatStats(); renderCategoryManager(); renderNavPreview();
+    // modal-এ সাব-ক্যাটাগরি re-render করো (অপরিবর্তিত)
+    var cat = allCategories.find(function(c){ return c.value === _ecmCatValue; });
+    if (cat) { _ecmRenderSubs(cat.subcategories || []); document.getElementById('ecmCatLabel').value = cat.label; }
+  } else {
+    toast(data.message || 'সমস্যা হয়েছে', 'error');
+  }
+}
+
+// Add subcategory from modal
+async function ecmAddSub() {
+  var slug  = document.getElementById('ecmNewSubSlug').value.trim().toLowerCase().replace(/\s+/g,'_');
+  var label = document.getElementById('ecmNewSubLabel').value.trim();
+  if (!slug || !label) return toast('Slug ও লেবেল দিন', 'error');
+
+  var data = await api('/admin/categories/' + _ecmCatValue + '/subcategories', 'POST', { value: slug, label: label });
+  if (data.success) {
+    allCategories = data.data; saveCategoriesToLocal();
+    document.getElementById('ecmNewSubSlug').value  = '';
+    document.getElementById('ecmNewSubLabel').value = '';
+    var cat = allCategories.find(function(c){ return c.value === _ecmCatValue; });
+    if (cat) _ecmRenderSubs(cat.subcategories || []);
+    toast('সাব-ক্যাটাগরি যোগ হয়েছে ✓');
+    refreshCategoryDropdowns(); renderCategoryPage(); renderCategoryManager(); renderNavPreview();
+  } else {
+    toast(data.message || 'সমস্যা', 'error');
+  }
+}
+
+// Edit subcategory label inline (prompt — within modal context)
+async function ecmEditSub(subVal, curLabel) {
+  var nl = window.prompt('নতুন লেবেল লিখুন:', curLabel);
+  if (!nl || nl.trim() === curLabel) return;
+  var data = await api('/admin/categories/' + _ecmCatValue + '/subcategories/' + subVal, 'PUT', { label: nl.trim() });
+  if (data.success) {
+    allCategories = data.data; saveCategoriesToLocal();
+    var cat = allCategories.find(function(c){ return c.value === _ecmCatValue; });
+    if (cat) _ecmRenderSubs(cat.subcategories || []);
+    toast('সাব-ক্যাটাগরি আপডেট হয়েছে ✓');
+    refreshCategoryDropdowns(); renderCategoryPage(); renderCategoryManager(); renderNavPreview();
+  } else {
+    toast(data.message || 'সমস্যা', 'error');
+  }
+}
+
+// Delete subcategory from modal
+async function ecmDelSub(subVal, subLabel) {
+  if (!window.confirm('"' + subLabel + '" সাব-ক্যাটাগরি মুছে ফেলবেন?')) return;
+  var data = await api('/admin/categories/' + _ecmCatValue + '/subcategories/' + subVal, 'DELETE');
+  if (data.success) {
+    allCategories = data.data; saveCategoriesToLocal();
+    var cat = allCategories.find(function(c){ return c.value === _ecmCatValue; });
+    if (cat) _ecmRenderSubs(cat.subcategories || []);
+    toast('সাব-ক্যাটাগরি মুছে ফেলা হয়েছে');
+    refreshCategoryDropdowns(); renderCategoryPage(); renderCategoryManager(); renderNavPreview();
+  } else {
+    toast(data.message || 'সমস্যা', 'error');
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('editCatModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditCatModal();
+});
+
+// Enter key — add sub from modal
+document.getElementById('ecmNewSubLabel').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') ecmAddSub();
+});
 
 // ===== SEED DEFAULT CATEGORIES =====
 async function seedDefaultCategories() {
