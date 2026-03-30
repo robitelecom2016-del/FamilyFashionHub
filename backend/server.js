@@ -11,7 +11,6 @@ require('dotenv').config();
 const app = express();
 
 // ===== CORS CONFIG =====
-// Frontend ও Admin উভয় URL থেকে request গ্রহণ করবে
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.ADMIN_URL,
@@ -22,7 +21,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Postman বা server-to-server এর জন্য origin নাও থাকতে পারে
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('CORS policy: এই origin অনুমোদিত নয়: ' + origin));
@@ -45,7 +43,7 @@ cloudinary.config({
 // ===== MULTER — memory storage =====
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // max 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 // ===== CLOUDINARY UPLOAD HELPER =====
@@ -70,13 +68,10 @@ async function uploadMultiple(files, folder) {
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('✅ MongoDB Connected');
-    // Bad unique index on orderId drop করো (যদি থাকে)
     try {
       await mongoose.connection.collection('orders').dropIndex('orderId_1');
       console.log('🔧 Bad orderId index dropped');
-    } catch(e) {
-      // index নেই — no problem
-    }
+    } catch(e) {}
     autoSetupAdmin();
   })
   .catch(err => console.error('❌ MongoDB Error:', err));
@@ -97,19 +92,18 @@ const productSchema = new mongoose.Schema({
   soldOut:     { type: Boolean, default: false },
   featured:    { type: Boolean, default: false },
 
-  // ===== বিস্তারিত পণ্য তথ্য =====
-  sizes:          [{ type: String }],                  // সাইজ যেমন: S, M, L, XL, 0-6M
-  colors:         [{ type: String }],                  // রঙ যেমন: লাল, নীল, সাদা
-  ageGroup:       { type: String, default: '' },        // বয়স: 0-6 মাস, 6-12 মাস ইত্যাদি
-  material:       { type: String, default: '' },        // কাপড়: Cotton, Fleece ইত্যাদি
-  stock:          { type: Number, default: 0 },         // স্টক সংখ্যা
-  sku:            { type: String, default: '' },         // স্টক কোড
-  weight:         { type: String, default: '' },         // ওজন/মাপ
-  deliveryInfo:   { type: String, default: '' },         // ডেলিভারি তথ্য
-  returnPolicy:   { type: String, default: '' },         // রিটার্ন নীতি
-  highlights:     [{ type: String }],                   // মূল বৈশিষ্ট্য তালিকা
-  careInstructions: { type: String, default: '' },      // পরিচর্যা নির্দেশনা
-  tags:           [{ type: String }],                   // সার্চ ট্যাগ
+  sizes:          [{ type: String }],
+  colors:         [{ type: String }],
+  ageGroup:       { type: String, default: '' },
+  material:       { type: String, default: '' },
+  stock:          { type: Number, default: 0 },
+  sku:            { type: String, default: '' },
+  weight:         { type: String, default: '' },
+  deliveryInfo:   { type: String, default: '' },
+  returnPolicy:   { type: String, default: '' },
+  highlights:     [{ type: String }],
+  careInstructions: { type: String, default: '' },
+  tags:           [{ type: String }],
 
   createdAt:   { type: Date, default: Date.now },
 });
@@ -164,23 +158,19 @@ const Settings = mongoose.model('Settings', settingsSchema);
 const Order    = mongoose.model('Order',    orderSchema);
 
 // ===== AUTO ADMIN SETUP =====
-// .env-এর ADMIN_USERNAME ও ADMIN_PASSWORD দিয়ে স্বয়ংক্রিয়ভাবে admin তৈরি করবে
 async function autoSetupAdmin() {
   try {
-    const adminPhone = process.env.ADMIN_USERNAME; // username হিসেবে phone ব্যবহার
+    const adminPhone = process.env.ADMIN_USERNAME;
     const adminPass  = process.env.ADMIN_PASSWORD;
-
     if (!adminPhone || !adminPass) {
       console.log('⚠️  ADMIN_USERNAME বা ADMIN_PASSWORD .env-এ নেই — auto setup স্কিপ');
       return;
     }
-
     const existing = await User.findOne({ phone: adminPhone, role: 'admin' });
     if (existing) {
       console.log('ℹ️  Admin ইতিমধ্যে আছে:', adminPhone);
       return;
     }
-
     const hashed = await bcrypt.hash(adminPass, 10);
     await User.create({
       name:     'Super Admin',
@@ -256,7 +246,6 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
       images = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
     }
     const img = images.length > 0 ? images[0].url : '';
-    // Array field parse helper (comma-separated string অথবা array হতে পারে)
     const parseArr = v => {
       if (!v) return [];
       if (Array.isArray(v)) return v.map(x => x.trim()).filter(Boolean);
@@ -297,11 +286,46 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       ageGroup, material, stock, sku, weight, deliveryInfo, returnPolicy, careInstructions,
       sizes, colors, highlights, tags,
     } = req.body;
+
+    // Parse existing images from frontend
+    let existingImages = [];
+    const existingImagesRaw = req.body.existingImages;
+    if (existingImagesRaw) {
+      try {
+        existingImages = JSON.parse(existingImagesRaw);
+      } catch(e) {}
+    }
+
+    // Get current product to compare
+    const currentProduct = await Product.findById(req.params.id);
+    if (!currentProduct) return res.json({ success: false, message: 'পণ্য পাওয়া যায়নি' });
+
+    // Delete images removed from the list
+    const toDelete = (currentProduct.images || []).filter(
+      img => !existingImages.some(ei => ei.public_id === img.public_id)
+    );
+    for (const img of toDelete) {
+      if (img.public_id) {
+        await cloudinary.uploader.destroy(img.public_id).catch(() => {});
+      }
+    }
+
+    // Upload new images
+    let newImages = [];
+    if (req.files && req.files.length > 0) {
+      const results = await uploadMultiple(req.files);
+      newImages = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
+    }
+
+    const finalImages = [...existingImages, ...newImages];
+    const firstImg = finalImages.length > 0 ? finalImages[0].url : '';
+
     const parseArr = v => {
       if (!v) return [];
       if (Array.isArray(v)) return v.map(x => x.trim()).filter(Boolean);
       return v.split(',').map(x => x.trim()).filter(Boolean);
     };
+
     const update = {
       name, description,
       price:       +price,
@@ -324,69 +348,12 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       colors:     parseArr(colors),
       highlights: parseArr(highlights),
       tags:       parseArr(tags),
+      images: finalImages,
+      img: firstImg,
     };
-    if (req.files && req.files.length > 0) {
-      const old = await Product.findById(req.params.id);
-      if (old && old.images && old.images.length) {
-        await Promise.all(
-          old.images
-            .filter(img => img.public_id)
-            .map(img => cloudinary.uploader.destroy(img.public_id).catch(() => {}))
-        );
-      }
-      const results = await uploadMultiple(req.files);
-      update.images = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
-      update.img    = update.images[0].url;
-    }
+
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     res.json({ success: true, data: product });
-  } catch (e) { res.json({ success: false, message: e.message }); }
-});
-
-// ===== PRODUCT IMAGE — একটি ছবি যোগ করা =====
-app.post('/api/products/:id/images', adminMiddleware, upload.array('images', 10), async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.json({ success: false, message: 'পণ্য পাওয়া যায়নি' });
-    if (!req.files || req.files.length === 0) return res.json({ success: false, message: 'কোনো ছবি নেই' });
-    const results = await uploadMultiple(req.files, 'FamilyFashionHub');
-    const newImages = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
-    product.images = [...(product.images || []), ...newImages];
-    if (!product.img) product.img = product.images[0].url;
-    await product.save();
-    res.json({ success: true, data: product.images, message: 'ছবি যোগ হয়েছে' });
-  } catch (e) { res.json({ success: false, message: e.message }); }
-});
-
-// ===== PRODUCT IMAGE — একটি ছবি মুছে ফেলা =====
-app.delete('/api/products/:id/images/:publicId', adminMiddleware, async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.json({ success: false, message: 'পণ্য পাওয়া যায়নি' });
-    // publicId URL-encoded হয়ে আসে, decode করো
-    const publicId = decodeURIComponent(req.params.publicId);
-    // Cloudinary থেকে মুছো
-    await cloudinary.uploader.destroy(publicId).catch(() => {});
-    // DB থেকে সরাও
-    product.images = (product.images || []).filter(img => img.public_id !== publicId);
-    // প্রধান img আপডেট করো
-    product.img = product.images.length > 0 ? product.images[0].url : '';
-    await product.save();
-    res.json({ success: true, data: product.images, message: 'ছবি মুছে ফেলা হয়েছে' });
-  } catch (e) { res.json({ success: false, message: e.message }); }
-});
-
-// ===== PRODUCT IMAGE — ক্রম পরিবর্তন =====
-app.put('/api/products/:id/images/reorder', adminMiddleware, async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.json({ success: false, message: 'পণ্য পাওয়া যায়নি' });
-    const { images } = req.body; // [{url, public_id}, ...] নতুন ক্রমে
-    if (!Array.isArray(images)) return res.json({ success: false, message: 'images array প্রয়োজন' });
-    product.images = images;
-    product.img = images.length > 0 ? images[0].url : '';
-    await product.save();
-    res.json({ success: true, data: product.images, message: 'ছবির ক্রম আপডেট হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
@@ -407,7 +374,6 @@ app.delete('/api/products/:id', adminMiddleware, async (req, res) => {
 });
 
 // ===== REVIEW ROUTES =====
-
 app.get('/api/reviews', async (req, res) => {
   try {
     const { featured, productId } = req.query;
@@ -449,7 +415,6 @@ app.delete('/api/reviews/:id', adminMiddleware, async (req, res) => {
 });
 
 // ===== USER ROUTES =====
-
 app.post('/api/users/register', async (req, res) => {
   try {
     const { name, phone, password } = req.body;
@@ -474,20 +439,12 @@ app.post('/api/users/login', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin Login — phone অথবা ADMIN_USERNAME দিয়ে login করা যাবে
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
-
-    // প্রথমে .env-এর ADMIN_USERNAME দিয়ে চেক করো
-    if (
-      phone === process.env.ADMIN_USERNAME &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      // DB-তে এই admin খোঁজো
+    if (phone === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
       let user = await User.findOne({ phone: process.env.ADMIN_USERNAME, role: 'admin' });
       if (!user) {
-        // না থাকলে এখনই তৈরি করো
         const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
         user = await User.create({
           name: 'Super Admin',
@@ -499,8 +456,6 @@ app.post('/api/admin/login', async (req, res) => {
       const token = jwt.sign({ id: user._id, phone: user.phone, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
       return res.json({ success: true, user: { id: user._id, name: user.name, phone: user.phone, role: 'admin' }, token });
     }
-
-    // সাধারণ DB-based admin login
     const user = await User.findOne({ phone, role: 'admin' });
     if (!user) return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
     const match = await bcrypt.compare(password, user.password);
@@ -536,8 +491,6 @@ app.delete('/api/admin/users/:id', adminMiddleware, async (req, res) => {
 });
 
 // ===== ORDER ROUTES =====
-
-// ===== ORDER DEBUG (temporary — frontend কী পাঠাচ্ছে দেখার জন্য) =====
 app.post('/api/orders/debug', (req, res) => {
   console.log('ORDER DEBUG body:', JSON.stringify(req.body, null, 2));
   res.json({ success: true, received: req.body });
@@ -546,36 +499,16 @@ app.post('/api/orders/debug', (req, res) => {
 app.post('/api/orders', async (req, res) => {
   try {
     const b = req.body;
-
-    // ফ্রন্টএন্ড যেকোনো field name দিয়ে পাঠাক — সব handle করা হচ্ছে
-    const customerName =
-      b.customerName || b.customer_name || b.name || b.fullName ||
-      b.full_name || b.userName || b.user_name || b.buyerName || '';
-
-    const phone =
-      b.phone || b.mobile || b.phoneNumber || b.phone_number ||
-      b.mobileNumber || b.mobile_number || b.contact || b.number || '';
-
-    const address =
-      b.address || b.shippingAddress || b.shipping_address ||
-      b.deliveryAddress || b.delivery_address || b.location || '';
-
-    const note =
-      b.note || b.notes || b.message || b.orderNote || b.order_note || '';
-
-    // deliveryArea — 'dhaka'/'inside' = ঢাকার ভেতর, 'outside' = বাইরে
+    const customerName = b.customerName || b.customer_name || b.name || b.fullName || b.full_name || b.userName || b.user_name || b.buyerName || '';
+    const phone = b.phone || b.mobile || b.phoneNumber || b.phone_number || b.mobileNumber || b.mobile_number || b.contact || b.number || '';
+    const address = b.address || b.shippingAddress || b.shipping_address || b.deliveryAddress || b.delivery_address || b.location || '';
+    const note = b.note || b.notes || b.message || b.orderNote || b.order_note || '';
     const deliveryArea = (b.deliveryArea || b.delivery_area || b.area || 'inside') === 'outside' ? 'outside' : 'inside';
-
-    // items — array or JSON string
     let items = b.items || b.cartItems || b.cart || b.products || [];
     if (typeof items === 'string') {
       try { items = JSON.parse(items); } catch { items = []; }
     }
-
-    // total — calculate from items if not provided
-    let total = parseFloat(b.total || b.totalPrice || b.total_price ||
-      b.amount || b.grandTotal || b.grand_total || 0);
-
+    let total = parseFloat(b.total || b.totalPrice || b.total_price || b.amount || b.grandTotal || b.grand_total || 0);
     if (!total && items.length) {
       total = items.reduce((sum, item) => {
         const price = parseFloat(item.price || item.unitPrice || 0);
@@ -583,19 +516,14 @@ app.post('/api/orders', async (req, res) => {
         return sum + price * qty;
       }, 0);
     }
-
-    // Validation — বাংলায় error দাও
     const errors = [];
     if (!customerName) errors.push('গ্রাহকের নাম দিন');
     if (!phone)        errors.push('ফোন নম্বর দিন');
     if (!address)      errors.push('ঠিকানা দিন');
     if (!total)        errors.push('মোট মূল্য পাওয়া যায়নি');
-
     if (errors.length) {
       return res.json({ success: false, message: errors.join(', ') });
     }
-
-    // items normalize
     const normalizedItems = items.map(item => ({
       productId: item.productId || item.product_id || item._id || item.id || '',
       name:      item.name || item.productName || item.product_name || item.title || '',
@@ -603,7 +531,6 @@ app.post('/api/orders', async (req, res) => {
       quantity:  parseInt(item.quantity || item.qty || 1, 10),
       img:       item.img || item.image || item.thumbnail || item.photo || '',
     }));
-
     const order = await Order.create({
       customerName,
       phone,
@@ -614,7 +541,6 @@ app.post('/api/orders', async (req, res) => {
       note,
       status: 'pending',
     });
-
     res.json({
       success: true,
       data: order,
@@ -650,14 +576,12 @@ app.delete('/api/admin/orders/:id', adminMiddleware, async (req, res) => {
 });
 
 // ===== CATEGORIES API =====
-// Frontend এই route থেকে categories ও subcategories পাবে
 app.get('/api/categories', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'categories' });
     if (setting && Array.isArray(setting.value) && setting.value.length) {
       return res.json({ success: true, data: setting.value });
     }
-    // Default fallback — Baby Products full structure
     res.json({
       success: true,
       data: [
@@ -702,12 +626,6 @@ app.get('/api/categories', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== CATEGORIES CRUD (Admin) =====
-
-// GET — সব categories
-// (already handled by /api/categories above)
-
-// POST — নতুন main category যোগ
 app.post('/api/admin/categories', adminMiddleware, async (req, res) => {
   try {
     const { value, label } = req.body;
@@ -722,7 +640,6 @@ app.post('/api/admin/categories', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// PUT — main category আপডেট (rename label)
 app.put('/api/admin/categories/:value', adminMiddleware, async (req, res) => {
   try {
     const { label } = req.body;
@@ -737,7 +654,6 @@ app.put('/api/admin/categories/:value', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// DELETE — main category মুছো
 app.delete('/api/admin/categories/:value', adminMiddleware, async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'categories' });
@@ -748,7 +664,6 @@ app.delete('/api/admin/categories/:value', adminMiddleware, async (req, res) => 
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — subcategory যোগ
 app.post('/api/admin/categories/:catValue/subcategories', adminMiddleware, async (req, res) => {
   try {
     const { value, label } = req.body;
@@ -766,7 +681,6 @@ app.post('/api/admin/categories/:catValue/subcategories', adminMiddleware, async
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// PUT — subcategory আপডেট
 app.put('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddleware, async (req, res) => {
   try {
     const { label } = req.body;
@@ -783,7 +697,6 @@ app.put('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddlewa
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// DELETE — subcategory মুছো
 app.delete('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddleware, async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'categories' });
@@ -796,7 +709,6 @@ app.delete('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddl
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — সম্পূর্ণ categories replace (bulk save)
 app.post('/api/admin/categories/bulk', adminMiddleware, async (req, res) => {
   try {
     const { categories } = req.body;
@@ -806,10 +718,7 @@ app.post('/api/admin/categories/bulk', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== PUBLIC CATEGORIES API (উপরে /api/categories route-এ already handled) =====
-
 // ===== SETTINGS ROUTES =====
-
 app.get('/api/settings', async (req, res) => {
   try {
     const settings = await Settings.find();
@@ -859,7 +768,7 @@ app.post('/api/upload', adminMiddleware, upload.single('image'), async (req, res
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== MANUAL SETUP ADMIN (fallback) =====
+// ===== MANUAL SETUP ADMIN =====
 app.post('/api/setup-admin', async (req, res) => {
   try {
     const count = await User.countDocuments({ role: 'admin' });
@@ -872,7 +781,7 @@ app.post('/api/setup-admin', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== ENV HEALTH CHECK (admin only) =====
+// ===== ENV HEALTH CHECK =====
 app.get('/api/admin/health', adminMiddleware, (req, res) => {
   res.json({
     success: true,
@@ -890,9 +799,6 @@ app.get('/api/admin/health', adminMiddleware, (req, res) => {
   });
 });
 
-
-// ===== SEED DEFAULT CATEGORIES (admin only) =====
-// প্রথমবার রান করলে MongoDB-তে default baby categories সেট হবে
 app.post('/api/admin/seed-categories', adminMiddleware, async (req, res) => {
   try {
     const existing = await Settings.findOne({ key: 'categories' });
@@ -947,26 +853,20 @@ app.post('/api/admin/seed-categories', adminMiddleware, async (req, res) => {
 });
 
 // ===== PRODUCT PAGE LAYOUT SETTINGS =====
-
-// GET — পণ্য পেজের লেআউট সেটিংস (Public — Frontend এর জন্য)
 app.get('/api/product-layout', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'productLayout' });
     const defaultLayout = {
-      // বাটন দৃশ্যমানতা
       showAddToCart:   true,
       showBuyNow:      true,
       showWhatsApp:    true,
       showCallOrder:   true,
-      // বাটনের টেক্সট
       addToCartText:   'ADD TO CART',
       buyNowText:      'BUY NOW',
       whatsappText:    'Order On WhatsApp',
       callOrderText:   'Call For Order',
-      // WhatsApp ও Call নম্বর
       whatsappNumber:  '',
       callNumber:      '',
-      // তিন কলাম লেআউট সেকশন দৃশ্যমানতা
       showPriceSection:       true,
       showSavingBadge:        true,
       showQuantitySelector:   true,
@@ -982,11 +882,8 @@ app.get('/api/product-layout', async (req, res) => {
       showCareInstructions:   true,
       showStockStatus:        true,
       showMoreProducts:       true,
-      // ডান কলাম "More Products" শিরোনাম
       moreProductsTitle:      'More Products',
-      // ব্র্যান্ড লেবেল টেক্সট
       brandLabel:             'Family Fashion Hub',
-      // Customer Reviews ট্যাব দেখাবে কিনা
       showReviewsTab:         true,
     };
     const layout = (setting && setting.value) ? { ...defaultLayout, ...setting.value } : defaultLayout;
@@ -994,7 +891,6 @@ app.get('/api/product-layout', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — পণ্য পেজের লেআউট সেটিংস আপডেট (Admin only)
 app.post('/api/admin/product-layout', adminMiddleware, async (req, res) => {
   try {
     const layout = req.body;
@@ -1016,6 +912,5 @@ app.get('/', (req, res) => res.json({
   admin: process.env.ADMIN_URL,
 }));
 
-// ===== START =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
