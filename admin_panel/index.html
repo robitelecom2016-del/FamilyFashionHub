@@ -336,6 +336,7 @@ tr:hover td { background: var(--bg); }
     <button class="nav-item" onclick="showPage('users')"><i class="fas fa-users"></i> ব্যবহারকারী</button>
     <div class="nav-label">কনফিগারেশন</div>
     <button class="nav-item" onclick="showPage('categories')"><i class="fas fa-tags"></i> ক্যাটাগরি</button>
+    <button class="nav-item" onclick="showPage('productlayout')"><i class="fas fa-columns"></i> পণ্য পেজ লেআউট</button>
     <button class="nav-item" onclick="showPage('settings')"><i class="fas fa-cog"></i> সেটিংস</button>
   </nav>
   <div class="sidebar-footer">
@@ -514,6 +515,209 @@ tr:hover td { background: var(--bg); }
             <div class="loading"><div class="spinner"></div></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- PRODUCT PAGE LAYOUT -->
+    <div class="page-section" id="page-productlayout">
+      <!-- শিরোনাম -->
+      <div style="margin-bottom:20px;">
+        <h2 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;"><i class="fas fa-columns" style="color:var(--primary);margin-right:8px;"></i>পণ্য পেজ লেআউট কন্ট্রোল</h2>
+        <p style="font-size:13px;color:var(--text-muted);">ফ্রন্টএন্ডের পণ্য বিবরণ পেজের ৩ কলাম লেআউট — বাটন, সেকশন এবং টেক্সট এখান থেকে নিয়ন্ত্রণ করুন।</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" id="layoutGrid">
+
+        <!-- কলাম ১: বাটন নিয়ন্ত্রণ -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-mouse-pointer" style="color:var(--primary)"></i> অ্যাকশন বাটন নিয়ন্ত্রণ</h3>
+          </div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">পণ্য পেজের বাটনগুলো দেখাবে কিনা এবং লেখা কী থাকবে তা ঠিক করুন।</p>
+
+            <!-- Add to Cart -->
+            <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+                  <span style="width:14px;height:14px;background:#f97316;border-radius:3px;display:inline-block;"></span> ADD TO CART বাটন
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
+                  <input type="checkbox" id="ly_showAddToCart" onchange="layoutLivePreview()"> দেখাও
+                </label>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">বাটনের লেখা</label>
+                <input type="text" class="form-control form-control-sm" id="ly_addToCartText" placeholder="ADD TO CART" oninput="layoutLivePreview()">
+              </div>
+            </div>
+
+            <!-- Buy Now -->
+            <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+                  <span style="width:14px;height:14px;background:#111827;border-radius:3px;display:inline-block;"></span> BUY NOW বাটন
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
+                  <input type="checkbox" id="ly_showBuyNow" onchange="layoutLivePreview()"> দেখাও
+                </label>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">বাটনের লেখা</label>
+                <input type="text" class="form-control form-control-sm" id="ly_buyNowText" placeholder="BUY NOW" oninput="layoutLivePreview()">
+              </div>
+            </div>
+
+            <!-- WhatsApp -->
+            <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+                  <span style="width:14px;height:14px;background:#22c55e;border-radius:3px;display:inline-block;"></span> WhatsApp বাটন
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
+                  <input type="checkbox" id="ly_showWhatsApp" onchange="layoutLivePreview()"> দেখাও
+                </label>
+              </div>
+              <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label">বাটনের লেখা</label>
+                <input type="text" class="form-control form-control-sm" id="ly_whatsappText" placeholder="Order On WhatsApp" oninput="layoutLivePreview()">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">WhatsApp নম্বর <span style="font-size:10px;color:var(--text-muted);">(দেশকোড সহ, যেমন: 8801XXXXXXXXX)</span></label>
+                <input type="text" class="form-control form-control-sm" id="ly_whatsappNumber" placeholder="8801XXXXXXXXX">
+              </div>
+            </div>
+
+            <!-- Call For Order -->
+            <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+                  <span style="width:14px;height:14px;background:#3b82f6;border-radius:3px;display:inline-block;"></span> Call For Order বাটন
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
+                  <input type="checkbox" id="ly_showCallOrder" onchange="layoutLivePreview()"> দেখাও
+                </label>
+              </div>
+              <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label">বাটনের লেখা</label>
+                <input type="text" class="form-control form-control-sm" id="ly_callOrderText" placeholder="Call For Order" oninput="layoutLivePreview()">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">ফোন নম্বর</label>
+                <input type="text" class="form-control form-control-sm" id="ly_callNumber" placeholder="01XXXXXXXXX">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- কলাম ২: সেকশন দৃশ্যমানতা -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-eye" style="color:var(--success)"></i> পণ্য পেজ সেকশন নিয়ন্ত্রণ</h3>
+          </div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">পণ্য বিবরণ পেজে কোন কোন সেকশন দেখাবে তা চালু/বন্ধ করুন।</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <!-- মূল্য সেকশন -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showPriceSection"> মূল্য সেকশন
+              </label>
+              <!-- ছাড়ের ব্যাজ -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showSavingBadge"> সেভিং ব্যাজ
+              </label>
+              <!-- পরিমাণ নির্বাচন -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showQuantitySelector"> পরিমাণ নির্বাচন
+              </label>
+              <!-- সাইজ নির্বাচন -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showSizeSelector"> সাইজ নির্বাচন
+              </label>
+              <!-- রঙ নির্বাচন -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showColorSelector"> রঙ নির্বাচন
+              </label>
+              <!-- ব্র্যান্ড -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showBrandLabel"> ব্র্যান্ড লেবেল
+              </label>
+              <!-- হাইলাইট -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showHighlights"> হাইলাইট
+              </label>
+              <!-- বিবরণ -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showDescription"> বিবরণ ট্যাব
+              </label>
+              <!-- উপাদান -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showMaterial"> উপাদান
+              </label>
+              <!-- বয়সসীমা -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showAgeGroup"> বয়সসীমা
+              </label>
+              <!-- ডেলিভারি -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showDeliveryInfo"> ডেলিভারি তথ্য
+              </label>
+              <!-- রিটার্ন নীতি -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showReturnPolicy"> রিটার্ন নীতি
+              </label>
+              <!-- পরিচর্যা -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showCareInstructions"> পরিচর্যা নির্দেশনা
+              </label>
+              <!-- স্টক -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showStockStatus"> স্টক স্ট্যাটাস
+              </label>
+              <!-- রিভিউ ট্যাব -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showReviewsTab"> রিভিউ ট্যাব
+              </label>
+              <!-- আরো পণ্য -->
+              <label style="display:flex;align-items:center;gap:8px;background:var(--bg);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid var(--border);">
+                <input type="checkbox" id="ly_showMoreProducts"> আরো পণ্য কলাম
+              </label>
+            </div>
+
+            <!-- অতিরিক্ত টেক্সট সেটিংস -->
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+              <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;"><i class="fas fa-font" style="color:var(--primary);"></i> লেবেল টেক্সট</p>
+              <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label">ব্র্যান্ড লেবেল টেক্সট</label>
+                <input type="text" class="form-control form-control-sm" id="ly_brandLabel" placeholder="Family Fashion Hub">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">"আরো পণ্য" কলামের শিরোনাম</label>
+                <input type="text" class="form-control form-control-sm" id="ly_moreProductsTitle" placeholder="More Products">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- লাইভ প্রিভিউ -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <h3><i class="fas fa-desktop" style="color:var(--info)"></i> লাইভ বাটন প্রিভিউ</h3>
+          <span style="font-size:12px;color:var(--text-muted);">সেভ করার আগে দেখুন বাটনগুলো কেমন দেখাবে</span>
+        </div>
+        <div class="card-body">
+          <div id="layoutPreviewBox" style="background:#f9fafb;border-radius:10px;padding:20px;border:1px dashed var(--border);">
+            <div id="layoutPreviewBtns" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- সেভ বাটন -->
+      <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-light" onclick="loadProductLayout()"><i class="fas fa-undo"></i> রিসেট</button>
+        <button class="btn btn-primary" onclick="saveProductLayout()"><i class="fas fa-save"></i> লেআউট সেভ করুন</button>
       </div>
     </div>
 
@@ -1065,6 +1269,7 @@ const pageMeta = {
   reviews: { title: 'রিভিউ সমূহ', breadcrumb: 'Home / Reviews' },
   users: { title: 'ব্যবহারকারী', breadcrumb: 'Home / Users' },
   categories: { title: 'ক্যাটাগরি ব্যবস্থাপনা', breadcrumb: 'Home / Categories' },
+  productlayout: { title: 'পণ্য পেজ লেআউট', breadcrumb: 'Home / Product Layout' },
   settings: { title: 'সেটিংস', breadcrumb: 'Home / Settings' },
 };
 
@@ -1083,6 +1288,7 @@ function showPage(page) {
   if (page === 'reviews') loadReviews();
   if (page === 'users') loadUsers();
   if (page === 'categories') loadCategoriesPage();
+  if (page === 'productlayout') loadProductLayout();
   if (page === 'settings') loadSettings();
 }
 
@@ -2270,6 +2476,147 @@ const _origLoadCatPage = window.loadCategoriesPage;
 if (typeof loadCategoriesPage === 'function') {
   window._ffhNavPreviewHooked = true;
 }
+
+// ===== PRODUCT PAGE LAYOUT =====
+
+// Layout-এর default মান
+const layoutDefaults = {
+  showAddToCart: true, showBuyNow: true, showWhatsApp: true, showCallOrder: true,
+  addToCartText: 'ADD TO CART', buyNowText: 'BUY NOW',
+  whatsappText: 'Order On WhatsApp', callOrderText: 'Call For Order',
+  whatsappNumber: '', callNumber: '',
+  showPriceSection: true, showSavingBadge: true, showQuantitySelector: true,
+  showSizeSelector: true, showColorSelector: true, showBrandLabel: true,
+  showHighlights: true, showDescription: true, showMaterial: true,
+  showAgeGroup: true, showDeliveryInfo: true, showReturnPolicy: true,
+  showCareInstructions: true, showStockStatus: true, showMoreProducts: true,
+  showReviewsTab: true,
+  moreProductsTitle: 'More Products', brandLabel: 'Family Fashion Hub',
+};
+
+// সার্ভার থেকে layout লোড করে ফর্মে বসাও
+async function loadProductLayout() {
+  try {
+    const res = await fetch(API_URL + '/product-layout');
+    const data = await res.json();
+    const ly = data.success ? { ...layoutDefaults, ...data.data } : { ...layoutDefaults };
+    _fillLayoutForm(ly);
+    layoutLivePreview();
+  } catch {
+    _fillLayoutForm({ ...layoutDefaults });
+    layoutLivePreview();
+  }
+}
+
+function _fillLayoutForm(ly) {
+  const set = (id, val) => { const el = document.getElementById(id); if (!el) return; if (el.type === 'checkbox') el.checked = !!val; else el.value = val || ''; };
+  set('ly_showAddToCart', ly.showAddToCart);
+  set('ly_showBuyNow', ly.showBuyNow);
+  set('ly_showWhatsApp', ly.showWhatsApp);
+  set('ly_showCallOrder', ly.showCallOrder);
+  set('ly_addToCartText', ly.addToCartText);
+  set('ly_buyNowText', ly.buyNowText);
+  set('ly_whatsappText', ly.whatsappText);
+  set('ly_callOrderText', ly.callOrderText);
+  set('ly_whatsappNumber', ly.whatsappNumber);
+  set('ly_callNumber', ly.callNumber);
+  set('ly_showPriceSection', ly.showPriceSection);
+  set('ly_showSavingBadge', ly.showSavingBadge);
+  set('ly_showQuantitySelector', ly.showQuantitySelector);
+  set('ly_showSizeSelector', ly.showSizeSelector);
+  set('ly_showColorSelector', ly.showColorSelector);
+  set('ly_showBrandLabel', ly.showBrandLabel);
+  set('ly_showHighlights', ly.showHighlights);
+  set('ly_showDescription', ly.showDescription);
+  set('ly_showMaterial', ly.showMaterial);
+  set('ly_showAgeGroup', ly.showAgeGroup);
+  set('ly_showDeliveryInfo', ly.showDeliveryInfo);
+  set('ly_showReturnPolicy', ly.showReturnPolicy);
+  set('ly_showCareInstructions', ly.showCareInstructions);
+  set('ly_showStockStatus', ly.showStockStatus);
+  set('ly_showMoreProducts', ly.showMoreProducts);
+  set('ly_showReviewsTab', ly.showReviewsTab);
+  set('ly_brandLabel', ly.brandLabel);
+  set('ly_moreProductsTitle', ly.moreProductsTitle);
+}
+
+function _readLayoutForm() {
+  const get = id => { const el = document.getElementById(id); if (!el) return undefined; return el.type === 'checkbox' ? el.checked : el.value.trim(); };
+  return {
+    showAddToCart: get('ly_showAddToCart'),
+    showBuyNow: get('ly_showBuyNow'),
+    showWhatsApp: get('ly_showWhatsApp'),
+    showCallOrder: get('ly_showCallOrder'),
+    addToCartText: get('ly_addToCartText') || 'ADD TO CART',
+    buyNowText: get('ly_buyNowText') || 'BUY NOW',
+    whatsappText: get('ly_whatsappText') || 'Order On WhatsApp',
+    callOrderText: get('ly_callOrderText') || 'Call For Order',
+    whatsappNumber: get('ly_whatsappNumber'),
+    callNumber: get('ly_callNumber'),
+    showPriceSection: get('ly_showPriceSection'),
+    showSavingBadge: get('ly_showSavingBadge'),
+    showQuantitySelector: get('ly_showQuantitySelector'),
+    showSizeSelector: get('ly_showSizeSelector'),
+    showColorSelector: get('ly_showColorSelector'),
+    showBrandLabel: get('ly_showBrandLabel'),
+    showHighlights: get('ly_showHighlights'),
+    showDescription: get('ly_showDescription'),
+    showMaterial: get('ly_showMaterial'),
+    showAgeGroup: get('ly_showAgeGroup'),
+    showDeliveryInfo: get('ly_showDeliveryInfo'),
+    showReturnPolicy: get('ly_showReturnPolicy'),
+    showCareInstructions: get('ly_showCareInstructions'),
+    showStockStatus: get('ly_showStockStatus'),
+    showMoreProducts: get('ly_showMoreProducts'),
+    showReviewsTab: get('ly_showReviewsTab'),
+    brandLabel: get('ly_brandLabel') || 'Family Fashion Hub',
+    moreProductsTitle: get('ly_moreProductsTitle') || 'More Products',
+  };
+}
+
+// লাইভ প্রিভিউ আপডেট
+function layoutLivePreview() {
+  const ly = _readLayoutForm();
+  const box = document.getElementById('layoutPreviewBtns');
+  if (!box) return;
+  const btns = [];
+  if (ly.showAddToCart) btns.push(`<button style="background:#f97316;color:#fff;border:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:default;display:flex;align-items:center;gap:7px;"><i class="fas fa-shopping-cart"></i> ${ly.addToCartText}</button>`);
+  if (ly.showBuyNow) btns.push(`<button style="background:#111827;color:#fff;border:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:default;">${ly.buyNowText}</button>`);
+  if (ly.showWhatsApp) btns.push(`<button style="background:#22c55e;color:#fff;border:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:default;display:flex;align-items:center;gap:7px;"><i class="fab fa-whatsapp"></i> ${ly.whatsappText}</button>`);
+  if (ly.showCallOrder) btns.push(`<button style="background:#3b82f6;color:#fff;border:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:default;display:flex;align-items:center;gap:7px;"><i class="fas fa-phone"></i> ${ly.callOrderText}</button>`);
+  if (!btns.length) {
+    box.innerHTML = '<p style="color:var(--text-muted);font-size:13px;"><i class="fas fa-eye-slash" style="margin-right:6px;"></i>সব বাটন বন্ধ আছে — কোনো বাটন দেখাবে না।</p>';
+  } else {
+    box.innerHTML = btns.join('');
+  }
+}
+
+// সার্ভারে সেভ করো
+async function saveProductLayout() {
+  const ly = _readLayoutForm();
+  try {
+    const data = await api('/admin/product-layout', 'POST', ly);
+    if (data.success) {
+      toast('পণ্য পেজ লেআউট সেভ হয়েছে ✓');
+    } else {
+      toast(data.message || 'সমস্যা হয়েছে', 'error');
+    }
+  } catch {
+    toast('সার্ভারে সংযোগ হচ্ছে না', 'error');
+  }
+}
+
+// responsive layout grid
+(function() {
+  function fixLayoutGrid() {
+    var g = document.getElementById('layoutGrid');
+    if (!g) return;
+    if (window.innerWidth < 900) g.style.gridTemplateColumns = '1fr';
+    else g.style.gridTemplateColumns = '1fr 1fr';
+  }
+  window.addEventListener('resize', fixLayoutGrid);
+  window.addEventListener('DOMContentLoaded', fixLayoutGrid);
+})();
 
 // Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(o => {

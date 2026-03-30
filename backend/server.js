@@ -903,6 +903,67 @@ app.post('/api/admin/seed-categories', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// ===== PRODUCT PAGE LAYOUT SETTINGS =====
+
+// GET — পণ্য পেজের লেআউট সেটিংস (Public — Frontend এর জন্য)
+app.get('/api/product-layout', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'productLayout' });
+    const defaultLayout = {
+      // বাটন দৃশ্যমানতা
+      showAddToCart:   true,
+      showBuyNow:      true,
+      showWhatsApp:    true,
+      showCallOrder:   true,
+      // বাটনের টেক্সট
+      addToCartText:   'ADD TO CART',
+      buyNowText:      'BUY NOW',
+      whatsappText:    'Order On WhatsApp',
+      callOrderText:   'Call For Order',
+      // WhatsApp ও Call নম্বর
+      whatsappNumber:  '',
+      callNumber:      '',
+      // তিন কলাম লেআউট সেকশন দৃশ্যমানতা
+      showPriceSection:       true,
+      showSavingBadge:        true,
+      showQuantitySelector:   true,
+      showSizeSelector:       true,
+      showColorSelector:      true,
+      showBrandLabel:         true,
+      showHighlights:         true,
+      showDescription:        true,
+      showMaterial:           true,
+      showAgeGroup:           true,
+      showDeliveryInfo:       true,
+      showReturnPolicy:       true,
+      showCareInstructions:   true,
+      showStockStatus:        true,
+      showMoreProducts:       true,
+      // ডান কলাম "More Products" শিরোনাম
+      moreProductsTitle:      'More Products',
+      // ব্র্যান্ড লেবেল টেক্সট
+      brandLabel:             'Family Fashion Hub',
+      // Customer Reviews ট্যাব দেখাবে কিনা
+      showReviewsTab:         true,
+    };
+    const layout = (setting && setting.value) ? { ...defaultLayout, ...setting.value } : defaultLayout;
+    res.json({ success: true, data: layout });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// POST — পণ্য পেজের লেআউট সেটিংস আপডেট (Admin only)
+app.post('/api/admin/product-layout', adminMiddleware, async (req, res) => {
+  try {
+    const layout = req.body;
+    await Settings.findOneAndUpdate(
+      { key: 'productLayout' },
+      { key: 'productLayout', value: layout },
+      { upsert: true }
+    );
+    res.json({ success: true, message: 'পণ্য পেজ লেআউট সেভ হয়েছে', data: layout });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // ===== ROOT =====
 app.get('/', (req, res) => res.json({
   success: true,
