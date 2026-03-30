@@ -4187,6 +4187,22 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSiteSettings();
   loadNavCategories();
 });
+
+setInterval(async () => {
+  try {
+    const res = await fetch(`${window.FFH_API}/products?limit=200`);
+    const data = await res.json();
+    if (data.success && data.data) {
+      window._ffhApiProducts = data.data;
+      window.apiProducts = data.data;
+      // বর্তমানে হোম পেজ খোলা থাকলে গ্রিড রিফ্রেশ করো
+      if (!document.getElementById('homePage').classList.contains('hidden')) {
+        const homeGrid = document.getElementById('productGrid');
+        if (homeGrid) _ffhRenderHomeGrid(data.data, homeGrid);
+      }
+    }
+  } catch(e) {}
+}, 30000); // ৩০ সেকেন্ড
 </script>
 </body>
 </html>
