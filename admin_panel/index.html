@@ -514,7 +514,11 @@ tr:hover td { background: var(--bg); }
           <div class="card" style="margin-top:16px;">
             <div class="card-header"><h3><i class="fas fa-eye" style="color:var(--success)"></i> Frontend Navbar প্রিভিউ</h3></div>
             <div class="card-body" style="padding:12px;">
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Admin-এ save করা categories ফ্রন্টএন্ডে ঠিক এভাবে দেখাবে:</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Admin-এ save করা categories ফ্রন্টএন্ডে ঠিক এভাবে দেখাবে। হোভার করলে subcategory লিংক দেখাবে।</p>
+              <div id="navPreviewFrontendHint" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:11px;color:var(--text-muted);" id="navPreviewUrlDisplay"></span>
+                <button onclick="showPage('settings')" style="background:none;border:none;color:var(--primary);font-size:11px;cursor:pointer;padding:0;text-decoration:underline;font-family:var(--font);">⚙️ Frontend URL সেট করুন</button>
+              </div>
               <div id="navPreviewBox" style="background:#111827;border-radius:8px;padding:10px 14px;overflow-x:auto;">
                 <div id="navPreviewItems" style="display:flex;gap:14px;align-items:center;flex-wrap:nowrap;min-width:max-content;">
                   <span style="color:rgba(255,255,255,0.3);font-size:12px;">লোড হচ্ছে...</span>
@@ -796,7 +800,11 @@ tr:hover td { background: var(--bg); }
         <div class="card-body">
           <div class="form-group"><label class="form-label">নতুন পাসওয়ার্ড</label><input type="password" class="form-control" id="newPassword" placeholder="••••••••"></div>
           <div class="form-group"><label class="form-label">API URL (ব্যাকএন্ড)</label><input type="text" class="form-control" id="settingApiUrl" placeholder="http://localhost:5000/api"></div>
-          <button class="btn btn-warning" onclick="saveApiUrl()"><i class="fas fa-link"></i> API URL সেভ</button>
+          <div class="form-group"><label class="form-label">Frontend URL <span style="font-size:11px;color:var(--text-muted);">(ক্যাটাগরি লিংক তৈরির জন্য)</span></label><input type="text" class="form-control" id="settingFrontendUrl" placeholder="https://yoursite.com"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-warning" onclick="saveApiUrl()"><i class="fas fa-link"></i> API URL সেভ</button>
+            <button class="btn btn-info" onclick="saveFrontendUrl()"><i class="fas fa-globe"></i> Frontend URL সেভ</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1165,6 +1173,7 @@ tr:hover td { background: var(--bg); }
 <script>
 // ===== CONFIG =====
 let API_URL = localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub.onrender.com/api';
+let FRONTEND_URL = localStorage.getItem('ffh_frontend_url') || '';
 let adminToken = localStorage.getItem('ffh_admin_token') || '';
 let adminUser = JSON.parse(localStorage.getItem('ffh_admin_user') || 'null');
 let allProducts = [], allOrders = [], allReviews = [], allUsers = [];
@@ -1229,6 +1238,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const savedApi = localStorage.getItem('ffh_admin_api');
   if (savedApi) API_URL = savedApi;
   document.getElementById('settingApiUrl').value = API_URL;
+
+  // Load Frontend URL
+  const savedFrontend = localStorage.getItem('ffh_frontend_url');
+  if (savedFrontend) FRONTEND_URL = savedFrontend;
+  if (document.getElementById('settingFrontendUrl')) document.getElementById('settingFrontendUrl').value = FRONTEND_URL;
 
   // Category dropdowns initial populate from localStorage
   refreshCategoryDropdowns();
@@ -1405,8 +1419,8 @@ function renderProducts(list) {
       <tr>
         <td><img src="${p.img || 'https://placehold.co/46x46?text=?'}" class="product-img" onerror="this.src='https://placehold.co/46x46?text=?'"></td>
         <td><p style="font-weight:600;font-size:13px;">${p.name}</p><p style="font-size:11px;color:var(--text-muted);">${p.sku || p._id.slice(-6)}</p></td>
-        <td><span class="badge badge-purple">${catLabel(p.category)}</span></td>
-        <td><span class="badge badge-gray" style="font-size:11px;">${subCatLabel(p.category, p.subcategory)}</span></td>
+        <td><span class="badge badge-purple" style="cursor:pointer;" onclick="quickFilterByCat('${p.category}')" title="এই ক্যাটাগরি ফিল্টার করুন">${catLabel(p.category)}</span></td>
+        <td>${p.subcategory ? `<span class="badge badge-gray" style="font-size:11px;cursor:pointer;" onclick="quickFilterBySub('${p.category}','${p.subcategory}')" title="এই সাব-ক্যাটাগরি ফিল্টার করুন">${subCatLabel(p.category, p.subcategory)}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
         <td><p style="font-weight:700;color:var(--primary);">৳${p.price}</p>${p.oldPrice ? `<p style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">৳${p.oldPrice}</p>` : ''}</td>
         <td><span style="font-size:13px;font-weight:600;color:${(p.stock||0)===0?'var(--danger)':'var(--success)'}">${p.stock||0}</span></td>
         <td style="display:flex;flex-direction:column;gap:4px;">
@@ -1448,6 +1462,22 @@ function filterProducts() {
     (!sub || p.subcategory === sub)
   );
   renderProducts(filtered);
+}
+
+function quickFilterByCat(catVal) {
+  const catSel = document.getElementById('productCategoryFilter');
+  if (catSel) { catSel.value = catVal; updateFilterSubcategoryOptions(); }
+  const subSel = document.getElementById('productSubcategoryFilter');
+  if (subSel) subSel.value = '';
+  filterProducts();
+}
+
+function quickFilterBySub(catVal, subVal) {
+  const catSel = document.getElementById('productCategoryFilter');
+  if (catSel) { catSel.value = catVal; updateFilterSubcategoryOptions(); }
+  const subSel = document.getElementById('productSubcategoryFilter');
+  if (subSel) subSel.value = subVal;
+  filterProducts();
 }
 
 function switchProdTab(tab, btn) {
@@ -1822,6 +1852,7 @@ async function loadSettings() {
     }
   } catch {}
   document.getElementById('settingApiUrl').value = API_URL;
+  if (document.getElementById('settingFrontendUrl')) document.getElementById('settingFrontendUrl').value = FRONTEND_URL;
   // Load categories fresh from dedicated API
   await loadCategoriesFromServer();
   renderCategoryManager();
@@ -1845,6 +1876,14 @@ function saveApiUrl() {
   API_URL = url;
   localStorage.setItem('ffh_admin_api', url);
   toast('API URL সেভ হয়েছে। পেইজ রিলোড করুন।', 'info');
+}
+
+function saveFrontendUrl() {
+  const url = document.getElementById('settingFrontendUrl').value.trim();
+  FRONTEND_URL = url;
+  localStorage.setItem('ffh_frontend_url', url);
+  toast('Frontend URL সেভ হয়েছে!', 'success');
+  renderNavPreview();
 }
 
 
@@ -1995,6 +2034,10 @@ function renderCategoryPage() {
   if (!filtered.length) {
     el.innerHTML = '<div class="empty-state"><i class="fas fa-tags"></i><p>কোনো ক্যাটাগরি নেই</p></div>'; return;
   }
+  // Product count helpers
+  const catCount = (catVal) => (allProducts || []).filter(p => p.category === catVal).length;
+  const subCount = (catVal, subVal) => (allProducts || []).filter(p => p.category === catVal && p.subcategory === subVal).length;
+
   el.innerHTML = filtered.map(cat => `
     <div style="border:1.5px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;">
       <div style="background:var(--primary-light);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -2002,15 +2045,17 @@ function renderCategoryPage() {
           <span style="font-weight:700;color:var(--primary-dark);font-size:14px;">${cat.label}</span>
           <span style="font-size:11px;color:var(--text-muted);margin-left:8px;background:#fff;padding:1px 7px;border-radius:5px;">${cat.value}</span>
           <span style="font-size:11px;color:var(--primary);margin-left:6px;">${(cat.subcategories||[]).length} সাব</span>
+          <span style="font-size:11px;color:var(--success);margin-left:6px;background:#d1fae5;padding:1px 7px;border-radius:5px;" onclick="quickFilterByCat('${cat.value}');showPage('products');" style="cursor:pointer;" title="এই ক্যাটাগরির পণ্য দেখুন">${catCount(cat.value)} পণ্য</span>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          ${FRONTEND_URL ? `<a href="${FRONTEND_URL.replace(/\/$/,'')}?category=${cat.value}" target="_blank" class="btn btn-xs btn-info" title="ফ্রন্টএন্ডে দেখুন"><i class="fas fa-external-link-alt"></i> দেখুন</a>` : ''}
           <button class="btn btn-xs btn-warning" onclick="openEditCatModal('${cat.value}')"><i class="fas fa-edit"></i> এডিট</button>
           <button class="btn btn-xs btn-danger" onclick="deleteCategoryAPI('${cat.value}','${cat.label.replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
         </div>
       </div>
       <div style="padding:12px 14px;">
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-          ${renderSubTags(cat)}
+          ${renderSubTagsWithCount(cat, subCount)}
         </div>
         <div style="background:#f9fafb;border:1px dashed var(--border);border-radius:8px;padding:10px;">
           <p style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;"><i class="fas fa-plus-circle"></i> নতুন সাব-ক্যাটাগরি যোগ</p>
@@ -2027,13 +2072,40 @@ function renderCategoryPage() {
 function renderSubTags(cat) {
   if (!(cat.subcategories || []).length)
     return '<span style="font-size:12px;color:var(--text-muted);">কোনো সাব-ক্যাটাগরি নেই</span>';
-  return cat.subcategories.map(s => `
+  const base = FRONTEND_URL ? FRONTEND_URL.replace(/\/$/, '') : '';
+  return cat.subcategories.map(s => {
+    const link = base ? `${base}?category=${cat.value}&subcategory=${s.value}` : `?category=${cat.value}&subcategory=${s.value}`;
+    return `
     <span style="background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
       <span style="font-weight:600;">${s.label}</span>
       <span style="color:var(--text-muted);font-size:10px;">${s.value}</span>
+      ${base ? `<a href="${link}" target="_blank" title="ফ্রন্টএন্ডে দেখুন" style="color:var(--info);font-size:11px;display:inline-flex;align-items:center;"><i class="fas fa-external-link-alt"></i></a>` : ''}
+      <button onclick="copySubcatLink('${link.replace(/'/g,"\\'")}');" title="লিংক কপি" style="background:none;border:none;color:var(--success);cursor:pointer;font-size:11px;padding:0;"><i class="fas fa-copy"></i></button>
       <button onclick="editSubAPI('${cat.value}','${s.value}','${s.label.replace(/'/g,"\\'")}');" style="background:none;border:none;color:var(--info);cursor:pointer;font-size:11px;padding:0;" title="এডিট"><i class="fas fa-pen"></i></button>
       <button onclick="deleteSubAPI('${cat.value}','${s.value}','${s.label.replace(/'/g,"\\'")}');" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:0;" title="মুছুন"><i class="fas fa-times"></i></button>
-    </span>`).join('');
+    </span>`;
+  }).join('');
+}
+
+// renderSubTags with product count — used in category page
+function renderSubTagsWithCount(cat, subCountFn) {
+  if (!(cat.subcategories || []).length)
+    return '<span style="font-size:12px;color:var(--text-muted);">কোনো সাব-ক্যাটাগরি নেই</span>';
+  const base = FRONTEND_URL ? FRONTEND_URL.replace(/\/$/, '') : '';
+  return cat.subcategories.map(s => {
+    const link = base ? `${base}?category=${cat.value}&subcategory=${s.value}` : `?category=${cat.value}&subcategory=${s.value}`;
+    const cnt = subCountFn ? subCountFn(cat.value, s.value) : '';
+    return `
+    <span style="background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+      <span style="font-weight:600;">${s.label}</span>
+      <span style="color:var(--text-muted);font-size:10px;">${s.value}</span>
+      ${cnt !== '' ? `<span style="background:#d1fae5;color:#065f46;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700;cursor:pointer;" onclick="quickFilterBySub('${cat.value}','${s.value}');showPage('products');" title="এই সাবক্যাটাগরির পণ্য দেখুন">${cnt}</span>` : ''}
+      ${base ? `<a href="${link}" target="_blank" title="ফ্রন্টএন্ডে দেখুন" style="color:var(--info);font-size:11px;display:inline-flex;align-items:center;"><i class="fas fa-external-link-alt"></i></a>` : ''}
+      <button onclick="copySubcatLink('${link.replace(/'/g,"\\'")}');" title="লিংক কপি" style="background:none;border:none;color:var(--success);cursor:pointer;font-size:11px;padding:0;"><i class="fas fa-copy"></i></button>
+      <button onclick="editSubAPI('${cat.value}','${s.value}','${s.label.replace(/'/g,"\\'")}');" style="background:none;border:none;color:var(--info);cursor:pointer;font-size:11px;padding:0;" title="এডিট"><i class="fas fa-pen"></i></button>
+      <button onclick="deleteSubAPI('${cat.value}','${s.value}','${s.label.replace(/'/g,"\\'")}');" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:0;" title="মুছুন"><i class="fas fa-times"></i></button>
+    </span>`;
+  }).join('');
 }
 
 // ---- API helpers ----
@@ -2467,6 +2539,10 @@ function renderNavPreview() {
   const el = document.getElementById('navPreviewItems');
   if (!el) return;
   const cats = allCategories || [];
+  const base = FRONTEND_URL ? FRONTEND_URL.replace(/\/$/, '') : '';
+  // Update hint display
+  const hintEl = document.getElementById('navPreviewUrlDisplay');
+  if (hintEl) hintEl.textContent = base ? `🌐 ${base}` : '⚠️ Frontend URL সেট করা নেই — লিংক কাজ করবে না';
   if (!cats.length) {
     el.innerHTML = '<span style="color:rgba(255,255,255,0.3);font-size:12px;">কোনো ক্যাটাগরি নেই</span>';
     return;
@@ -2476,11 +2552,23 @@ function renderNavPreview() {
       <button style="background:none;border:none;color:white;font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;padding:5px 0;cursor:pointer;white-space:nowrap;font-family:'Hind Siliguri','Poppins',sans-serif;" onmouseover="this.style.color='#fb923c'" onmouseout="this.style.color='white'">
         ${cat.label} <i class="fas fa-chevron-down" style="font-size:9px;"></i>
       </button>
-      <div class="nav-prev-dd" style="display:none;position:absolute;top:100%;left:0;min-width:200px;background:white;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.15);z-index:999;overflow:hidden;">
+      <div class="nav-prev-dd" style="display:none;position:absolute;top:100%;left:0;min-width:220px;background:white;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.15);z-index:999;overflow:hidden;">
         ${(cat.subcategories||[]).length > 0
-          ? (cat.subcategories||[]).map(s => `<div style="padding:9px 14px;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6;font-family:'Hind Siliguri','Poppins',sans-serif;">${s.label}</div>`).join('')
+          ? (cat.subcategories||[]).map(s => {
+              const link = base ? `${base}?category=${cat.value}&subcategory=${s.value}` : `?category=${cat.value}&subcategory=${s.value}`;
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f3f4f6;gap:8px;">
+                <span style="font-size:12px;color:#374151;font-family:'Hind Siliguri','Poppins',sans-serif;">${s.label}</span>
+                <div style="display:flex;gap:4px;flex-shrink:0;">
+                  <a href="${link}" target="_blank" title="ফ্রন্টএন্ডে দেখুন" style="background:#dbeafe;color:#1e40af;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;text-decoration:none;font-family:'Poppins',sans-serif;display:inline-flex;align-items:center;gap:3px;"><i class="fas fa-external-link-alt"></i></a>
+                  <button onclick="copySubcatLink('${link}')" title="লিংক কপি করুন" style="background:#d1fae5;color:#065f46;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:'Poppins',sans-serif;display:inline-flex;align-items:center;gap:3px;"><i class="fas fa-copy"></i></button>
+                </div>
+              </div>`;
+            }).join('')
           : '<div style="padding:9px 14px;font-size:11px;color:#9ca3af;">কোনো সাব-ক্যাটাগরি নেই</div>'
         }
+        ${base ? `<div style="padding:6px 12px;background:#f9fafb;border-top:1px solid #f3f4f6;">
+          <a href="${base}?category=${cat.value}" target="_blank" style="font-size:11px;color:#6b7280;text-decoration:none;display:flex;align-items:center;gap:4px;"><i class="fas fa-layer-group" style="font-size:9px;"></i> সব ${cat.label} দেখুন</a>
+        </div>` : ''}
       </div>
     </div>`).join('');
 
@@ -2489,6 +2577,18 @@ function renderNavPreview() {
     const dd = g.querySelector('.nav-prev-dd');
     g.addEventListener('mouseenter', () => { if(dd) dd.style.display='block'; });
     g.addEventListener('mouseleave', () => { if(dd) dd.style.display='none'; });
+  });
+}
+
+function copySubcatLink(link) {
+  navigator.clipboard.writeText(link).then(() => toast('লিংক কপি হয়েছে! 📋', 'success')).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = link;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    toast('লিংক কপি হয়েছে! 📋', 'success');
   });
 }
 
