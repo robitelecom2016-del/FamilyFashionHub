@@ -1198,567 +1198,729 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
   </div>
 </div>
 
+
 <script>
 'use strict';
-// ===== CONFIG =====
-// ===== 🔧 BACKEND URL — এখানে আপনার deployed server URL দিন =====
+
+// ====================================================
+// ===== ⚙️ BACKEND URL — আপনার server URL এখানে =====
+// ====================================================
 const FFH_API = 'https://familyfashionhub-backend.vercel.app/api';
-// Local development এর জন্য: 'http://localhost:5000/api'
+// Local test: const FFH_API = 'http://localhost:5000/api';
 
-let adminToken = localStorage.getItem('ffh_admin_token') || '';
-let adminUser  = JSON.parse(localStorage.getItem('ffh_admin_user') || 'null');
-let allProducts = [], allOrders = [], allUsers = [], allReviews = [];
+// ===== GLOBAL STATE =====
+let adminToken   = localStorage.getItem('ffh_admin_token') || '';
+let adminUser    = JSON.parse(localStorage.getItem('ffh_admin_user') || 'null');
+let allProducts  = [], allOrders = [], allUsers = [], allReviews = [];
+let allCategories= [];
+let sliderData   = [];
+let layoutData   = {};
 let currentOrderId = null;
-let currentPanel = 'dashboard';
-let allCategories = [];
-let sliderData = [];
-let layoutData = {};
-let prodPage = 1; const prodPerPage = 20;
+let currentPanel   = 'dashboard';
+let prodPage = 1;
+const prodPerPage = 20;
 
+// ====================================================
 // ===== INIT =====
+// ====================================================
 document.addEventListener('DOMContentLoaded', () => {
   if (adminToken && adminUser && adminUser.role === 'admin') {
     showAdmin();
   } else {
     document.getElementById('loginPage').style.display = 'flex';
   }
-  // Enter key on login
-  document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginPass').addEventListener('keydown',  e => { if(e.key==='Enter') doLogin(); });
   document.getElementById('loginPhone').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 });
 
+// ====================================================
 // ===== AUTH =====
+// ====================================================
 async function doLogin() {
   const phone = document.getElementById('loginPhone').value.trim();
   const pass  = document.getElementById('loginPass').value.trim();
   if (!phone || !pass) return showLoginError('Username ও Password দিন');
   const btn = document.getElementById('loginBtn');
-  btn.innerHTML = '<span class="spinner"></span>';
-  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> লগইন হচ্ছে...';
+  btn.disabled  = true;
   try {
-    const res  = await apiFetch('/admin/login', 'POST', { phone, password: pass }, false);
+    const res = await apiFetch('/admin/login', 'POST', { phone, password: pass }, false);
     if (res.success) {
       adminToken = res.token;
       adminUser  = res.user;
       localStorage.setItem('ffh_admin_token', adminToken);
-      localStorage.setItem('ffh_admin_user', JSON.stringify(adminUser));
+      localStorage.setItem('ffh_admin_user',  JSON.stringify(adminUser));
+      document.getElementById('loginError').style.display = 'none';
       showAdmin();
     } else {
       showLoginError(res.message || 'Login ব্যর্থ হয়েছে');
     }
-  } catch(e) { showLoginError('সংযোগ ব্যর্থ: ' + e.message); }
+  } catch(e) {
+    showLoginError('সার্ভার সংযোগ ব্যর্থ: ' + e.message);
+  }
   btn.innerHTML = '<span id="loginBtnText">Login করুন</span>';
-  btn.disabled = false;
+  btn.disabled  = false;
 }
+
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
-  el.textContent = msg; el.style.display = 'block';
+  el.textContent   = msg;
+  el.style.display = 'block';
 }
+
 function doLogout() {
-  adminToken = ''; adminUser = null;
+  adminToken = '';
+  adminUser  = null;
   localStorage.removeItem('ffh_admin_token');
   localStorage.removeItem('ffh_admin_user');
-  document.getElementById('adminApp').style.display = 'none';
-  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('adminApp').style.display   = 'none';
+  document.getElementById('loginPage').style.display  = 'flex';
   document.getElementById('loginError').style.display = 'none';
   document.getElementById('loginPhone').value = '';
-  document.getElementById('loginPass').value = '';
+  document.getElementById('loginPass').value  = '';
 }
+
 function showAdmin() {
   document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('adminApp').style.display = 'block';
-  // Set admin name
+  document.getElementById('adminApp').style.display  = 'block';
   if (adminUser) {
     const name = adminUser.name || 'Admin';
-    document.getElementById('adminNameSide').textContent = name;
-    document.getElementById('adminAvatarSide').textContent = name[0].toUpperCase();
+    const el1  = document.getElementById('adminNameSide');
+    const el2  = document.getElementById('adminAvatarSide');
+    if (el1) el1.textContent = name;
+    if (el2) el2.textContent = name[0].toUpperCase();
   }
   loadDashboard();
   loadCategoriesForDropdowns();
   checkApiStatus();
 }
+
 function togglePass(id, btn) {
-  const inp = document.getElementById(id);
-  const isPass = inp.type === 'password';
-  inp.type = isPass ? 'text' : 'password';
+  const inp   = document.getElementById(id);
+  const isPass= inp.type === 'password';
+  inp.type    = isPass ? 'text' : 'password';
   btn.querySelector('i').className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
 }
 
-// ===== API HELPER =====
-async function apiFetch(path, method='GET', body=null, auth=true) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+// ====================================================
+// ===== API HELPER — সব server call এখান থেকে =====
+// ====================================================
+async function apiFetch(path, method = 'GET', body = null, auth = true) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
   if (auth) opts.headers['Authorization'] = 'Bearer ' + adminToken;
-  if (body && !(body instanceof FormData)) opts.body = JSON.stringify(body);
-  if (body instanceof FormData) { delete opts.headers['Content-Type']; opts.body = body; }
+  if (body instanceof FormData) {
+    delete opts.headers['Content-Type'];
+    opts.body = body;
+  } else if (body) {
+    opts.body = JSON.stringify(body);
+  }
   try {
-    const r = await fetch(FFH_API + path, opts);
+    const r    = await fetch(FFH_API + path, opts);
     const data = await r.json();
-    // Token expired হলে auto logout
-    if (data && data.success === false && data.message && 
-        (data.message.includes('Invalid token') || data.message.includes('Token নেই'))) {
-      if (auth) {
-        toast('সেশন শেষ হয়ে গেছে। আবার লগইন করুন।', 'error');
-        setTimeout(() => doLogout(), 1500);
-      }
+    // Token মেয়াদ শেষ হলে auto logout
+    if (auth && data && data.success === false &&
+        (data.message === 'Invalid token' || data.message === 'Token নেই' || data.message === 'Admin access প্রয়োজন')) {
+      toast('সেশন শেষ হয়েছে — আবার লগইন করুন', 'error');
+      setTimeout(doLogout, 1800);
     }
     return data;
-  } catch(e) {
-    console.error('API Error [' + path + ']:', e);
+  } catch (e) {
+    console.error('[API Error]', path, e.message);
     throw e;
   }
 }
 
+// ===== API Status Check =====
 async function checkApiStatus() {
+  const el  = document.getElementById('apiStatus');
+  const txt = document.getElementById('apiStatusText');
   try {
-    const r = await fetch(FFH_API.replace('/api', '/'));
-    const el = document.getElementById('apiStatus');
-    const txt = document.getElementById('apiStatusText');
+    const r = await fetch(FFH_API.replace('/api', '/'), { signal: AbortSignal.timeout(5000) });
     if (r.ok) {
-      el.className = 'api-status';
+      el.className    = 'api-status';
       txt.textContent = 'Connected';
-      el.title = FFH_API;
+      el.title        = FFH_API;
     } else {
-      el.className = 'api-status error';
+      el.className    = 'api-status error';
       txt.textContent = 'Server Error';
     }
   } catch {
-    document.getElementById('apiStatus').className = 'api-status error';
-    document.getElementById('apiStatusText').textContent = 'Offline';
+    el.className    = 'api-status error';
+    txt.textContent = 'Offline';
   }
 }
 
+// ====================================================
 // ===== PANEL NAVIGATION =====
+// ====================================================
 function showPanel(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const panel = document.getElementById('panel-' + name);
   if (panel) panel.classList.add('active');
-  const nav = document.getElementById('nav-' + name);
+  const nav   = document.getElementById('nav-' + name);
   if (nav) nav.classList.add('active');
   currentPanel = name;
 
   const titles = {
-    dashboard: ['Dashboard', 'Overview'],
-    products:  ['পণ্য তালিকা', 'পণ্য ব্যবস্থাপনা'],
-    addProduct:['নতুন পণ্য যোগ', 'পণ্য ব্যবস্থাপনা'],
-    orders:    ['অর্ডার তালিকা', 'অর্ডার ব্যবস্থাপনা'],
-    reviews:   ['রিভিউ', 'কন্টেন্ট ব্যবস্থাপনা'],
-    users:     ['ব্যবহারকারী', 'কাস্টমার ব্যবস্থাপনা'],
-    categories:['ক্যাটাগরি', 'কন্টেন্ট ব্যবস্থাপনা'],
-    settings:  ['সেটিংস', 'সাইট কনফিগারেশন'],
-    layout:    ['পণ্য পেজ লেআউট', 'সেটিংস'],
+    dashboard:  ['Dashboard', 'Overview'],
+    products:   ['পণ্য তালিকা', 'পণ্য ব্যবস্থাপনা'],
+    addProduct: ['নতুন পণ্য যোগ', 'পণ্য ব্যবস্থাপনা'],
+    orders:     ['অর্ডার তালিকা', 'অর্ডার ব্যবস্থাপনা'],
+    reviews:    ['রিভিউ', 'কন্টেন্ট ব্যবস্থাপনা'],
+    users:      ['ব্যবহারকারী', 'কাস্টমার ব্যবস্থাপনা'],
+    categories: ['ক্যাটাগরি', 'কন্টেন্ট ব্যবস্থাপনা'],
+    settings:   ['সেটিংস', 'সাইট কনফিগারেশন'],
+    layout:     ['পণ্য পেজ লেআউট', 'সেটিংস'],
   };
-  if (titles[name]) {
-    document.getElementById('topbarTitle').textContent = titles[name][0];
-    document.getElementById('topbarBreadcrumb').textContent = 'Admin / ' + titles[name][1];
+  const t = titles[name];
+  if (t) {
+    const el1 = document.getElementById('topbarTitle');
+    const el2 = document.getElementById('topbarBreadcrumb');
+    if (el1) el1.textContent = t[0];
+    if (el2) el2.textContent = 'Admin / ' + t[1];
   }
-  // Load data on navigate
-  if (name==='products')   loadProducts();
-  if (name==='orders')     loadOrders();
-  if (name==='reviews')    loadReviews();
-  if (name==='users')      loadUsers();
-  if (name==='categories') loadCategories();
-  if (name==='settings')   loadSettings();
-  if (name==='layout')     loadLayout();
-  if (name==='addProduct') { clearProductForm(); document.getElementById('nav-addProduct').classList.add('active'); }
+
+  if (name === 'products')   loadProducts();
+  if (name === 'orders')     loadOrders();
+  if (name === 'reviews')    loadReviews();
+  if (name === 'users')      loadUsers();
+  if (name === 'categories') loadCategories();
+  if (name === 'settings')   loadSettings();
+  if (name === 'layout')     loadLayout();
+  if (name === 'addProduct') {
+    clearProductForm();
+    const nav2 = document.getElementById('nav-addProduct');
+    if (nav2) nav2.classList.add('active');
+  }
   closeSidebar();
 }
-function refreshCurrentPanel() { showPanel(currentPanel); if(currentPanel==='dashboard') loadDashboard(); }
 
-// ===== DASHBOARD =====
+function refreshCurrentPanel() {
+  showPanel(currentPanel);
+  if (currentPanel === 'dashboard') loadDashboard();
+}
+
+// ====================================================
+// ===== DASHBOARD — GET /api/admin/stats =====
+// ====================================================
 async function loadDashboard() {
   try {
     const res = await apiFetch('/admin/stats');
     if (res.success) {
       const d = res.data;
-      document.getElementById('stat-products').textContent = d.products || 0;
-      document.getElementById('stat-orders').textContent   = d.orders   || 0;
-      document.getElementById('stat-users').textContent    = d.users    || 0;
-      document.getElementById('stat-reviews').textContent  = d.reviews  || 0;
-      document.getElementById('stat-revenue').textContent  = '৳' + (d.revenue||0).toLocaleString();
-      document.getElementById('stat-pending').textContent  = d.pendingOrders || 0;
-      // Badges
-      if (d.pendingOrders > 0) {
-        const b = document.getElementById('navBadgeOrders');
-        b.textContent = d.pendingOrders; b.style.display = 'inline-flex';
+      setText('stat-products', d.products || 0);
+      setText('stat-orders',   d.orders   || 0);
+      setText('stat-users',    d.users    || 0);
+      setText('stat-reviews',  d.reviews  || 0);
+      setText('stat-revenue',  '৳' + (d.revenue || 0).toLocaleString('bn-BD'));
+      setText('stat-pending',  d.pendingOrders || 0);
+      const badge = document.getElementById('navBadgeOrders');
+      if (badge && d.pendingOrders > 0) {
+        badge.textContent  = d.pendingOrders;
+        badge.style.display= 'inline-flex';
       }
     } else {
-      toast('স্ট্যাটস লোড ব্যর্থ: ' + (res.message||''), 'error');
+      toast('স্ট্যাটস লোড ব্যর্থ: ' + (res.message || ''), 'error');
     }
-    loadRecentOrders();
-    loadRecentProducts();
-  } catch(e) { toast('সার্ভার সংযোগ ব্যর্থ: ' + e.message, 'error'); }
-}
-async function loadRecentOrders() {
-  const res = await apiFetch('/admin/orders?status=all');
-  const el = document.getElementById('recentOrders');
-  if (!res.success || !res.data.length) { el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>কোনো অর্ডার নেই</p></div>'; return; }
-  const orders = res.data.slice(0,6);
-  el.innerHTML = orders.map(o => `
-    <div class="dash-order-row" style="display:flex;align-items:center;gap:10px;padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px;" onclick="openOrderModal('${o._id}')">
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${o.customerName}</div>
-        <div style="font-size:11px;color:var(--text2);">${o.phone}</div>
-      </div>
-      <div style="font-weight:700;color:var(--warning);">৳${o.total}</div>
-      <span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span>
-    </div>
-  `).join('');
-}
-async function loadRecentProducts() {
-  const res = await apiFetch('/products?limit=6');
-  const el = document.getElementById('recentProducts');
-  if (!res.success || !res.data.length) { el.innerHTML = '<div class="empty-state"><i class="fas fa-box"></i><p>কোনো পণ্য নেই</p></div>'; return; }
-  el.innerHTML = res.data.map(p => `
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);">
-      <img src="${p.img||'https://via.placeholder.com/48x48/1a2035/6366f1?text=P'}" class="prod-thumb" onerror="this.src='https://via.placeholder.com/48x48/1a2035/6366f1?text=P'">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
-        <div style="font-size:11px;color:var(--text2);">${p.category}</div>
-      </div>
-      <div style="font-weight:700;color:var(--success);">৳${p.price}</div>
-    </div>
-  `).join('');
+  } catch(e) {
+    toast('সার্ভার সংযোগ ব্যর্থ হয়েছে', 'error');
+  }
+  loadRecentOrders();
+  loadRecentProducts();
 }
 
-// ===== PRODUCTS =====
+// GET /api/admin/orders?status=all
+async function loadRecentOrders() {
+  const el = document.getElementById('recentOrders');
+  if (!el) return;
+  el.innerHTML = '<div style="padding:20px;text-align:center"><span class="spinner"></span></div>';
+  try {
+    const res = await apiFetch('/admin/orders?status=all');
+    if (!res.success || !res.data.length) {
+      el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>কোনো অর্ডার নেই</p></div>';
+      return;
+    }
+    el.innerHTML = res.data.slice(0, 6).map(o => `
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;" onclick="showPanel('orders')">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(o.customerName)}</div>
+          <div style="font-size:11px;color:var(--text2);">${escHtml(o.phone)}</div>
+        </div>
+        <div style="font-weight:700;color:var(--warning);">৳${o.total}</div>
+        <span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span>
+      </div>
+    `).join('');
+  } catch {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>লোড ব্যর্থ</p></div>';
+  }
+}
+
+// GET /api/products?limit=6
+async function loadRecentProducts() {
+  const el = document.getElementById('recentProducts');
+  if (!el) return;
+  el.innerHTML = '<div style="padding:20px;text-align:center"><span class="spinner"></span></div>';
+  try {
+    const res = await apiFetch('/products?limit=6', 'GET', null, false);
+    if (!res.success || !res.data.length) {
+      el.innerHTML = '<div class="empty-state"><i class="fas fa-box"></i><p>কোনো পণ্য নেই</p></div>';
+      return;
+    }
+    el.innerHTML = res.data.map(p => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);">
+        <img src="${p.img || 'https://placehold.co/48x48/1a2035/6366f1?text=P'}" class="prod-thumb"
+             onerror="this.src='https://placehold.co/48x48/1a2035/6366f1?text=P'">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(p.name)}</div>
+          <div style="font-size:11px;color:var(--text2);">${escHtml(p.category)}</div>
+        </div>
+        <div style="font-weight:700;color:var(--success);">৳${p.price}</div>
+      </div>
+    `).join('');
+  } catch {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>লোড ব্যর্থ</p></div>';
+  }
+}
+
+// ====================================================
+// ===== PRODUCTS — GET /api/products =====
+// ====================================================
 let prodSearchTimeout = null;
 function searchProducts() {
   clearTimeout(prodSearchTimeout);
-  prodSearchTimeout = setTimeout(() => { prodPage=1; loadProducts(); }, 400);
+  prodSearchTimeout = setTimeout(() => { prodPage = 1; loadProducts(); }, 400);
 }
+
 async function loadProducts() {
-  const search = document.getElementById('prodSearch').value.trim();
-  const cat    = document.getElementById('prodCatFilter').value;
-  const sale   = document.getElementById('prodSaleFilter').value;
-  let url = `/products?limit=1000`;
-  if (cat) url += `&category=${cat}`;
+  const search = (document.getElementById('prodSearch')?.value || '').trim();
+  const cat    = document.getElementById('prodCatFilter')?.value || '';
+  const sale   = document.getElementById('prodSaleFilter')?.value || '';
+  let url = '/products?limit=1000';
+  if (cat)    url += `&category=${encodeURIComponent(cat)}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
-  
-  document.getElementById('prodTableBody').innerHTML = '<tr class="loading-row"><td colspan="7"><span class="spinner"></span> লোড হচ্ছে...</td></tr>';
-  const res = await apiFetch(url);
-  if (!res.success) { toast('পণ্য লোড ব্যর্থ', 'error'); return; }
-  
-  let prods = res.data;
-  if (sale === 'true')    prods = prods.filter(p => p.onSale);
-  if (sale === 'soldout') prods = prods.filter(p => p.soldOut);
-  if (sale === 'featured')prods = prods.filter(p => p.featured);
-  allProducts = prods;
-  
-  document.getElementById('prodCount').textContent = `(${prods.length} টি পণ্য)`;
-  document.getElementById('navBadgeProducts').textContent = prods.length;
-  if (prods.length > 0) document.getElementById('navBadgeProducts').style.display = 'inline-flex';
-  
-  const start = (prodPage-1)*prodPerPage;
-  const page  = prods.slice(start, start+prodPerPage);
-  
-  if (!page.length) {
-    document.getElementById('prodTableBody').innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-box-open"></i><p>কোনো পণ্য পাওয়া যায়নি</p></div></td></tr>';
-    return;
+
+  const tbody = document.getElementById('prodTableBody');
+  if (tbody) tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><span class="spinner"></span> লোড হচ্ছে...</td></tr>';
+
+  try {
+    const res = await apiFetch(url, 'GET', null, false);
+    if (!res.success) { toast('পণ্য লোড ব্যর্থ: ' + (res.message || ''), 'error'); return; }
+
+    let prods = res.data;
+    if (sale === 'true')     prods = prods.filter(p => p.onSale);
+    if (sale === 'soldout')  prods = prods.filter(p => p.soldOut);
+    if (sale === 'featured') prods = prods.filter(p => p.featured);
+    allProducts = prods;
+
+    setText('prodCount', `(${prods.length} টি পণ্য)`);
+    const navBadge = document.getElementById('navBadgeProducts');
+    if (navBadge) { navBadge.textContent = prods.length; navBadge.style.display = 'inline-flex'; }
+
+    const start = (prodPage - 1) * prodPerPage;
+    const page  = prods.slice(start, start + prodPerPage);
+
+    if (!page.length) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-box-open"></i><p>কোনো পণ্য পাওয়া যায়নি</p></div></td></tr>';
+      renderProdPagination(0);
+      return;
+    }
+    if (tbody) tbody.innerHTML = page.map(p => `
+      <tr>
+        <td><img src="${p.img || 'https://placehold.co/48'}" class="prod-thumb"
+            onerror="this.src='https://placehold.co/48'"></td>
+        <td>
+          <div style="font-weight:600;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(p.name)}</div>
+          <div style="font-size:11px;color:var(--text2);">SKU: ${escHtml(p.sku || '—')}</div>
+        </td>
+        <td>
+          <span class="badge badge-accent">${escHtml(p.category)}</span>
+          ${p.subcategory ? `<br><span style="font-size:11px;color:var(--text2);">${escHtml(p.subcategory)}</span>` : ''}
+        </td>
+        <td>
+          <span style="font-weight:700;color:var(--success);">৳${p.price}</span>
+          ${p.oldPrice ? `<br><span style="font-size:11px;text-decoration:line-through;color:var(--text2);">৳${p.oldPrice}</span>` : ''}
+        </td>
+        <td><span style="color:${p.stock > 0 ? 'var(--success)' : 'var(--danger)'};font-weight:600;">${p.stock || 0}</span></td>
+        <td>
+          ${p.onSale    ? '<span class="badge badge-warning" style="margin-bottom:3px;display:inline-flex;">Sale</span>' : ''}
+          ${p.soldOut   ? '<span class="badge badge-danger"  style="margin-bottom:3px;display:inline-flex;">Sold Out</span>' : ''}
+          ${p.featured  ? '<span class="badge badge-accent"  style="margin-bottom:3px;display:inline-flex;">Featured</span>' : ''}
+          ${!p.onSale && !p.soldOut && !p.featured ? '<span class="badge badge-gray">Normal</span>' : ''}
+        </td>
+        <td>
+          <div style="display:flex;gap:5px;">
+            <button class="btn btn-info btn-xs"   onclick="editProduct('${p._id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-danger btn-xs" onclick="confirmDelete('পণ্য মুছে ফেলবেন?','এই পণ্যটি স্থায়ীভাবে মুছে যাবে।',()=>deleteProduct('${p._id}'))"><i class="fas fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+    renderProdPagination(prods.length);
+  } catch(e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>সার্ভার সংযোগ ব্যর্থ</p></div></td></tr>';
   }
-  document.getElementById('prodTableBody').innerHTML = page.map(p => `
-    <tr>
-      <td><img src="${p.img||'https://via.placeholder.com/48'}" class="prod-thumb" onerror="this.src='https://via.placeholder.com/48'"></td>
-      <td>
-        <div style="font-weight:600;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
-        <div style="font-size:11px;color:var(--text2);">SKU: ${p.sku||'—'}</div>
-      </td>
-      <td><span class="badge badge-accent">${p.category}</span>${p.subcategory?`<br><span style="font-size:11px;color:var(--text2);">${p.subcategory}</span>`:''}</td>
-      <td><span style="font-weight:700;color:var(--success);">৳${p.price}</span>${p.oldPrice?`<br><span style="font-size:11px;text-decoration:line-through;color:var(--text2);">৳${p.oldPrice}</span>`:''}</td>
-      <td><span style="color:${p.stock>0?'var(--success)':'var(--danger)'};font-weight:600;">${p.stock||0}</span></td>
-      <td>
-        ${p.onSale   ?'<span class="badge badge-warning" style="margin-bottom:3px;display:inline-flex;">Sale</span>':''}
-        ${p.soldOut  ?'<span class="badge badge-danger"  style="margin-bottom:3px;display:inline-flex;">Sold Out</span>':''}
-        ${p.featured ?'<span class="badge badge-accent"  style="margin-bottom:3px;display:inline-flex;">Featured</span>':''}
-        ${(!p.onSale&&!p.soldOut&&!p.featured)?'<span class="badge badge-gray">Normal</span>':''}
-      </td>
-      <td>
-        <div style="display:flex;gap:5px;">
-          <button class="btn btn-info btn-xs" onclick="editProduct('${p._id}')"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-danger btn-xs" onclick="confirmDelete('পণ্য মুছে ফেলবেন?','এই পণ্যটি স্থায়ীভাবে মুছে যাবে।',()=>deleteProduct('${p._id}'))"><i class="fas fa-trash"></i></button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-  renderProdPagination(prods.length);
 }
+
 function renderProdPagination(total) {
-  const pages = Math.ceil(total/prodPerPage);
-  if (pages <= 1) { document.getElementById('prodPagination').innerHTML=''; return; }
-  let html = '';
-  for (let i=1;i<=pages;i++) {
-    html += `<button class="page-btn ${i===prodPage?'active':''}" onclick="prodPage=${i};loadProducts()">${i}</button>`;
-  }
-  document.getElementById('prodPagination').innerHTML = html;
+  const el    = document.getElementById('prodPagination');
+  if (!el) return;
+  const pages = Math.ceil(total / prodPerPage);
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = Array.from({length: pages}, (_, i) =>
+    `<button class="page-btn ${i+1 === prodPage ? 'active' : ''}" onclick="prodPage=${i+1};loadProducts()">${i+1}</button>`
+  ).join('');
 }
+
+// GET /api/products/:id  →  fill form
 async function editProduct(id) {
-  const res = await apiFetch('/products/'+id);
-  if (!res.success) { toast('পণ্য লোড ব্যর্থ','error'); return; }
-  const p = res.data;
-  showPanel('addProduct');
-  document.getElementById('addProdTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--info)"></i> পণ্য সম্পাদনা';
-  document.getElementById('editProdId').value = p._id;
-  document.getElementById('pName').value      = p.name||'';
-  document.getElementById('pDesc').value      = p.description||'';
-  document.getElementById('pPrice').value     = p.price||'';
-  document.getElementById('pOldPrice').value  = p.oldPrice||'';
-  document.getElementById('pSaving').value    = p.saving||'';
-  document.getElementById('pStock').value     = p.stock||'';
-  document.getElementById('pSku').value       = p.sku||'';
-  document.getElementById('pAgeGroup').value  = p.ageGroup||'';
-  document.getElementById('pMaterial').value  = p.material||'';
-  document.getElementById('pWeight').value    = p.weight||'';
-  document.getElementById('pDelivery').value  = p.deliveryInfo||'';
-  document.getElementById('pReturn').value    = p.returnPolicy||'';
-  document.getElementById('pCare').value      = p.careInstructions||'';
-  document.getElementById('pSizes').value     = (p.sizes||[]).join(', ');
-  document.getElementById('pColors').value    = (p.colors||[]).join(', ');
-  document.getElementById('pHighlights').value= (p.highlights||[]).join(', ');
-  document.getElementById('pTags').value      = (p.tags||[]).join(', ');
-  document.getElementById('pOnSale').checked  = !!p.onSale;
-  document.getElementById('pSoldOut').checked = !!p.soldOut;
-  document.getElementById('pFeatured').checked= !!p.featured;
-  // Category
-  await loadCategoriesForDropdowns();
-  document.getElementById('pCategory').value = p.category||'';
-  updateSubcatDropdown();
-  setTimeout(()=>{ document.getElementById('pSubcategory').value = p.subcategory||''; }, 100);
-  // Existing images
-  const prev = document.getElementById('imgPreviews');
-  if (p.images && p.images.length) {
-    prev.innerHTML = p.images.map((img,i)=>`<div class="img-preview-item"><img src="${img.url}"><button class="del-img" onclick="this.parentElement.remove()">×</button></div>`).join('');
-  } else if (p.img) {
-    prev.innerHTML = `<div class="img-preview-item"><img src="${p.img}"><button class="del-img" onclick="this.parentElement.remove()">×</button></div>`;
+  try {
+    const res = await apiFetch('/products/' + id, 'GET', null, false);
+    if (!res.success) { toast('পণ্য লোড ব্যর্থ', 'error'); return; }
+    const p = res.data;
+    showPanel('addProduct');
+    setText('addProdTitle', ''); // will set innerHTML below
+    document.getElementById('addProdTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--info)"></i> পণ্য সম্পাদনা';
+    setVal('editProdId',   p._id);
+    setVal('pName',        p.name || '');
+    setVal('pDesc',        p.description || '');
+    setVal('pPrice',       p.price || '');
+    setVal('pOldPrice',    p.oldPrice || '');
+    setVal('pSaving',      p.saving || '');
+    setVal('pStock',       p.stock || '');
+    setVal('pSku',         p.sku || '');
+    setVal('pAgeGroup',    p.ageGroup || '');
+    setVal('pMaterial',    p.material || '');
+    setVal('pWeight',      p.weight || '');
+    setVal('pDelivery',    p.deliveryInfo || '');
+    setVal('pReturn',      p.returnPolicy || '');
+    setVal('pCare',        p.careInstructions || '');
+    setVal('pSizes',       (p.sizes || []).join(', '));
+    setVal('pColors',      (p.colors || []).join(', '));
+    setVal('pHighlights',  (p.highlights || []).join(', '));
+    setVal('pTags',        (p.tags || []).join(', '));
+    setChecked('pOnSale',  !!p.onSale);
+    setChecked('pSoldOut', !!p.soldOut);
+    setChecked('pFeatured',!!p.featured);
+    // Category + Subcategory
+    await loadCategoriesForDropdowns();
+    setVal('pCategory', p.category || '');
+    updateSubcatDropdown();
+    setTimeout(() => setVal('pSubcategory', p.subcategory || ''), 120);
+    // Existing images preview
+    const prev = document.getElementById('imgPreviews');
+    if (prev) {
+      if (p.images && p.images.length) {
+        prev.innerHTML = p.images.map(img =>
+          `<div class="img-preview-item"><img src="${img.url}"><button class="del-img" onclick="this.parentElement.remove()">×</button></div>`
+        ).join('');
+      } else if (p.img) {
+        prev.innerHTML = `<div class="img-preview-item"><img src="${p.img}"><button class="del-img" onclick="this.parentElement.remove()">×</button></div>`;
+      }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch(e) {
+    toast('পণ্য লোড ব্যর্থ: ' + e.message, 'error');
   }
-  window.scrollTo({top:0,behavior:'smooth'});
 }
+
+// POST /api/products  or  PUT /api/products/:id
 async function saveProduct() {
-  const name  = document.getElementById('pName').value.trim();
-  const price = document.getElementById('pPrice').value.trim();
-  const cat   = document.getElementById('pCategory').value;
-  if (!name)  { toast('পণ্যের নাম দিন','error'); return; }
-  if (!price) { toast('মূল্য দিন','error'); return; }
-  if (!cat)   { toast('ক্যাটাগরি বেছে নিন','error'); return; }
+  const name  = (document.getElementById('pName')?.value || '').trim();
+  const price = (document.getElementById('pPrice')?.value || '').trim();
+  const cat   = document.getElementById('pCategory')?.value || '';
+  if (!name)  { toast('পণ্যের নাম দিন', 'error'); return; }
+  if (!price) { toast('মূল্য দিন', 'error'); return; }
+  if (!cat)   { toast('ক্যাটাগরি বেছে নিন', 'error'); return; }
 
   const btn = document.getElementById('saveProdBtn');
-  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
-  btn.disabled = true;
+  if (btn) { btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...'; btn.disabled = true; }
 
   const fd = new FormData();
   fd.append('name',             name);
-  fd.append('description',      document.getElementById('pDesc').value);
+  fd.append('description',      document.getElementById('pDesc')?.value || '');
   fd.append('price',            price);
-  fd.append('oldPrice',         document.getElementById('pOldPrice').value||0);
-  fd.append('saving',           document.getElementById('pSaving').value||0);
+  fd.append('oldPrice',         document.getElementById('pOldPrice')?.value || 0);
+  fd.append('saving',           document.getElementById('pSaving')?.value || 0);
   fd.append('category',         cat);
-  fd.append('subcategory',      document.getElementById('pSubcategory').value||'');
-  fd.append('stock',            document.getElementById('pStock').value||0);
-  fd.append('sku',              document.getElementById('pSku').value||'');
-  fd.append('ageGroup',         document.getElementById('pAgeGroup').value||'');
-  fd.append('material',         document.getElementById('pMaterial').value||'');
-  fd.append('weight',           document.getElementById('pWeight').value||'');
-  fd.append('deliveryInfo',     document.getElementById('pDelivery').value||'');
-  fd.append('returnPolicy',     document.getElementById('pReturn').value||'');
-  fd.append('careInstructions', document.getElementById('pCare').value||'');
-  fd.append('sizes',            document.getElementById('pSizes').value||'');
-  fd.append('colors',           document.getElementById('pColors').value||'');
-  fd.append('highlights',       document.getElementById('pHighlights').value||'');
-  fd.append('tags',             document.getElementById('pTags').value||'');
-  fd.append('onSale',   document.getElementById('pOnSale').checked+'');
-  fd.append('soldOut',  document.getElementById('pSoldOut').checked+'');
-  fd.append('featured', document.getElementById('pFeatured').checked+'');
+  fd.append('subcategory',      document.getElementById('pSubcategory')?.value || '');
+  fd.append('stock',            document.getElementById('pStock')?.value || 0);
+  fd.append('sku',              document.getElementById('pSku')?.value || '');
+  fd.append('ageGroup',         document.getElementById('pAgeGroup')?.value || '');
+  fd.append('material',         document.getElementById('pMaterial')?.value || '');
+  fd.append('weight',           document.getElementById('pWeight')?.value || '');
+  fd.append('deliveryInfo',     document.getElementById('pDelivery')?.value || '');
+  fd.append('returnPolicy',     document.getElementById('pReturn')?.value || '');
+  fd.append('careInstructions', document.getElementById('pCare')?.value || '');
+  fd.append('sizes',            document.getElementById('pSizes')?.value || '');
+  fd.append('colors',           document.getElementById('pColors')?.value || '');
+  fd.append('highlights',       document.getElementById('pHighlights')?.value || '');
+  fd.append('tags',             document.getElementById('pTags')?.value || '');
+  fd.append('onSale',   String(document.getElementById('pOnSale')?.checked  || false));
+  fd.append('soldOut',  String(document.getElementById('pSoldOut')?.checked || false));
+  fd.append('featured', String(document.getElementById('pFeatured')?.checked|| false));
+  const files = document.getElementById('pImages')?.files;
+  if (files) for (const f of files) fd.append('images', f);
 
-  const files = document.getElementById('pImages').files;
-  for (let f of files) fd.append('images', f);
-
-  const editId = document.getElementById('editProdId').value;
+  const editId = document.getElementById('editProdId')?.value || '';
   const method = editId ? 'PUT' : 'POST';
-  const path   = editId ? '/products/'+editId : '/products';
+  const path   = editId ? '/products/' + editId : '/products';
 
   try {
-    const opts = { method, headers: { 'Authorization': 'Bearer '+adminToken }, body: fd };
-    const r = await fetch(FFH_API+path, opts);
+    const r   = await fetch(FFH_API + path, {
+      method,
+      headers: { 'Authorization': 'Bearer ' + adminToken },
+      body: fd,
+    });
     const res = await r.json();
     if (res.success) {
       toast(editId ? 'পণ্য আপডেট হয়েছে ✓' : 'নতুন পণ্য যোগ হয়েছে ✓', 'success');
       clearProductForm();
       showPanel('products');
     } else {
-      toast(res.message||'সেভ ব্যর্থ', 'error');
+      toast(res.message || 'সেভ ব্যর্থ হয়েছে', 'error');
     }
-  } catch(e) { toast('সংযোগ ব্যর্থ: '+e.message, 'error'); }
-  btn.innerHTML = '<i class="fas fa-save"></i> <span>পণ্য সেভ করুন</span>';
-  btn.disabled = false;
+  } catch(e) {
+    toast('সার্ভার সংযোগ ব্যর্থ: ' + e.message, 'error');
+  }
+  if (btn) { btn.innerHTML = '<i class="fas fa-save"></i> <span>পণ্য সেভ করুন</span>'; btn.disabled = false; }
 }
+
+// DELETE /api/products/:id
 async function deleteProduct(id) {
-  const res = await apiFetch('/products/'+id, 'DELETE');
-  if (res.success) { toast('পণ্য মুছে ফেলা হয়েছে','success'); loadProducts(); }
-  else toast(res.message||'মুছতে ব্যর্থ','error');
+  try {
+    const res = await apiFetch('/products/' + id, 'DELETE');
+    if (res.success) { toast('পণ্য মুছে ফেলা হয়েছে', 'success'); loadProducts(); }
+    else toast(res.message || 'মুছতে ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
+
 function clearProductForm() {
-  document.getElementById('editProdId').value = '';
-  document.getElementById('addProdTitle').innerHTML = '<i class="fas fa-plus-circle" style="color:var(--success)"></i> নতুন পণ্য যোগ করুন';
+  setVal('editProdId', '');
+  const el = document.getElementById('addProdTitle');
+  if (el) el.innerHTML = '<i class="fas fa-plus-circle" style="color:var(--success)"></i> নতুন পণ্য যোগ করুন';
   ['pName','pDesc','pPrice','pOldPrice','pSaving','pStock','pSku','pAgeGroup','pMaterial',
    'pWeight','pDelivery','pReturn','pCare','pSizes','pColors','pHighlights','pTags']
-   .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('pOnSale').checked = false;
-  document.getElementById('pSoldOut').checked = false;
-  document.getElementById('pFeatured').checked = false;
-  document.getElementById('imgPreviews').innerHTML = '';
-  document.getElementById('pImages').value = '';
+   .forEach(id => setVal(id, ''));
+  setChecked('pOnSale', false);
+  setChecked('pSoldOut', false);
+  setChecked('pFeatured', false);
+  const prev = document.getElementById('imgPreviews');
+  if (prev) prev.innerHTML = '';
+  const pimg = document.getElementById('pImages');
+  if (pimg) pimg.value = '';
 }
+
 function previewImages(input) {
   const prev = document.getElementById('imgPreviews');
+  if (!prev) return;
   prev.innerHTML = '';
-  for (let f of input.files) {
+  for (const f of input.files) {
     const url = URL.createObjectURL(f);
-    prev.insertAdjacentHTML('beforeend', `<div class="img-preview-item"><img src="${url}"><button class="del-img" type="button" onclick="this.parentElement.remove()">×</button></div>`);
+    prev.insertAdjacentHTML('beforeend',
+      `<div class="img-preview-item"><img src="${url}"><button class="del-img" type="button" onclick="this.parentElement.remove()">×</button></div>`);
   }
 }
 
-// ===== ORDERS =====
+// ====================================================
+// ===== ORDERS — GET /api/admin/orders =====
+// ====================================================
 async function loadOrders() {
-  const status = document.getElementById('orderStatusFilter').value;
-  const url = status && status!=='all' ? `/admin/orders?status=${status}` : '/admin/orders?status=all';
-  document.getElementById('orderTableBody').innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>';
-  const res = await apiFetch(url);
-  if (!res.success) { toast('অর্ডার লোড ব্যর্থ','error'); return; }
-  allOrders = res.data;
-  renderOrderTable(allOrders);
+  const status = document.getElementById('orderStatusFilter')?.value || 'all';
+  const url    = status && status !== 'all' ? `/admin/orders?status=${status}` : '/admin/orders?status=all';
+  const tbody  = document.getElementById('orderTableBody');
+  if (tbody) tbody.innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner"></span> লোড হচ্ছে...</td></tr>';
+  try {
+    const res = await apiFetch(url);
+    if (!res.success) { toast('অর্ডার লোড ব্যর্থ: ' + (res.message || ''), 'error'); return; }
+    allOrders = res.data;
+    renderOrderTable(allOrders);
+  } catch(e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>সার্ভার সংযোগ ব্যর্থ</p></div></td></tr>';
+  }
 }
+
 function filterOrders() {
-  const q = document.getElementById('orderSearch').value.toLowerCase();
-  const filtered = allOrders.filter(o => o.customerName.toLowerCase().includes(q) || o.phone.includes(q));
-  renderOrderTable(filtered);
+  const q = (document.getElementById('orderSearch')?.value || '').toLowerCase();
+  renderOrderTable(allOrders.filter(o =>
+    (o.customerName || '').toLowerCase().includes(q) || (o.phone || '').includes(q)
+  ));
 }
+
 function renderOrderTable(orders) {
-  document.getElementById('orderCount').textContent = `(${orders.length} টি)`;
+  setText('orderCount', `(${orders.length} টি)`);
+  const tbody = document.getElementById('orderTableBody');
+  if (!tbody) return;
   if (!orders.length) {
-    document.getElementById('orderTableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>কোনো অর্ডার নেই</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>কোনো অর্ডার নেই</p></div></td></tr>';
     return;
   }
-  document.getElementById('orderTableBody').innerHTML = orders.map(o => `
+  tbody.innerHTML = orders.map(o => `
     <tr style="cursor:pointer;" onclick="openOrderModal('${o._id}')">
       <td><code style="font-size:11px;color:var(--text2);">${o._id.slice(-8).toUpperCase()}</code></td>
-      <td><div style="font-weight:600;">${o.customerName}</div></td>
-      <td>${o.phone}</td>
+      <td><div style="font-weight:600;">${escHtml(o.customerName)}</div></td>
+      <td>${escHtml(o.phone)}</td>
       <td><span style="font-weight:700;color:var(--warning);">৳${o.total}</span></td>
-      <td>${o.items?.length||0} আইটেম</td>
-      <td style="font-size:12px;color:var(--text2);">${new Date(o.createdAt).toLocaleDateString('bn-BD')}</td>
+      <td>${(o.items || []).length} আইটেম</td>
+      <td style="font-size:12px;color:var(--text2);">${fmtDate(o.createdAt)}</td>
       <td><span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span></td>
       <td>
         <div style="display:flex;gap:5px;" onclick="event.stopPropagation()">
-          <button class="btn btn-info btn-xs" onclick="openOrderModal('${o._id}')"><i class="fas fa-eye"></i></button>
+          <button class="btn btn-info btn-xs"   onclick="openOrderModal('${o._id}')"><i class="fas fa-eye"></i></button>
           <button class="btn btn-danger btn-xs" onclick="confirmDelete('অর্ডার মুছুন?','এই অর্ডারটি মুছে যাবে।',()=>deleteOrder('${o._id}'))"><i class="fas fa-trash"></i></button>
         </div>
       </td>
     </tr>
   `).join('');
 }
+
 async function openOrderModal(id) {
-  const order = allOrders.find(o=>o._id===id) || (await apiFetch('/admin/orders?status=all').then(r=>r.data?.find(o=>o._id===id)));
-  if (!order) return;
+  let order = allOrders.find(o => o._id === id);
+  if (!order) {
+    try {
+      const res = await apiFetch('/admin/orders?status=all');
+      if (res.success) order = res.data.find(o => o._id === id);
+    } catch {}
+  }
+  if (!order) { toast('অর্ডার পাওয়া যায়নি', 'error'); return; }
   currentOrderId = id;
-  document.getElementById('orderModalTitle').textContent = `অর্ডার #${id.slice(-8).toUpperCase()}`;
-  document.getElementById('orderStatusSelect').value = order.status;
-  document.getElementById('orderModalBody').innerHTML = `
+  const titleEl = document.getElementById('orderModalTitle');
+  if (titleEl) titleEl.textContent = `অর্ডার #${id.slice(-8).toUpperCase()}`;
+  const sel = document.getElementById('orderStatusSelect');
+  if (sel) sel.value = order.status;
+  const body = document.getElementById('orderModalBody');
+  if (body) body.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
       <div style="background:var(--hover);border-radius:10px;padding:14px;">
         <div style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;margin-bottom:10px;">গ্রাহকের তথ্য</div>
-        <div style="font-size:14px;font-weight:700;">${order.customerName}</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:4px;"><i class="fas fa-phone" style="margin-right:6px;"></i>${order.phone}</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:4px;"><i class="fas fa-map-marker-alt" style="margin-right:6px;"></i>${order.address||'—'}</div>
-        ${order.note?`<div style="font-size:12px;color:var(--info);margin-top:6px;"><i class="fas fa-sticky-note" style="margin-right:6px;"></i>${order.note}</div>`:''}
+        <div style="font-size:14px;font-weight:700;">${escHtml(order.customerName)}</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px;"><i class="fas fa-phone" style="margin-right:6px;"></i>${escHtml(order.phone)}</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px;"><i class="fas fa-map-marker-alt" style="margin-right:6px;"></i>${escHtml(order.address || '—')}</div>
+        ${order.note ? `<div style="font-size:12px;color:var(--info);margin-top:6px;"><i class="fas fa-sticky-note" style="margin-right:6px;"></i>${escHtml(order.note)}</div>` : ''}
       </div>
       <div style="background:var(--hover);border-radius:10px;padding:14px;">
         <div style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;margin-bottom:10px;">অর্ডার সারসংক্ষেপ</div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2)">অর্ডার ID</span><code style="font-size:12px;">${id.slice(-8).toUpperCase()}</code></div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2)">তারিখ</span><span>${new Date(order.createdAt).toLocaleString('bn-BD')}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2)">তারিখ</span><span>${fmtDate(order.createdAt)}</span></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2)">স্ট্যাটাস</span><span class="badge ${statusClass(order.status)}">${statusLabel(order.status)}</span></div>
         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)">মোট</span><span style="font-weight:800;font-size:16px;color:var(--warning);">৳${order.total}</span></div>
       </div>
     </div>
     <div style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;margin-bottom:10px;">অর্ডার করা আইটেম</div>
     <div class="order-items-list">
-      ${(order.items||[]).map(item=>`
+      ${(order.items || []).map(item => `
         <div class="order-item-row">
-          <img src="${item.img||'https://via.placeholder.com/52'}" class="order-item-img" onerror="this.src='https://via.placeholder.com/52'">
+          <img src="${item.img || 'https://placehold.co/52'}" class="order-item-img" onerror="this.src='https://placehold.co/52'">
           <div style="flex:1;">
-            <div style="font-weight:600;">${item.name}</div>
+            <div style="font-weight:600;">${escHtml(item.name)}</div>
             <div style="font-size:12px;color:var(--text2);">৳${item.price} × ${item.quantity}</div>
           </div>
-          <div style="font-weight:700;color:var(--success);">৳${item.price*item.quantity}</div>
+          <div style="font-weight:700;color:var(--success);">৳${item.price * item.quantity}</div>
         </div>
       `).join('')}
     </div>
   `;
   openModal('orderModal');
 }
+
+// PUT /api/admin/orders/:id
 async function updateOrderStatus() {
-  const status = document.getElementById('orderStatusSelect').value;
-  const res = await apiFetch('/admin/orders/'+currentOrderId, 'PUT', { status });
-  if (res.success) { toast('স্ট্যাটাস আপডেট হয়েছে ✓','success'); closeModal('orderModal'); loadOrders(); }
-  else toast(res.message||'আপডেট ব্যর্থ','error');
-}
-async function deleteOrder(id) {
-  const res = await apiFetch('/admin/orders/'+id, 'DELETE');
-  if (res.success) { toast('অর্ডার মুছে ফেলা হয়েছে','success'); closeModal('orderModal'); loadOrders(); }
-  else toast(res.message||'মুছতে ব্যর্থ','error');
-}
-function deleteOrderConfirm() {
-  closeModal('orderModal');
-  confirmDelete('অর্ডার মুছুন?','এই অর্ডারটি স্থায়ীভাবে মুছে যাবে।',()=>deleteOrder(currentOrderId));
-}
-function statusClass(s) {
-  return {pending:'status-pending',processing:'status-processing',shipped:'status-shipped',delivered:'status-delivered',cancelled:'status-cancelled'}[s]||'badge-gray';
-}
-function statusLabel(s) {
-  return {pending:'Pending',processing:'Processing',shipped:'Shipped',delivered:'Delivered',cancelled:'Cancelled'}[s]||s;
+  const status = document.getElementById('orderStatusSelect')?.value;
+  if (!status || !currentOrderId) return;
+  try {
+    const res = await apiFetch('/admin/orders/' + currentOrderId, 'PUT', { status });
+    if (res.success) {
+      toast('স্ট্যাটাস আপডেট হয়েছে ✓', 'success');
+      closeModal('orderModal');
+      loadOrders();
+    } else toast(res.message || 'আপডেট ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
 
-// ===== REVIEWS =====
-async function loadReviews() {
-  document.getElementById('reviewTableBody').innerHTML = '<tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>';
-  const res = await apiFetch('/admin/reviews');
-  if (!res.success) { toast('রিভিউ লোড ব্যর্থ','error'); return; }
-  allReviews = res.data;
-  // Badge
-  const pending = allReviews.filter(r=>!r.approved).length;
-  if (pending>0) { document.getElementById('navBadgeReviews').textContent=pending; document.getElementById('navBadgeReviews').style.display='inline-flex'; }
-  filterReviews();
+// DELETE /api/admin/orders/:id
+async function deleteOrder(id) {
+  try {
+    const res = await apiFetch('/admin/orders/' + id, 'DELETE');
+    if (res.success) {
+      toast('অর্ডার মুছে ফেলা হয়েছে', 'success');
+      closeModal('orderModal');
+      loadOrders();
+    } else toast(res.message || 'মুছতে ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
+
+function deleteOrderConfirm() {
+  closeModal('orderModal');
+  confirmDelete('অর্ডার মুছুন?', 'এই অর্ডারটি স্থায়ীভাবে মুছে যাবে।', () => deleteOrder(currentOrderId));
+}
+
+function statusClass(s) {
+  return { pending:'status-pending', processing:'status-processing', shipped:'status-shipped', delivered:'status-delivered', cancelled:'status-cancelled' }[s] || 'badge-gray';
+}
+function statusLabel(s) {
+  return { pending:'Pending', processing:'Processing', shipped:'Shipped', delivered:'Delivered', cancelled:'Cancelled' }[s] || s;
+}
+
+// ====================================================
+// ===== REVIEWS — GET /api/admin/reviews =====
+// ====================================================
+async function loadReviews() {
+  const tbody = document.getElementById('reviewTableBody');
+  if (tbody) tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><span class="spinner"></span> লোড হচ্ছে...</td></tr>';
+  try {
+    const res = await apiFetch('/admin/reviews');
+    if (!res.success) { toast('রিভিউ লোড ব্যর্থ: ' + (res.message || ''), 'error'); return; }
+    allReviews = res.data;
+    const pending = allReviews.filter(r => !r.approved).length;
+    const badge   = document.getElementById('navBadgeReviews');
+    if (badge && pending > 0) { badge.textContent = pending; badge.style.display = 'inline-flex'; }
+    filterReviews();
+  } catch(e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>সার্ভার সংযোগ ব্যর্থ</p></div></td></tr>';
+  }
+}
+
 function filterReviews() {
-  const q      = document.getElementById('reviewSearch').value.toLowerCase();
-  const filter = document.getElementById('reviewFilter').value;
-  let reviews  = allReviews.filter(r => r.name.toLowerCase().includes(q) || r.comment.toLowerCase().includes(q));
-  if (filter==='approved') reviews = reviews.filter(r=>r.approved);
-  if (filter==='pending')  reviews = reviews.filter(r=>!r.approved);
-  if (filter==='featured') reviews = reviews.filter(r=>r.featured);
-  document.getElementById('reviewCount').textContent = `(${reviews.length} টি)`;
+  const q      = (document.getElementById('reviewSearch')?.value || '').toLowerCase();
+  const filter = document.getElementById('reviewFilter')?.value || 'all';
+  let reviews  = allReviews.filter(r =>
+    (r.name || '').toLowerCase().includes(q) || (r.comment || '').toLowerCase().includes(q)
+  );
+  if (filter === 'approved') reviews = reviews.filter(r =>  r.approved);
+  if (filter === 'pending')  reviews = reviews.filter(r => !r.approved);
+  if (filter === 'featured') reviews = reviews.filter(r =>  r.featured);
+  setText('reviewCount', `(${reviews.length} টি)`);
+  const tbody = document.getElementById('reviewTableBody');
+  if (!tbody) return;
   if (!reviews.length) {
-    document.getElementById('reviewTableBody').innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-star"></i><p>কোনো রিভিউ নেই</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-star"></i><p>কোনো রিভিউ নেই</p></div></td></tr>';
     return;
   }
-  document.getElementById('reviewTableBody').innerHTML = reviews.map(r => `
+  tbody.innerHTML = reviews.map(r => `
     <tr>
       <td>
-        <div style="font-weight:600;">${r.name}</div>
-        <div style="font-size:11px;color:var(--text2);">${r.phone||'—'}</div>
+        <div style="font-weight:600;">${escHtml(r.name)}</div>
+        <div style="font-size:11px;color:var(--text2);">${escHtml(r.phone || '—')}</div>
       </td>
-      <td><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span> <span style="font-size:12px;color:var(--text2);">${r.rating}/5</span></td>
-      <td style="max-width:200px;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${r.comment}</div></td>
-      <td style="font-size:12px;color:var(--text2);">${r.productName||'—'}</td>
-      <td style="font-size:12px;color:var(--text2);">${new Date(r.createdAt).toLocaleDateString('bn-BD')}</td>
+      <td><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span> <span style="font-size:12px;color:var(--text2);">${r.rating}/5</span></td>
+      <td style="max-width:200px;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${escHtml(r.comment)}</div></td>
+      <td style="font-size:12px;color:var(--text2);">${escHtml(r.productName || '—')}</td>
+      <td style="font-size:12px;color:var(--text2);">${fmtDate(r.createdAt)}</td>
       <td>
-        ${r.approved?'<span class="badge badge-success">অনুমোদিত</span>':'<span class="badge badge-warning">অপেক্ষায়</span>'}
-        ${r.featured?'<span class="badge badge-accent" style="margin-top:3px;display:inline-flex;">Featured</span>':''}
+        ${r.approved ? '<span class="badge badge-success">অনুমোদিত</span>' : '<span class="badge badge-warning">অপেক্ষায়</span>'}
+        ${r.featured  ? '<span class="badge badge-accent" style="margin-top:3px;display:inline-flex;">Featured</span>' : ''}
       </td>
       <td>
         <div style="display:flex;gap:4px;">
-          <button class="btn btn-success btn-xs" onclick="toggleReview('${r._id}','approved',${!r.approved})" title="${r.approved?'অনুমোদন প্রত্যাহার':'অনুমোদন দিন'}">
-            <i class="fas fa-${r.approved?'times':'check'}"></i>
+          <button class="btn btn-success btn-xs" title="${r.approved ? 'অনুমোদন প্রত্যাহার' : 'অনুমোদন দিন'}"
+            onclick="toggleReview('${r._id}','approved',${!r.approved})">
+            <i class="fas fa-${r.approved ? 'times' : 'check'}"></i>
           </button>
-          <button class="btn btn-accent btn-xs" onclick="toggleReview('${r._id}','featured',${!r.featured})" title="${r.featured?'Featured সরান':'Featured করুন'}">
+          <button class="btn btn-accent btn-xs" title="${r.featured ? 'Featured সরান' : 'Featured করুন'}"
+            onclick="toggleReview('${r._id}','featured',${!r.featured})">
             <i class="fas fa-star"></i>
           </button>
           <button class="btn btn-danger btn-xs" onclick="confirmDelete('রিভিউ মুছুন?','',()=>deleteReview('${r._id}'))">
@@ -1769,133 +1931,178 @@ function filterReviews() {
     </tr>
   `).join('');
 }
+
+// PUT /api/reviews/:id
 async function toggleReview(id, field, val) {
-  const res = await apiFetch('/reviews/'+id, 'PUT', { [field]: val });
-  if (res.success) { toast('রিভিউ আপডেট হয়েছে ✓','success'); loadReviews(); }
-  else toast(res.message||'ব্যর্থ','error');
-}
-async function deleteReview(id) {
-  const res = await apiFetch('/reviews/'+id, 'DELETE');
-  if (res.success) { toast('রিভিউ মুছে ফেলা হয়েছে','success'); loadReviews(); }
-  else toast(res.message||'মুছতে ব্যর্থ','error');
+  try {
+    const res = await apiFetch('/reviews/' + id, 'PUT', { [field]: val });
+    if (res.success) { toast('রিভিউ আপডেট হয়েছে ✓', 'success'); loadReviews(); }
+    else toast(res.message || 'আপডেট ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
 
-// ===== USERS =====
-async function loadUsers() {
-  document.getElementById('userTableBody').innerHTML = '<tr class="loading-row"><td colspan="5"><span class="spinner"></span></td></tr>';
-  const res = await apiFetch('/admin/users');
-  if (!res.success) { toast('ব্যবহারকারী লোড ব্যর্থ','error'); return; }
-  allUsers = res.data;
-  filterUsers();
+// DELETE /api/reviews/:id
+async function deleteReview(id) {
+  try {
+    const res = await apiFetch('/reviews/' + id, 'DELETE');
+    if (res.success) { toast('রিভিউ মুছে ফেলা হয়েছে', 'success'); loadReviews(); }
+    else toast(res.message || 'মুছতে ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
+
+// ====================================================
+// ===== USERS — GET /api/admin/users =====
+// ====================================================
+async function loadUsers() {
+  const tbody = document.getElementById('userTableBody');
+  if (tbody) tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><span class="spinner"></span> লোড হচ্ছে...</td></tr>';
+  try {
+    const res = await apiFetch('/admin/users');
+    if (!res.success) { toast('ব্যবহারকারী লোড ব্যর্থ: ' + (res.message || ''), 'error'); return; }
+    allUsers = res.data;
+    filterUsers();
+  } catch(e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>সার্ভার সংযোগ ব্যর্থ</p></div></td></tr>';
+  }
+}
+
 function filterUsers() {
-  const q    = document.getElementById('userSearch').value.toLowerCase();
-  const role = document.getElementById('userRoleFilter').value;
-  let users  = allUsers.filter(u => u.name.toLowerCase().includes(q) || u.phone.includes(q));
+  const q    = (document.getElementById('userSearch')?.value || '').toLowerCase();
+  const role = document.getElementById('userRoleFilter')?.value || 'all';
+  let users  = allUsers.filter(u =>
+    (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q)
+  );
   if (role !== 'all') users = users.filter(u => u.role === role);
-  document.getElementById('userCount').textContent = `(${users.length} জন)`;
+  setText('userCount', `(${users.length} জন)`);
+  const tbody = document.getElementById('userTableBody');
+  if (!tbody) return;
   if (!users.length) {
-    document.getElementById('userTableBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-users"></i><p>কোনো ব্যবহারকারী নেই</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-users"></i><p>কোনো ব্যবহারকারী নেই</p></div></td></tr>';
     return;
   }
-  document.getElementById('userTableBody').innerHTML = users.map(u => `
+  tbody.innerHTML = users.map(u => `
     <tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;">${u.name[0].toUpperCase()}</div>
-          <span style="font-weight:600;">${u.name}</span>
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;flex-shrink:0;">${(u.name[0] || '?').toUpperCase()}</div>
+          <span style="font-weight:600;">${escHtml(u.name)}</span>
         </div>
       </td>
-      <td>${u.phone}</td>
-      <td><span class="badge ${u.role==='admin'?'badge-danger':'badge-accent'}">${u.role==='admin'?'Admin':'User'}</span></td>
-      <td style="font-size:12px;color:var(--text2);">${new Date(u.createdAt).toLocaleDateString('bn-BD')}</td>
+      <td>${escHtml(u.phone)}</td>
+      <td><span class="badge ${u.role === 'admin' ? 'badge-danger' : 'badge-accent'}">${u.role === 'admin' ? 'Admin' : 'User'}</span></td>
+      <td style="font-size:12px;color:var(--text2);">${fmtDate(u.createdAt)}</td>
       <td>
-        <button class="btn btn-danger btn-xs" onclick="confirmDelete('ব্যবহারকারী মুছুন?','${u.name} কে মুছে ফেলা হবে।',()=>deleteUser('${u._id}'))">
-          <i class="fas fa-trash"></i>
-        </button>
+        ${u.role !== 'admin' ? `<button class="btn btn-danger btn-xs" onclick="confirmDelete('ব্যবহারকারী মুছুন?','${escHtml(u.name)} কে মুছে ফেলা হবে।',()=>deleteUser('${u._id}'))"><i class="fas fa-trash"></i></button>` : '<span style="font-size:11px;color:var(--text2);">সুরক্ষিত</span>'}
       </td>
     </tr>
   `).join('');
 }
+
 function openAddUserModal() {
-  document.getElementById('newUserName').value = '';
-  document.getElementById('newUserPhone').value = '';
-  document.getElementById('newUserPass').value = '';
-  document.getElementById('newUserRole').value = 'user';
+  setVal('newUserName',  '');
+  setVal('newUserPhone', '');
+  setVal('newUserPass',  '');
+  setVal('newUserRole',  'user');
   openModal('addUserModal');
 }
+
+// POST /api/admin/users
 async function saveNewUser() {
-  const name  = document.getElementById('newUserName').value.trim();
-  const phone = document.getElementById('newUserPhone').value.trim();
-  const pass  = document.getElementById('newUserPass').value.trim();
-  const role  = document.getElementById('newUserRole').value;
-  if (!name||!phone||!pass) { toast('সব তথ্য দিন','error'); return; }
-  const res = await apiFetch('/admin/users', 'POST', { name, phone, password: pass, role });
-  if (res.success) { toast('ব্যবহারকারী যোগ হয়েছে ✓','success'); closeModal('addUserModal'); loadUsers(); }
-  else toast(res.message||'ব্যর্থ','error');
-}
-async function deleteUser(id) {
-  const res = await apiFetch('/admin/users/'+id, 'DELETE');
-  if (res.success) { toast('ব্যবহারকারী মুছে ফেলা হয়েছে','success'); loadUsers(); }
-  else toast(res.message||'মুছতে ব্যর্থ','error');
+  const name  = (document.getElementById('newUserName')?.value  || '').trim();
+  const phone = (document.getElementById('newUserPhone')?.value || '').trim();
+  const pass  = (document.getElementById('newUserPass')?.value  || '').trim();
+  const role  = document.getElementById('newUserRole')?.value || 'user';
+  if (!name || !phone || !pass) { toast('সব তথ্য দিন', 'error'); return; }
+  try {
+    const res = await apiFetch('/admin/users', 'POST', { name, phone, password: pass, role });
+    if (res.success) {
+      toast('ব্যবহারকারী যোগ হয়েছে ✓', 'success');
+      closeModal('addUserModal');
+      loadUsers();
+    } else toast(res.message || 'যোগ করতে ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
 
-// ===== CATEGORIES =====
+// DELETE /api/admin/users/:id
+async function deleteUser(id) {
+  try {
+    const res = await apiFetch('/admin/users/' + id, 'DELETE');
+    if (res.success) { toast('ব্যবহারকারী মুছে ফেলা হয়েছে', 'success'); loadUsers(); }
+    else toast(res.message || 'মুছতে ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
+}
+
+// ====================================================
+// ===== CATEGORIES — GET /api/categories =====
+// ====================================================
 async function loadCategoriesForDropdowns() {
-  const res = await apiFetch('/categories', 'GET', null, false);
-  if (res.success && res.data) {
+  try {
+    const res = await apiFetch('/categories', 'GET', null, false);
+    if (res.success && Array.isArray(res.data)) {
+      allCategories = res.data;
+      const catSel = document.getElementById('pCategory');
+      const catFil = document.getElementById('prodCatFilter');
+      if (catSel) catSel.innerHTML =
+        '<option value="">ক্যাটাগরি বেছে নিন</option>' +
+        allCategories.map(c => `<option value="${c.value}">${escHtml(c.label)}</option>`).join('');
+      if (catFil) catFil.innerHTML =
+        '<option value="">সব ক্যাটাগরি</option>' +
+        allCategories.map(c => `<option value="${c.value}">${escHtml(c.label)}</option>`).join('');
+    }
+  } catch {}
+}
+
+function updateSubcatDropdown() {
+  const catVal = document.getElementById('pCategory')?.value || '';
+  const subSel = document.getElementById('pSubcategory');
+  if (!subSel) return;
+  const cat = allCategories.find(c => c.value === catVal);
+  subSel.innerHTML =
+    '<option value="">সাব-ক্যাটাগরি বেছে নিন</option>' +
+    ((cat && cat.subcategories) || []).map(s => `<option value="${s.value}">${escHtml(s.label)}</option>`).join('');
+}
+
+// GET /api/categories  (admin panel list)
+async function loadCategories() {
+  const tree = document.getElementById('catTree');
+  if (tree) tree.innerHTML = '<div style="text-align:center;padding:40px"><span class="spinner"></span> লোড হচ্ছে...</div>';
+  try {
+    const res = await apiFetch('/categories', 'GET', null, false);
+    if (!res.success) { toast('ক্যাটাগরি লোড ব্যর্থ', 'error'); return; }
     allCategories = res.data;
-    // Fill product category dropdown
-    const catSel = document.getElementById('pCategory');
-    const catFil = document.getElementById('prodCatFilter');
-    if (catSel) {
-      catSel.innerHTML = '<option value="">ক্যাটাগরি বেছে নিন</option>' +
-        allCategories.map(c=>`<option value="${c.value}">${c.label}</option>`).join('');
-    }
-    if (catFil) {
-      catFil.innerHTML = '<option value="">সব ক্যাটাগরি</option>' +
-        allCategories.map(c=>`<option value="${c.value}">${c.label}</option>`).join('');
-    }
+    renderCatTree(allCategories);
+  } catch(e) {
+    if (tree) tree.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>সার্ভার সংযোগ ব্যর্থ</p></div>';
   }
 }
-function updateSubcatDropdown() {
-  const catVal = document.getElementById('pCategory').value;
-  const subSel = document.getElementById('pSubcategory');
-  const cat    = allCategories.find(c=>c.value===catVal);
-  subSel.innerHTML = '<option value="">সাব-ক্যাটাগরি বেছে নিন</option>' +
-    ((cat&&cat.subcategories)||[]).map(s=>`<option value="${s.value}">${s.label}</option>`).join('');
-}
-async function loadCategories() {
-  const res = await apiFetch('/categories', 'GET', null, false);
-  if (!res.success) { toast('ক্যাটাগরি লোড ব্যর্থ','error'); return; }
-  allCategories = res.data;
-  renderCatTree(allCategories);
-}
+
 function renderCatTree(cats) {
+  const tree = document.getElementById('catTree');
+  if (!tree) return;
   if (!cats.length) {
-    document.getElementById('catTree').innerHTML = '<div class="empty-state"><i class="fas fa-tags"></i><p>কোনো ক্যাটাগরি নেই। "Default লোড" চাপুন।</p></div>';
+    tree.innerHTML = '<div class="empty-state"><i class="fas fa-tags"></i><p>কোনো ক্যাটাগরি নেই। "Default লোড" চাপুন।</p></div>';
     return;
   }
-  document.getElementById('catTree').innerHTML = cats.map(cat => `
+  tree.innerHTML = cats.map(cat => `
     <div class="cat-item">
       <div class="cat-header">
-        <span class="cat-label">${cat.label}</span>
-        <span class="cat-value">${cat.value}</span>
+        <span class="cat-label">${escHtml(cat.label)}</span>
+        <span class="cat-value">${escHtml(cat.value)}</span>
         <div style="display:flex;gap:6px;margin-left:10px;">
-          <button class="btn btn-accent btn-xs" onclick="openAddSubModal('${cat.value}','${cat.label}')"><i class="fas fa-plus"></i> সাব</button>
-          <button class="btn btn-info btn-xs" onclick="editCat('${cat.value}','${cat.label}')"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-danger btn-xs" onclick="confirmDelete('ক্যাটাগরি মুছুন?','${cat.label} ও এর সব সাব-ক্যাটাগরি মুছে যাবে।',()=>deleteCat('${cat.value}'))"><i class="fas fa-trash"></i></button>
+          <button class="btn btn-accent btn-xs" onclick="openAddSubModal('${cat.value}','${escHtml(cat.label)}')"><i class="fas fa-plus"></i> সাব</button>
+          <button class="btn btn-info btn-xs"   onclick="editCat('${cat.value}','${escHtml(cat.label)}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-danger btn-xs" onclick="confirmDelete('ক্যাটাগরি মুছুন?','${escHtml(cat.label)} ও এর সব সাব-ক্যাটাগরি মুছে যাবে।',()=>deleteCat('${cat.value}'))"><i class="fas fa-trash"></i></button>
         </div>
       </div>
-      ${cat.subcategories&&cat.subcategories.length ? `
+      ${cat.subcategories && cat.subcategories.length ? `
         <div class="sub-list">
-          ${cat.subcategories.map(s=>`
+          ${cat.subcategories.map(s => `
             <div class="sub-item">
-              <span class="sub-label">${s.label}</span>
-              <span class="sub-value">${s.value}</span>
+              <span class="sub-label">${escHtml(s.label)}</span>
+              <span class="sub-value">${escHtml(s.value)}</span>
               <div style="display:flex;gap:4px;margin-left:8px;">
-                <button class="btn btn-info btn-xs" onclick="editSub('${cat.value}','${s.value}','${s.label}')"><i class="fas fa-edit"></i></button>
-                <button class="btn btn-danger btn-xs" onclick="confirmDelete('সাব-ক্যাটাগরি মুছুন?','${s.label} মুছে যাবে।',()=>deleteSub('${cat.value}','${s.value}'))"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-info btn-xs"   onclick="editSub('${cat.value}','${s.value}','${escHtml(s.label)}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-xs" onclick="confirmDelete('সাব-ক্যাটাগরি মুছুন?','${escHtml(s.label)} মুছে যাবে।',()=>deleteSub('${cat.value}','${s.value}'))"><i class="fas fa-trash"></i></button>
               </div>
             </div>
           `).join('')}
@@ -1904,147 +2111,202 @@ function renderCatTree(cats) {
     </div>
   `).join('');
 }
-function openAddCatModal(editVal='', editLabel='') {
-  document.getElementById('addCatModalTitle').textContent = editVal ? 'ক্যাটাগরি সম্পাদনা' : 'নতুন ক্যাটাগরি যোগ করুন';
-  document.getElementById('newCatLabel').value = editLabel;
-  document.getElementById('newCatValue').value = editVal;
-  document.getElementById('newCatValue').disabled = !!editVal;
+
+function openAddCatModal(editVal = '', editLabel = '') {
+  setText('addCatModalTitle', editVal ? 'ক্যাটাগরি সম্পাদনা' : 'নতুন ক্যাটাগরি যোগ করুন');
+  setVal('newCatLabel', editLabel);
+  setVal('newCatValue', editVal);
+  const vi = document.getElementById('newCatValue');
+  if (vi) vi.disabled = !!editVal;
   openModal('addCatModal');
 }
 function editCat(val, label) { openAddCatModal(val, label); }
+
+// POST /api/admin/categories  or  PUT /api/admin/categories/:value
 async function saveCat() {
-  const label = document.getElementById('newCatLabel').value.trim();
-  const value = document.getElementById('newCatValue').value.trim();
-  const isEdit= document.getElementById('newCatValue').disabled;
-  if (!label) { toast('নাম দিন','error'); return; }
-  let res;
-  if (isEdit) {
-    res = await apiFetch('/admin/categories/'+value, 'PUT', { label });
-  } else {
-    if (!value) { toast('Value/Slug দিন','error'); return; }
-    res = await apiFetch('/admin/categories', 'POST', { value, label });
-  }
-  if (res.success) { toast('ক্যাটাগরি সেভ হয়েছে ✓','success'); closeModal('addCatModal'); loadCategories(); loadCategoriesForDropdowns(); }
-  else toast(res.message||'ব্যর্থ','error');
+  const label  = (document.getElementById('newCatLabel')?.value || '').trim();
+  const value  = (document.getElementById('newCatValue')?.value || '').trim();
+  const isEdit = document.getElementById('newCatValue')?.disabled;
+  if (!label) { toast('নাম দিন', 'error'); return; }
+  try {
+    let res;
+    if (isEdit) {
+      res = await apiFetch('/admin/categories/' + value, 'PUT', { label });
+    } else {
+      if (!value) { toast('Value/Slug দিন', 'error'); return; }
+      res = await apiFetch('/admin/categories', 'POST', { value, label });
+    }
+    if (res.success) {
+      toast('ক্যাটাগরি সেভ হয়েছে ✓', 'success');
+      closeModal('addCatModal');
+      loadCategories();
+      loadCategoriesForDropdowns();
+    } else toast(res.message || 'সেভ ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
+
+// DELETE /api/admin/categories/:value
 async function deleteCat(val) {
-  const res = await apiFetch('/admin/categories/'+val, 'DELETE');
-  if (res.success) { toast('ক্যাটাগরি মুছে ফেলা হয়েছে','success'); loadCategories(); loadCategoriesForDropdowns(); }
-  else toast(res.message||'ব্যর্থ','error');
+  try {
+    const res = await apiFetch('/admin/categories/' + val, 'DELETE');
+    if (res.success) {
+      toast('ক্যাটাগরি মুছে ফেলা হয়েছে', 'success');
+      loadCategories();
+      loadCategoriesForDropdowns();
+    } else toast(res.message || 'মুছতে ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
+
 function openAddSubModal(catVal, catLabel) {
-  document.getElementById('addSubModalTitle').textContent = `"${catLabel}" — সাব-ক্যাটাগরি যোগ`;
-  document.getElementById('addSubParentCat').value = catVal;
-  document.getElementById('newSubLabel').value = '';
-  document.getElementById('newSubValue').value = '';
-  document.getElementById('newSubValue').disabled = false;
+  setText('addSubModalTitle', `"${catLabel}" — সাব-ক্যাটাগরি যোগ`);
+  setVal('addSubParentCat', catVal);
+  setVal('newSubLabel', '');
+  setVal('newSubValue', '');
+  const vi = document.getElementById('newSubValue');
+  if (vi) vi.disabled = false;
   openModal('addSubModal');
 }
 function editSub(catVal, subVal, subLabel) {
-  document.getElementById('addSubModalTitle').textContent = 'সাব-ক্যাটাগরি সম্পাদনা';
-  document.getElementById('addSubParentCat').value = catVal;
-  document.getElementById('newSubLabel').value = subLabel;
-  document.getElementById('newSubValue').value = subVal;
-  document.getElementById('newSubValue').disabled = true;
+  setText('addSubModalTitle', 'সাব-ক্যাটাগরি সম্পাদনা');
+  setVal('addSubParentCat', catVal);
+  setVal('newSubLabel', subLabel);
+  setVal('newSubValue', subVal);
+  const vi = document.getElementById('newSubValue');
+  if (vi) vi.disabled = true;
   openModal('addSubModal');
 }
+
+// POST /api/admin/categories/:catValue/subcategories  or  PUT .../:subValue
 async function saveSub() {
-  const catVal  = document.getElementById('addSubParentCat').value;
-  const label   = document.getElementById('newSubLabel').value.trim();
-  const value   = document.getElementById('newSubValue').value.trim();
-  const isEdit  = document.getElementById('newSubValue').disabled;
-  if (!label) { toast('নাম দিন','error'); return; }
-  let res;
-  if (isEdit) {
-    res = await apiFetch(`/admin/categories/${catVal}/subcategories/${value}`, 'PUT', { label });
-  } else {
-    if (!value) { toast('Value/Slug দিন','error'); return; }
-    res = await apiFetch(`/admin/categories/${catVal}/subcategories`, 'POST', { value, label });
-  }
-  if (res.success) { toast('সাব-ক্যাটাগরি সেভ হয়েছে ✓','success'); closeModal('addSubModal'); loadCategories(); loadCategoriesForDropdowns(); }
-  else toast(res.message||'ব্যর্থ','error');
-}
-async function deleteSub(catVal, subVal) {
-  const res = await apiFetch(`/admin/categories/${catVal}/subcategories/${subVal}`, 'DELETE');
-  if (res.success) { toast('সাব-ক্যাটাগরি মুছে ফেলা হয়েছে','success'); loadCategories(); loadCategoriesForDropdowns(); }
-  else toast(res.message||'ব্যর্থ','error');
-}
-async function seedCategories() {
-  const res = await apiFetch('/admin/seed-categories', 'POST');
-  if (res.success) { toast('Default ক্যাটাগরি লোড হয়েছে ✓','success'); loadCategories(); loadCategoriesForDropdowns(); }
-  else toast(res.message||'ব্যর্থ','warning');
+  const catVal = document.getElementById('addSubParentCat')?.value || '';
+  const label  = (document.getElementById('newSubLabel')?.value || '').trim();
+  const value  = (document.getElementById('newSubValue')?.value || '').trim();
+  const isEdit = document.getElementById('newSubValue')?.disabled;
+  if (!label) { toast('নাম দিন', 'error'); return; }
+  try {
+    let res;
+    if (isEdit) {
+      res = await apiFetch(`/admin/categories/${catVal}/subcategories/${value}`, 'PUT', { label });
+    } else {
+      if (!value) { toast('Value/Slug দিন', 'error'); return; }
+      res = await apiFetch(`/admin/categories/${catVal}/subcategories`, 'POST', { value, label });
+    }
+    if (res.success) {
+      toast('সাব-ক্যাটাগরি সেভ হয়েছে ✓', 'success');
+      closeModal('addSubModal');
+      loadCategories();
+      loadCategoriesForDropdowns();
+    } else toast(res.message || 'সেভ ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
 
-// ===== SETTINGS =====
-async function loadSettings() {
-  const res = await apiFetch('/settings', 'GET', null, false);
-  if (!res.success) return;
-  const d = res.data;
-  if (d.announcement) document.getElementById('settAnnouncement').value = d.announcement;
-  if (d.siteName)     document.getElementById('settSiteName').value     = d.siteName;
-  if (d.phone)        document.getElementById('settPhone').value        = d.phone;
-  if (d.whatsapp)     document.getElementById('settWhatsapp').value     = d.whatsapp;
-  if (d.email)        document.getElementById('settEmail').value        = d.email;
-  if (d.address)      document.getElementById('settAddress').value      = d.address;
-  // Slider
-  if (d.sliderItems && Array.isArray(d.sliderItems)) {
-    sliderData = d.sliderItems;
-  } else {
-    sliderData = [
-      {img:'images/Baby Care.png',title:'Baby Care',link:'baby_care'},
-      {img:'images/Feeding Items.png',title:'Feeding Items',link:'feeding'},
-    ];
-  }
-  renderSliderList();
+// DELETE /api/admin/categories/:catValue/subcategories/:subValue
+async function deleteSub(catVal, subVal) {
+  try {
+    const res = await apiFetch(`/admin/categories/${catVal}/subcategories/${subVal}`, 'DELETE');
+    if (res.success) {
+      toast('সাব-ক্যাটাগরি মুছে ফেলা হয়েছে', 'success');
+      loadCategories();
+      loadCategoriesForDropdowns();
+    } else toast(res.message || 'মুছতে ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
 }
+
+// POST /api/admin/seed-categories
+async function seedCategories() {
+  try {
+    const res = await apiFetch('/admin/seed-categories', 'POST');
+    if (res.success) {
+      toast('Default ক্যাটাগরি লোড হয়েছে ✓', 'success');
+      loadCategories();
+      loadCategoriesForDropdowns();
+    } else toast(res.message || 'লোড ব্যর্থ', 'warning');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
+}
+
+// ====================================================
+// ===== SETTINGS — GET /api/settings =====
+// ====================================================
+async function loadSettings() {
+  try {
+    const res = await apiFetch('/settings', 'GET', null, false);
+    if (!res.success) { toast('সেটিংস লোড ব্যর্থ', 'error'); return; }
+    const d = res.data;
+    setVal('settAnnouncement', d.announcement || '');
+    setVal('settSiteName',     d.siteName     || '');
+    setVal('settPhone',        d.phone        || '');
+    setVal('settWhatsapp',     d.whatsapp     || '');
+    setVal('settEmail',        d.email        || '');
+    setVal('settAddress',      d.address      || '');
+    // Slider
+    sliderData = Array.isArray(d.sliderItems) ? d.sliderItems : [
+      { img: 'images/Baby Care.png',      title: 'Baby Care',      link: 'baby_care' },
+      { img: 'images/Feeding Items.png',  title: 'Feeding Items',  link: 'feeding'   },
+    ];
+    renderSliderList();
+  } catch(e) { toast('সার্ভার সংযোগ ব্যর্থ', 'error'); }
+}
+
+// POST /api/settings  (general)
 async function saveGeneralSettings() {
   const btn = event.currentTarget;
+  const orig = btn.innerHTML;
   btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
-  btn.disabled = true;
-  const res = await apiFetch('/settings', 'POST', {
-    announcement: document.getElementById('settAnnouncement').value,
-    siteName:     document.getElementById('settSiteName').value,
-  });
-  btn.innerHTML = '<i class="fas fa-save"></i> সেভ করুন';
-  btn.disabled = false;
-  if (res.success) toast('সাধারণ সেটিংস সেভ হয়েছে ✓','success');
-  else toast(res.message||'সেভ ব্যর্থ হয়েছে','error');
-}
-async function saveContactSettings() {
-  const btn = event.currentTarget;
-  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
-  btn.disabled = true;
-  const res = await apiFetch('/settings', 'POST', {
-    phone:    document.getElementById('settPhone').value,
-    whatsapp: document.getElementById('settWhatsapp').value,
-    email:    document.getElementById('settEmail').value,
-    address:  document.getElementById('settAddress').value,
-  });
-  btn.innerHTML = '<i class="fas fa-save"></i> সেভ করুন';
-  btn.disabled = false;
-  if (res.success) toast('যোগাযোগ সেটিংস সেভ হয়েছে ✓','success');
-  else toast(res.message||'সেভ ব্যর্থ হয়েছে','error');
+  btn.disabled  = true;
+  try {
+    const res = await apiFetch('/settings', 'POST', {
+      announcement: document.getElementById('settAnnouncement')?.value || '',
+      siteName:     document.getElementById('settSiteName')?.value     || '',
+    });
+    if (res.success) toast('সাধারণ সেটিংস সেভ হয়েছে ✓', 'success');
+    else toast(res.message || 'সেভ ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
+  btn.innerHTML = orig;
+  btn.disabled  = false;
 }
 
+// POST /api/settings  (contact)
+async function saveContactSettings() {
+  const btn = event.currentTarget;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
+  btn.disabled  = true;
+  try {
+    const res = await apiFetch('/settings', 'POST', {
+      phone:    document.getElementById('settPhone')?.value    || '',
+      whatsapp: document.getElementById('settWhatsapp')?.value || '',
+      email:    document.getElementById('settEmail')?.value    || '',
+      address:  document.getElementById('settAddress')?.value  || '',
+    });
+    if (res.success) toast('যোগাযোগ সেটিংস সেভ হয়েছে ✓', 'success');
+    else toast(res.message || 'সেভ ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
+  btn.innerHTML = orig;
+  btn.disabled  = false;
+}
+
+// Slider UI
 function renderSliderList() {
   const el = document.getElementById('sliderList');
-  if (!sliderData.length) { el.innerHTML = '<div class="empty-state"><i class="fas fa-images"></i><p>কোনো স্লাইড নেই</p></div>'; return; }
-  el.innerHTML = sliderData.map((s,i) => `
+  if (!el) return;
+  if (!sliderData.length) {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-images"></i><p>কোনো স্লাইড নেই</p></div>';
+    return;
+  }
+  el.innerHTML = sliderData.map((s, i) => `
     <div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--hover);border-radius:10px;margin-bottom:10px;border:1px solid var(--border);">
-      <img src="${s.img||''}" style="width:80px;height:50px;object-fit:cover;border-radius:6px;background:var(--bg);" onerror="this.style.background='var(--bg)'">
+      <img src="${escHtml(s.img || '')}" style="width:80px;height:50px;object-fit:cover;border-radius:6px;background:var(--bg);" onerror="this.style.background='var(--bg)'">
       <div style="flex:1;">
         <div class="field" style="margin-bottom:6px;">
           <label>ছবির URL</label>
-          <input type="text" value="${s.img||''}" onchange="sliderData[${i}].img=this.value" placeholder="https://... বা images/file.png">
+          <input type="text" value="${escHtml(s.img || '')}" onchange="sliderData[${i}].img=this.value" placeholder="https://...">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="field">
-            <label>শিরোনাম</label>
-            <input type="text" value="${s.title||''}" onchange="sliderData[${i}].title=this.value" placeholder="স্লাইড শিরোনাম">
+          <div class="field"><label>শিরোনাম</label>
+            <input type="text" value="${escHtml(s.title || '')}" onchange="sliderData[${i}].title=this.value" placeholder="স্লাইড শিরোনাম">
           </div>
-          <div class="field">
-            <label>লিংক (Category)</label>
-            <input type="text" value="${s.link||''}" onchange="sliderData[${i}].link=this.value" placeholder="baby_dress">
+          <div class="field"><label>লিংক (Category)</label>
+            <input type="text" value="${escHtml(s.link || '')}" onchange="sliderData[${i}].link=this.value" placeholder="baby_dress">
           </div>
         </div>
       </div>
@@ -2052,23 +2314,34 @@ function renderSliderList() {
     </div>
   `).join('');
 }
-function addSliderItem() {
-  sliderData.push({img:'',title:'',link:''});
-  renderSliderList();
-}
+function addSliderItem() { sliderData.push({ img: '', title: '', link: '' }); renderSliderList(); }
+
+// POST /api/settings  (slider)
 async function saveSliderSettings() {
-  const res = await apiFetch('/settings', 'POST', { sliderItems: sliderData });
-  if (res.success) toast('স্লাইডার সেটিংস সেভ হয়েছে ✓','success');
-  else toast(res.message||'ব্যর্থ','error');
+  const btn = event.currentTarget;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
+  btn.disabled  = true;
+  try {
+    const res = await apiFetch('/settings', 'POST', { sliderItems: sliderData });
+    if (res.success) toast('স্লাইডার সেটিংস সেভ হয়েছে ✓', 'success');
+    else toast(res.message || 'সেভ ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
+  btn.innerHTML = orig;
+  btn.disabled  = false;
 }
+
 function showStab(id, btn) {
-  document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.stab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById(id);
+  if (panel) panel.classList.add('active');
   btn.classList.add('active');
 }
 
-// ===== LAYOUT =====
+// ====================================================
+// ===== LAYOUT — GET /api/product-layout =====
+// ====================================================
 const LAYOUT_BTN_VIS = [
   { key:'showAddToCart', label:'Add to Cart বাটন' },
   { key:'showBuyNow',    label:'Buy Now বাটন' },
@@ -2099,97 +2372,150 @@ const LAYOUT_SECTIONS = [
   { key:'showMoreProducts',     label:'আরো পণ্য (ডান কলাম)' },
   { key:'showReviewsTab',       label:'রিভিউ ট্যাব' },
 ];
+
 async function loadLayout() {
-  const res = await apiFetch('/product-layout', 'GET', null, false);
-  if (!res.success) return;
-  layoutData = res.data;
-  // Btn visibility
-  document.getElementById('layoutBtnVisibility').innerHTML = LAYOUT_BTN_VIS.map(item=>`
-    <div class="toggle-wrap">
-      <label class="toggle"><input type="checkbox" id="lyt_${item.key}" ${layoutData[item.key]!==false?'checked':''}><span class="toggle-slider"></span></label>
-      <span class="toggle-label">${item.label}</span>
-    </div>
-  `).join('');
-  // Btn texts
-  document.getElementById('layoutBtnTexts').innerHTML = LAYOUT_BTN_TXT.map(item=>`
-    <div class="field">
-      <label>${item.label}</label>
-      <input type="text" id="lyt_${item.key}" value="${layoutData[item.key]||''}">
-    </div>
-  `).join('');
-  // Sections
-  document.getElementById('layoutSections').innerHTML = LAYOUT_SECTIONS.map(item=>`
-    <div class="layout-card">
-      <div><div class="lc-label">${item.label}</div></div>
-      <label class="toggle"><input type="checkbox" id="lyt_${item.key}" ${layoutData[item.key]!==false?'checked':''}><span class="toggle-slider"></span></label>
-    </div>
-  `).join('');
-  // WhatsApp & Call
-  document.getElementById('layoutWhatsapp').value  = layoutData.whatsappNumber||'';
-  document.getElementById('layoutCall').value      = layoutData.callNumber||'';
-  document.getElementById('layoutBrand').value     = layoutData.brandLabel||'Family Fashion Hub';
-  document.getElementById('layoutMoreTitle').value = layoutData.moreProductsTitle||'More Products';
+  try {
+    const res = await apiFetch('/product-layout', 'GET', null, false);
+    if (!res.success) { toast('লেআউট লোড ব্যর্থ', 'error'); return; }
+    layoutData = res.data;
+    // Button visibility
+    const bv = document.getElementById('layoutBtnVisibility');
+    if (bv) bv.innerHTML = LAYOUT_BTN_VIS.map(item => `
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" id="lyt_${item.key}" ${layoutData[item.key] !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+        <span class="toggle-label">${item.label}</span>
+      </div>
+    `).join('');
+    // Button texts
+    const bt = document.getElementById('layoutBtnTexts');
+    if (bt) bt.innerHTML = LAYOUT_BTN_TXT.map(item => `
+      <div class="field">
+        <label>${item.label}</label>
+        <input type="text" id="lyt_${item.key}" value="${escHtml(layoutData[item.key] || '')}">
+      </div>
+    `).join('');
+    // Sections
+    const ls = document.getElementById('layoutSections');
+    if (ls) ls.innerHTML = LAYOUT_SECTIONS.map(item => `
+      <div class="layout-card">
+        <div><div class="lc-label">${item.label}</div></div>
+        <label class="toggle"><input type="checkbox" id="lyt_${item.key}" ${layoutData[item.key] !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+      </div>
+    `).join('');
+    // Numbers
+    setVal('layoutWhatsapp',  layoutData.whatsappNumber     || '');
+    setVal('layoutCall',      layoutData.callNumber         || '');
+    setVal('layoutBrand',     layoutData.brandLabel         || 'Family Fashion Hub');
+    setVal('layoutMoreTitle', layoutData.moreProductsTitle  || 'More Products');
+  } catch(e) { toast('সার্ভার সংযোগ ব্যর্থ', 'error'); }
 }
+
+// POST /api/admin/product-layout
 async function saveLayout() {
+  const btn  = event.currentTarget;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
+  btn.disabled  = true;
   const data = { ...layoutData };
   [...LAYOUT_BTN_VIS, ...LAYOUT_SECTIONS].forEach(item => {
-    const el = document.getElementById('lyt_'+item.key);
+    const el = document.getElementById('lyt_' + item.key);
     if (el) data[item.key] = el.checked;
   });
   LAYOUT_BTN_TXT.forEach(item => {
-    const el = document.getElementById('lyt_'+item.key);
+    const el = document.getElementById('lyt_' + item.key);
     if (el) data[item.key] = el.value;
   });
-  data.whatsappNumber     = document.getElementById('layoutWhatsapp').value;
-  data.callNumber         = document.getElementById('layoutCall').value;
-  data.brandLabel         = document.getElementById('layoutBrand').value;
-  data.moreProductsTitle  = document.getElementById('layoutMoreTitle').value;
-  const btn = event.currentTarget;
-  const origText = btn.innerHTML;
-  btn.innerHTML = '<span class="spinner"></span> সেভ হচ্ছে...';
-  btn.disabled = true;
-  const res = await apiFetch('/admin/product-layout', 'POST', data);
-  btn.innerHTML = origText;
-  btn.disabled = false;
-  if (res.success) { layoutData = data; toast('লেআউট সেটিংস সেভ হয়েছে ✓','success'); }
-  else toast(res.message||'সেভ ব্যর্থ','error');
+  data.whatsappNumber    = document.getElementById('layoutWhatsapp')?.value  || '';
+  data.callNumber        = document.getElementById('layoutCall')?.value      || '';
+  data.brandLabel        = document.getElementById('layoutBrand')?.value     || '';
+  data.moreProductsTitle = document.getElementById('layoutMoreTitle')?.value || '';
+  try {
+    const res = await apiFetch('/admin/product-layout', 'POST', data);
+    if (res.success) { layoutData = data; toast('লেআউট সেটিংস সেভ হয়েছে ✓', 'success'); }
+    else toast(res.message || 'সেভ ব্যর্থ', 'error');
+  } catch(e) { toast('সংযোগ ব্যর্থ', 'error'); }
+  btn.innerHTML = orig;
+  btn.disabled  = false;
 }
 
+// ====================================================
 // ===== MODAL HELPERS =====
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
+// ====================================================
+function openModal(id)  {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
 function confirmDelete(title, msg, cb) {
-  document.getElementById('confirmTitle').textContent = title;
-  document.getElementById('confirmMsg').textContent   = msg;
-  document.getElementById('confirmOkBtn').onclick = () => { closeModal('confirmModal'); cb(); };
+  setText('confirmTitle', title);
+  setText('confirmMsg',   msg);
+  const okBtn = document.getElementById('confirmOkBtn');
+  if (okBtn) okBtn.onclick = () => { closeModal('confirmModal'); cb(); };
   openModal('confirmModal');
 }
 
+// ====================================================
 // ===== TOAST =====
-function toast(msg, type='info') {
-  const icons = { success:'check-circle', error:'exclamation-circle', info:'info-circle', warning:'exclamation-triangle' };
-  const el = document.createElement('div');
-  el.className = `toast-item ${type}`;
-  el.innerHTML = `<i class="fas fa-${icons[type]||'info-circle'}"></i> ${msg}`;
-  document.getElementById('toast').appendChild(el);
+// ====================================================
+function toast(msg, type = 'info') {
+  const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle', warning: 'exclamation-triangle' };
+  const el    = document.createElement('div');
+  el.className= `toast-item ${type}`;
+  el.innerHTML= `<i class="fas fa-${icons[type] || 'info-circle'}"></i> ${msg}`;
+  const container = document.getElementById('toast');
+  if (container) container.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
 
+// ====================================================
 // ===== SIDEBAR TOGGLE (MOBILE) =====
+// ====================================================
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('mobileOverlay').classList.toggle('open');
+  document.getElementById('sidebar')?.classList.toggle('open');
+  document.getElementById('mobileOverlay')?.classList.toggle('open');
 }
 function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('mobileOverlay').classList.remove('open');
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('mobileOverlay')?.classList.remove('open');
 }
 
 // Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.classList.remove('open'); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 });
+
+// ====================================================
+// ===== UTILITY HELPERS =====
+// ====================================================
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+function setChecked(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.checked = val;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('bn-BD', { year:'numeric', month:'short', day:'numeric' }); }
+  catch { return d; }
+}
+function escHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 </script>
 </body>
 </html>
