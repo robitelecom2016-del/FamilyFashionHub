@@ -1593,12 +1593,12 @@
             <div class="dash-banner"></div>
             <div style="background:white;border-radius:0 0 10px 10px;padding:16px;">
               <div class="dash-stats-grid">
-                <div class="dash-stat-card"><div><div class="stat-num">0</div><div class="stat-label">Total order placed</div></div><div class="dash-stat-icon" style="background:#e0f2fe;"><i class="fas fa-shopping-bag" style="color:#0ea5e9;"></i></div></div>
-                <div class="dash-stat-card"><div><div class="stat-num">0</div><div class="stat-label">Running orders</div></div><div class="dash-stat-icon" style="background:#fef9c3;"><i class="fas fa-truck" style="color:#eab308;"></i></div></div>
-                <div class="dash-stat-card"><div><div class="stat-num">0</div><div class="stat-label">Items in cart</div></div><div class="dash-stat-icon" style="background:#dcfce7;"><i class="fas fa-cart-plus" style="color:#22c55e;"></i></div></div>
-                <div class="dash-stat-card"><div><div class="stat-num">0</div><div class="stat-label">Product in wishlist's</div></div><div class="dash-stat-icon" style="background:#fee2e2;"><i class="fas fa-heart" style="color:#ef4444;"></i></div></div>
-                <div class="dash-stat-card"><div><div class="stat-num">0</div><div class="stat-label">Amount spent</div></div><div class="dash-stat-icon" style="background:#ede9fe;"><i class="fas fa-taka-sign" style="color:#8b5cf6;font-size:15px;"></i></div></div>
-                <div class="dash-stat-card"><div><div class="stat-num">0</div><div class="stat-label">Opened Tickets</div></div><div class="dash-stat-icon" style="background:#fce7f3;"><i class="fas fa-comment-dots" style="color:#ec4899;"></i></div></div>
+                <div class="dash-stat-card"><div><div class="stat-num" id="dsStat-total">0</div><div class="stat-label">Total order placed</div></div><div class="dash-stat-icon" style="background:#e0f2fe;"><i class="fas fa-shopping-bag" style="color:#0ea5e9;"></i></div></div>
+                <div class="dash-stat-card"><div><div class="stat-num" id="dsStat-running">0</div><div class="stat-label">Running orders</div></div><div class="dash-stat-icon" style="background:#fef9c3;"><i class="fas fa-truck" style="color:#eab308;"></i></div></div>
+                <div class="dash-stat-card"><div><div class="stat-num" id="dsStat-cart">0</div><div class="stat-label">Items in cart</div></div><div class="dash-stat-icon" style="background:#dcfce7;"><i class="fas fa-cart-plus" style="color:#22c55e;"></i></div></div>
+                <div class="dash-stat-card"><div><div class="stat-num" id="dsStat-wishlist">0</div><div class="stat-label">Product in wishlist's</div></div><div class="dash-stat-icon" style="background:#fee2e2;"><i class="fas fa-heart" style="color:#ef4444;"></i></div></div>
+                <div class="dash-stat-card"><div><div class="stat-num" id="dsStat-spent">৳0</div><div class="stat-label">Amount spent</div></div><div class="dash-stat-icon" style="background:#ede9fe;"><i class="fas fa-taka-sign" style="color:#8b5cf6;font-size:15px;"></i></div></div>
+                <div class="dash-stat-card"><div><div class="stat-num" id="dsStat-delivered">0</div><div class="stat-label">Delivered orders</div></div><div class="dash-stat-icon" style="background:#fce7f3;"><i class="fas fa-check-circle" style="color:#ec4899;"></i></div></div>
               </div>
               <div class="dash-section">
                 <div class="dash-section-header"><h3>Recent orders</h3><button onclick="switchDashPanel('orders')">All orders</button></div>
@@ -2952,19 +2952,7 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         pg.classList.add('active'); pg.classList.remove('detail-page');
         switchDashPanel(panel || 'dashboard');
         window.scrollTo({ top: 0 });
-        if (ffhToken) {
-          try {
-            const res  = await fetch(window.FFH_API + '/admin/orders', {
-              headers: { Authorization: 'Bearer ' + ffhToken }
-            });
-            const data = await res.json();
-            if (data.success && Array.isArray(data.data)) {
-              const myPhone = ffhUser?.phone || '';
-              const myOrders = data.data.filter(o => o.phone === myPhone);
-              _ffhRenderDashOrders(myOrders);
-            }
-          } catch(e) {}
-        }
+        await _ffhLoadMyOrders();
       }
 
       window.switchDashPanel = function(panel) {
@@ -3671,17 +3659,21 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
 
           try {
             const API = window.FFH_API || 'https://familyfashionhub-backend.onrender.com/api';
+            const _orderHeaders = { 'Content-Type': 'application/json' };
+            if (typeof ffhToken !== 'undefined' && ffhToken) _orderHeaders['Authorization'] = 'Bearer ' + ffhToken;
             const res = await fetch(API + '/orders', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: _orderHeaders,
               body: JSON.stringify(orderData),
             });
             const data = await res.json();
             if (data.success) {
               paymentModal.classList.add('invisible', 'opacity-0');
+              const shortId = data.shortId || (data.data?.shortId) || '';
               const orderId = data.orderId || data.data?._id || '';
+              const displayId = shortId || (orderId ? orderId.toString().slice(-8).toUpperCase() : '');
               const oidEl = document.getElementById('successOrderId');
-              if (oidEl) oidEl.textContent = orderId ? '#' + orderId.slice(-8).toUpperCase() : '';
+              if (oidEl) oidEl.textContent = displayId ? '#' + displayId : '';
               const phoneEl = document.getElementById('successPhone');
               if (phoneEl) phoneEl.textContent = phoneVal;
               successPopup.classList.remove('invisible', 'opacity-0');
@@ -4011,27 +4003,91 @@ function _ffhRestoreSession() {
   }
 }
 
+// ===== MY ORDERS লোড করো API থেকে =====
+async function _ffhLoadMyOrders() {
+  if (!ffhToken) return;
+  try {
+    const res = await fetch(window.FFH_API + '/orders/my', {
+      headers: { Authorization: 'Bearer ' + ffhToken }
+    });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.data)) {
+      _ffhRenderDashOrders(data.data);
+    } else {
+      _ffhRenderDashOrders([]);
+    }
+  } catch(e) {
+    _ffhRenderDashOrders([]);
+  }
+}
+
 function _ffhRenderDashOrders(orders) {
   const recentEl = document.getElementById('dashRecentOrders');
   const listEl   = document.getElementById('dashOrdersList');
-  const statuses = { pending:'⏳ পেন্ডিং', processing:'🔧 প্রক্রিয়াধীন', shipped:'🚚 শিপ হয়েছে', delivered:'✅ ডেলিভারি', cancelled:'❌ বাতিল' };
-  const colors   = { pending:'#f97316', processing:'#3b82f6', shipped:'#8b5cf6', delivered:'#22c55e', cancelled:'#ef4444' };
+
+  const statuses = {
+    pending:    '⏳ পেন্ডিং',
+    processing: '🔧 প্রক্রিয়াধীন',
+    shipped:    '🚚 শিপ হয়েছে',
+    delivered:  '✅ ডেলিভারি',
+    cancelled:  '❌ বাতিল',
+  };
+  const colors = {
+    pending:    '#f97316',
+    processing: '#3b82f6',
+    shipped:    '#8b5cf6',
+    delivered:  '#22c55e',
+    cancelled:  '#ef4444',
+  };
+
+  // ===== Dashboard Stats আপডেট =====
+  const total     = orders.length;
+  const running   = orders.filter(o => ['pending','processing','shipped'].includes(o.status)).length;
+  const delivered = orders.filter(o => o.status === 'delivered').length;
+  const spent     = orders.filter(o => o.status !== 'cancelled').reduce((s,o) => s + (o.total||0), 0);
+  const cartCount = (typeof cart !== 'undefined') ? cart.reduce((s,i) => s + (i.qty||i.quantity||1), 0) : 0;
+
+  const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setStat('dsStat-total',     total);
+  setStat('dsStat-running',   running);
+  setStat('dsStat-delivered', delivered);
+  setStat('dsStat-spent',     '৳' + spent.toLocaleString('en-BD'));
+  setStat('dsStat-cart',      cartCount);
+
+  // ===== Empty State =====
   if (!orders.length) {
     if (recentEl) recentEl.innerHTML = '<div class="dash-empty">কোনো অর্ডার নেই।</div>';
     if (listEl)   listEl.innerHTML   = '<div class="dash-empty"><i class="fas fa-box-open" style="font-size:2.5rem;color:#d1d5db;display:block;margin-bottom:12px;"></i>এখনো কোনো অর্ডার নেই।<br><button onclick="showHomePage()" style="margin-top:14px;background:#f97316;color:white;border:none;padding:10px 22px;font-size:13px;font-weight:600;cursor:pointer;border-radius:6px;font-family:inherit;">পণ্য কিনুন</button></div>';
     return;
   }
+
+  // ===== Order Card =====
   function orderCard(o) {
+    const sid  = o.shortId || o._id.toString().slice(-8).toUpperCase();
     const date = new Date(o.createdAt).toLocaleDateString('bn-BD');
-    return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:10px;background:white;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:12px;font-weight:700;color:#374151;">#${o._id.slice(-8).toUpperCase()}</span>
-        <span style="font-size:11px;font-weight:600;color:${colors[o.status]||'#6b7280'};background:${colors[o.status]||'#6b7280'}22;padding:3px 9px;border-radius:20px;">${statuses[o.status]||o.status}</span>
+    const statusColor = colors[o.status] || '#6b7280';
+    const statusText  = statuses[o.status] || o.status;
+    const itemNames   = (o.items||[]).map(i => i.name).join(', ');
+    const totalItems  = (o.items||[]).reduce((s,i) => s + (i.quantity||1), 0);
+
+    return `<div style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:12px;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fafafa;border-bottom:1px solid #f3f4f6;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:monospace;font-size:13px;font-weight:800;color:#6d28d9;background:#f5f3ff;padding:3px 9px;border-radius:5px;letter-spacing:0.5px;">#${sid}</span>
+          <span style="font-size:11px;color:#9ca3af;">${date}</span>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:${statusColor};background:${statusColor}20;padding:4px 10px;border-radius:20px;">${statusText}</span>
       </div>
-      <div style="font-size:12px;color:#6b7280;">📅 ${date} &nbsp;|&nbsp; 💰 ৳${o.total?.toLocaleString()}</div>
-      <div style="font-size:12px;color:#374151;margin-top:4px;">${(o.items||[]).map(i=>i.name).join(', ')}</div>
+      <div style="padding:10px 14px;">
+        <div style="font-size:12px;color:#374151;margin-bottom:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${itemNames}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-size:12px;color:#6b7280;">${totalItems} টি আইটেম</span>
+          <span style="font-size:14px;font-weight:800;color:#111827;">৳${(o.total||0).toLocaleString()}</span>
+        </div>
+      </div>
     </div>`;
   }
+
   if (recentEl) recentEl.innerHTML = orders.slice(0,3).map(orderCard).join('');
   if (listEl)   listEl.innerHTML   = orders.map(orderCard).join('');
 }

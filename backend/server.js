@@ -149,7 +149,8 @@ const settingsSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-  shortId:      { type: String, default: '', index: true }, // ফ্রন্টএন্ডে দেখানো ছোট ID যেমন #62024DF8
+  shortId:      { type: String, default: '', index: true }, // ফ্রন্টএন্ডে দেখানো ছোট ID — যেমন 62024DF8
+  userEmail:    { type: String, default: '' },              // লগইন করা user-এর email (My Orders ফিল্টারের জন্য)
   customerName: { type: String, default: '' },
   phone:        { type: String, default: '' },
   address:      { type: String, default: '' },
@@ -568,6 +569,16 @@ app.post('/api/orders', async (req, res) => {
   try {
     const b = req.body;
 
+    // লগইন করা user-এর email token থেকে নাও (থাকলে)
+    let userEmail = '';
+    const tokenHeader = (req.headers.authorization || '').split(' ')[1];
+    if (tokenHeader) {
+      try {
+        const decoded = jwt.verify(tokenHeader, JWT_SECRET);
+        userEmail = decoded.email || '';
+      } catch { /* guest order */ }
+    }
+
     // ফ্রন্টএন্ড যেকোনো field name দিয়ে পাঠাক — সব handle করা হচ্ছে
     const customerName =
       b.customerName || b.customer_name || b.name || b.fullName ||
@@ -626,6 +637,7 @@ app.post('/api/orders', async (req, res) => {
     }));
 
     const order = await Order.create({
+      userEmail,
       customerName,
       phone,
       address,
@@ -636,14 +648,14 @@ app.post('/api/orders', async (req, res) => {
       status: 'pending',
     });
 
-    // shortId = MongoDB _id এর শেষ ৮ ক্যারেক্টার uppercase — ফ্রন্টএন্ডে #62024DF8 ফরম্যাটে দেখায়
+    // shortId = _id-এর শেষ ৮ ক্যারেক্টার uppercase
     const shortId = order._id.toString().slice(-8).toUpperCase();
     order.shortId = shortId;
     await order.save();
 
     res.json({
       success: true,
-      data: order,
+      data:    order,
       message: 'অর্ডার সফলভাবে দেওয়া হয়েছে! আমরা শীঘ্রই যোগাযোগ করব।',
       orderId: order._id,
       shortId,
@@ -653,26 +665,44 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// ===== MY ORDERS — লগইন করা user-এর নিজের অর্ডার =====
+app.get('/api/orders/my', authMiddleware, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const orders = await Order.find({ userEmail: email }).sort({ createdAt: -1 });
+    const result = orders.map(o => ({
+      _id:          o._id,
+      shortId:      o.shortId || o._id.toString().slice(-8).toUpperCase(),
+      customerName: o.customerName,
+      phone:        o.phone,
+      address:      o.address,
+      items:        o.items,
+      total:        o.total,
+      deliveryArea: o.deliveryArea,
+      status:       o.status,
+      note:         o.note,
+      createdAt:    o.createdAt,
+    }));
+    res.json({ success: true, data: result });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // ===== PUBLIC ORDER TRACKING =====
-// যে কেউ Order ID দিয়ে অর্ডার ট্র্যাক করতে পারবে
-// shortId (#62024DF8 বা 62024DF8) অথবা full MongoDB _id — দুটোই কাজ করবে
+// shortId (62024DF8) অথবা full MongoDB _id — দুটোই কাজ করবে
 app.get('/api/orders/:id', async (req, res) => {
   try {
     let { id } = req.params;
-
-    // # চিহ্ন থাকলে সরিয়ে দাও
     id = id.replace(/^#/, '').trim();
 
     let order = null;
 
-    // ১. shortId দিয়ে খোঁজো (8 character hex, case-insensitive)
+    // ১. shortId দিয়ে খোঁজো (8 hex char)
     if (/^[a-fA-F0-9]{8}$/.test(id)) {
       order = await Order.findOne({ shortId: id.toUpperCase() });
-      // পুরনো অর্ডার যেগুলোতে shortId নেই সেগুলো _id-এর শেষ ৮ দিয়ে মিলাও
+      // পুরনো অর্ডার যেখানে shortId নেই সেগুলো _id দিয়ে মেলাও
       if (!order) {
-        const allOrders = await Order.find({});
-        order = allOrders.find(o => o._id.toString().slice(-8).toUpperCase() === id.toUpperCase()) || null;
-        // পুরনো অর্ডার হলে shortId সেট করে দাও
+        const all = await Order.find({});
+        order = all.find(o => o._id.toString().slice(-8).toUpperCase() === id.toUpperCase()) || null;
         if (order && !order.shortId) {
           order.shortId = order._id.toString().slice(-8).toUpperCase();
           await order.save();
@@ -682,43 +712,34 @@ app.get('/api/orders/:id', async (req, res) => {
     // ২. full MongoDB ObjectId দিয়ে খোঁজো
     else if (/^[a-fA-F0-9]{24}$/.test(id)) {
       order = await Order.findById(id);
-      // shortId না থাকলে সেট করো
       if (order && !order.shortId) {
         order.shortId = order._id.toString().slice(-8).toUpperCase();
         await order.save();
       }
-    }
-    // ৩. অন্য কিছু হলে
-    else {
+    } else {
       return res.json({ success: false, message: 'অর্ডারটি পাওয়া যায়নি। Order ID টি সঠিক কিনা যাচাই করুন।' });
     }
 
     if (!order) return res.json({ success: false, message: 'অর্ডারটি পাওয়া যায়নি। Order ID টি সঠিক কিনা যাচাই করুন।' });
 
-    // Token থাকলে লগইন check করো
     let isLoggedIn = false;
     const token = (req.headers.authorization || '').split(' ')[1];
     if (token) {
-      try {
-        jwt.verify(token, JWT_SECRET);
-        isLoggedIn = true;
-      } catch { isLoggedIn = false; }
+      try { jwt.verify(token, JWT_SECRET); isLoggedIn = true; }
+      catch { isLoggedIn = false; }
     }
 
-    // phone masking — প্রথম ৪ সংখ্যা দেখাবে বাকী * দিয়ে ঢাকবে
     const rawPhone = order.phone || '';
     const maskedPhone = isLoggedIn
       ? rawPhone
-      : rawPhone.length > 4
-        ? rawPhone.slice(0, 4) + '*'.repeat(rawPhone.length - 4)
-        : rawPhone;
+      : rawPhone.length > 4 ? rawPhone.slice(0, 4) + '*'.repeat(rawPhone.length - 4) : rawPhone;
 
     const statusLabels = {
-      pending:    { label: 'অপেক্ষমাণ',    color: '#f59e0b', icon: '🕐' },
-      processing: { label: 'প্রক্রিয়াধীন', color: '#3b82f6', icon: '⚙️' },
-      shipped:    { label: 'পাঠানো হয়েছে', color: '#8b5cf6', icon: '🚚' },
+      pending:    { label: 'অপেক্ষমাণ',     color: '#f59e0b', icon: '🕐' },
+      processing: { label: 'প্রক্রিয়াধীন',  color: '#3b82f6', icon: '⚙️' },
+      shipped:    { label: 'পাঠানো হয়েছে',  color: '#8b5cf6', icon: '🚚' },
       delivered:  { label: 'ডেলিভারি হয়েছে', color: '#10b981', icon: '✅' },
-      cancelled:  { label: 'বাতিল',         color: '#ef4444', icon: '❌' },
+      cancelled:  { label: 'বাতিল',          color: '#ef4444', icon: '❌' },
     };
 
     const shortId = order.shortId || order._id.toString().slice(-8).toUpperCase();
