@@ -3199,15 +3199,17 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         }
       });
 
-      detailPageOrderNow.addEventListener('click', () => {
-        if (currentProduct && !currentProduct.soldOut) {
-          const qty = parseInt(detailPageQty.value) || 1;
-          addToCart(currentProduct, qty);
-          updateOrderSummary();
-          paymentModal.classList.remove('invisible', 'opacity-0');
-        }
-      });
-
+      // নতুন কোড (ঠিক):
+detailPageOrderNow.addEventListener('click', () => {
+  // কার্ট পপআপ ছাড়াই যোগ করো
+  const existing = cart.find(item => item.id === currentProduct.id);
+  if (existing) { existing.qty += qty; } 
+  else { cart.push({ ...currentProduct, qty }); }
+  updateCartUI();
+  // সরাসরি অর্ডার ফর্ম খোলো
+  updateOrderSummary();
+  paymentModal.classList.remove('invisible', 'opacity-0');
+});
       function addToCart(product, qty = 1) {
         const existing = cart.find(item => item.id === product.id);
         if (existing) {
