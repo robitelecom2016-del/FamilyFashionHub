@@ -1690,11 +1690,12 @@ function renderOrders(list) {
   if (!list.length) { el.innerHTML = '<div class="empty-state"><i class="fas fa-shopping-bag"></i><p>কোনো অর্ডার নেই</p></div>'; return; }
   el.innerHTML = `<div class="table-wrapper"><table>
     <thead><tr><th>অর্ডার আইডি</th><th>গ্রাহক</th><th>ফোন</th><th>আইটেম</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead>
-    <tbody>${list.map(o => `
+    <tbody>${list.map(o => {
+      const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
+      return `
       <tr>
         <td>
-          <span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:3px 7px;border-radius:5px;color:#6d28d9;cursor:pointer;user-select:all;" title="ক্লিক করে কপি করুন" onclick="copyOrderId('${o._id}',this)">${o._id.slice(-8).toUpperCase()}</span>
-          <div style="font-size:10px;color:#9ca3af;margin-top:2px;">...${o._id.slice(-8)}</div>
+          <span style="font-family:monospace;font-size:13px;font-weight:700;background:#f5f3ff;padding:4px 9px;border-radius:6px;color:#6d28d9;cursor:pointer;letter-spacing:0.5px;display:inline-block;" title="ক্লিক করলে কপি হবে" onclick="copyOrderId('#${sid}',this)">#${sid}</span>
         </td>
         <td><p style="font-weight:600;font-size:13px;">${o.customerName}</p></td>
         <td>${o.phone}</td>
@@ -1711,35 +1712,38 @@ function renderOrders(list) {
           <button class="btn btn-xs btn-info" onclick="viewOrder('${o._id}')"><i class="fas fa-eye"></i></button>
           <button class="btn btn-xs btn-danger" style="margin-left:4px;" onclick="deleteOrder('${o._id}')"><i class="fas fa-trash"></i></button>
         </td>
-      </tr>`).join('')}
+      </tr>`;}).join('')}
     </tbody></table></div>`;
 }
 
 function filterOrders() {
-  const q = document.getElementById('orderSearch').value.toLowerCase();
-  const filtered = allOrders.filter(o =>
-    o.customerName.toLowerCase().includes(q) || o.phone.includes(q) ||
-    o._id.toLowerCase().includes(q)
-  );
+  const q = document.getElementById('orderSearch').value.toLowerCase().replace(/^#/,'');
+  const filtered = allOrders.filter(o => {
+    const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
+    return o.customerName.toLowerCase().includes(q) ||
+           o.phone.includes(q) ||
+           sid.toLowerCase().includes(q);
+  });
   renderOrders(filtered);
 }
 
-function copyOrderId(id, btn) {
-  navigator.clipboard.writeText(id).then(() => {
+function copyOrderId(text, btn) {
+  const clean = text.replace(/^#/, '');
+  navigator.clipboard.writeText(clean).then(() => {
     const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-check"></i> কপি হয়েছে!';
-    btn.style.background = '#10b981';
-    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+    btn.innerHTML = '✅ কপি!';
+    btn.style.background = '#d1fae5';
+    btn.style.color = '#065f46';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 2000);
   }).catch(() => {
-    // Fallback for older browsers
     const ta = document.createElement('textarea');
-    ta.value = id;
+    ta.value = clean;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
     const orig = btn.innerHTML;
-    btn.innerHTML = typeof orig === 'string' && orig.includes('fa-copy') ? '<i class="fas fa-check"></i> কপি হয়েছে!' : '✅ কপি হয়েছে!';
+    btn.innerHTML = '✅ কপি!';
     setTimeout(() => { btn.innerHTML = orig; }, 2000);
   });
 }
@@ -1760,13 +1764,14 @@ async function updateOrderStatus(id, status) {
 function viewOrder(id) {
   const o = allOrders.find(x => x._id === id);
   if (!o) return;
+  const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
   document.getElementById('orderModalBody').innerHTML = `
     <div style="background:#f5f3ff;border:1px solid #ede9fe;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div>
-        <p style="font-size:11px;color:#6b7280;margin-bottom:2px;">অর্ডার আইডি (Track Order এ ব্যবহার করুন)</p>
-        <p style="font-family:monospace;font-size:13px;font-weight:700;color:#6d28d9;letter-spacing:0.5px;">${o._id}</p>
+        <p style="font-size:11px;color:#6b7280;margin-bottom:3px;">📦 অর্ডার আইডি — ফ্রন্টএন্ড Track Order এ এই আইডি ব্যবহার করুন</p>
+        <p style="font-family:monospace;font-size:22px;font-weight:800;color:#6d28d9;letter-spacing:1px;">#${sid}</p>
       </div>
-      <button onclick="copyOrderId('${o._id}',this)" style="background:#7c3aed;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><i class="fas fa-copy"></i> কপি করুন</button>
+      <button onclick="copyOrderId('${sid}',this)" style="background:#7c3aed;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px;"><i class="fas fa-copy"></i> কপি করুন</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
       <div><p style="font-size:12px;color:var(--text-muted);">গ্রাহক</p><p style="font-weight:600;">${o.customerName}</p></div>
