@@ -559,6 +559,58 @@ app.delete('/api/admin/users/:id', adminMiddleware, async (req, res) => {
 
 // ===== ORDER ROUTES =====
 
+// ===== PHONE ORDER HISTORY — PUBLIC (অর্ডার ফর্মে ব্যবহার করা হয়) =====
+// অর্ডার দেওয়ার আগে customer নিজেও তার phone-এর history দেখতে পারবে
+// শুধু summary দেয়, বিস্তারিত তথ্য দেয় না (privacy)
+app.get('/api/orders/phone-summary/:phone', async (req, res) => {
+  try {
+    const phone = req.params.phone.replace(/\D/g, '');
+    if (!phone || phone.length < 7) return res.json({ success: false, message: 'ফোন নম্বর সঠিক নয়' });
+
+    const allOrders = await Order.find({}, 'phone status total createdAt customerName shortId').sort({ createdAt: -1 });
+    const matched = allOrders.filter(o => {
+      const p = (o.phone || '').replace(/\D/g, '');
+      return p === phone || p.endsWith(phone) || p.includes(phone);
+    });
+
+    const total      = matched.length;
+    const delivered  = matched.filter(o => o.status === 'delivered').length;
+    const cancelled  = matched.filter(o => o.status === 'cancelled').length;
+    const pending    = matched.filter(o => o.status === 'pending').length;
+    const processing = matched.filter(o => o.status === 'processing').length;
+    const shipped    = matched.filter(o => o.status === 'shipped').length;
+
+    // "রিসিভ করেনি" = pending + cancelled
+    const notReceived  = pending + cancelled;
+    // "কনফার্ম করেছে" = delivered + shipped + processing
+    const confirmed    = delivered + shipped + processing;
+
+    const cancelRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+
+    let riskLevel = 'low';
+    if (cancelRate >= 60) riskLevel = 'high';
+    else if (cancelRate >= 30 || pending >= 2) riskLevel = 'medium';
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        confirmed,   // ওয়েবসাইটে অর্ডার কনফার্ম করেছে
+        notReceived, // অর্ডার করে রেখে দিয়েছে (রিসিভ করেনি)
+        delivered,
+        cancelled,
+        pending,
+        processing,
+        shipped,
+        cancelRate,
+        riskLevel,   // low / medium / high
+        customerName: matched[0]?.customerName || '',
+        lastOrderDate: matched[0]?.createdAt || null,
+      }
+    });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // ===== ORDER DEBUG (temporary — frontend কী পাঠাচ্ছে দেখার জন্য) =====
 app.post('/api/orders/debug', (req, res) => {
   console.log('ORDER DEBUG body:', JSON.stringify(req.body, null, 2));
@@ -653,12 +705,41 @@ app.post('/api/orders', async (req, res) => {
     order.shortId = shortId;
     await order.save();
 
+    // এই phone-এর আগের অর্ডার ইতিহাস (admin কে সতর্ক করার জন্য)
+    const cleanPhone = phone.replace(/\D/g, '');
+    const prevOrders = await Order.find({ _id: { $ne: order._id } }, 'phone status total').lean();
+    const prevMatched = prevOrders.filter(o => {
+      const p = (o.phone || '').replace(/\D/g, '');
+      return p === cleanPhone || p.endsWith(cleanPhone) || p.includes(cleanPhone);
+    });
+    const prevTotal     = prevMatched.length;
+    const prevDelivered = prevMatched.filter(o => o.status === 'delivered').length;
+    const prevCancelled = prevMatched.filter(o => o.status === 'cancelled').length;
+    const prevPending   = prevMatched.filter(o => o.status === 'pending').length;
+    const prevNotReceived = prevCancelled + prevPending;
+    const prevConfirmed   = prevDelivered + prevMatched.filter(o=>o.status==='shipped'||o.status==='processing').length;
+    const prevCancelRate  = prevTotal > 0 ? Math.round((prevCancelled / prevTotal) * 100) : 0;
+    let prevRisk = 'low';
+    if (prevCancelRate >= 60) prevRisk = 'high';
+    else if (prevCancelRate >= 30 || prevPending >= 2) prevRisk = 'medium';
+
     res.json({
       success: true,
       data:    order,
       message: 'অর্ডার সফলভাবে দেওয়া হয়েছে! আমরা শীঘ্রই যোগাযোগ করব।',
       orderId: order._id,
       shortId,
+      // এই phone-এর পূর্ববর্তী অর্ডার ইতিহাস
+      phoneHistory: {
+        previousOrders: prevTotal,
+        confirmed:      prevConfirmed,
+        notReceived:    prevNotReceived,
+        cancelled:      prevCancelled,
+        pending:        prevPending,
+        delivered:      prevDelivered,
+        cancelRate:     prevCancelRate,
+        riskLevel:      prevRisk,
+      },
     });
   } catch (e) {
     res.json({ success: false, message: e.message });
@@ -790,15 +871,21 @@ app.get('/api/admin/orders/track/:phone', adminMiddleware, async (req, res) => {
       return p === phone || p.endsWith(phone) || p.includes(phone);
     });
 
-    const total     = matched.length;
-    const delivered = matched.filter(o => o.status === 'delivered').length;
-    const cancelled = matched.filter(o => o.status === 'cancelled').length;
-    const pending   = matched.filter(o => o.status === 'pending').length;
-    const processing= matched.filter(o => o.status === 'processing').length;
-    const shipped   = matched.filter(o => o.status === 'shipped').length;
+    const total      = matched.length;
+    const delivered  = matched.filter(o => o.status === 'delivered').length;
+    const cancelled  = matched.filter(o => o.status === 'cancelled').length;
+    const pending    = matched.filter(o => o.status === 'pending').length;
+    const processing = matched.filter(o => o.status === 'processing').length;
+    const shipped    = matched.filter(o => o.status === 'shipped').length;
+
+    // "রিসিভ করেনি" = pending (এখনও নেয়নি) + cancelled (বাতিল করেছে)
     const notReceived = cancelled + pending;
-    const totalSpent = matched.filter(o=>o.status==='delivered').reduce((s,o)=>s+(o.total||0),0);
-    const cancelRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+    // "কনফার্ম করেছে" = delivered + shipped + processing (সক্রিয় বা সম্পন্ন)
+    const confirmed   = delivered + shipped + processing;
+
+    const totalSpent  = matched.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
+    const cancelRate  = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+    const notReceivedRate = total > 0 ? Math.round((notReceived / total) * 100) : 0;
 
     let riskLevel = 'low';
     if (cancelRate >= 60) riskLevel = 'high';
@@ -809,10 +896,20 @@ app.get('/api/admin/orders/track/:phone', adminMiddleware, async (req, res) => {
       data: {
         orders: matched,
         summary: {
-          customerName: matched[0]?.customerName || '',
-          phone: matched[0]?.phone || phone,
-          total, delivered, cancelled, pending, processing, shipped,
-          notReceived, totalSpent, cancelRate, riskLevel,
+          customerName:     matched[0]?.customerName || '',
+          phone:            matched[0]?.phone || phone,
+          total,
+          confirmed,         // ওয়েবসাইটে অর্ডার কনফার্ম করেছে (active/done)
+          notReceived,       // অর্ডার করে রেখে দিয়েছে / রিসিভ করেনি
+          delivered,
+          cancelled,
+          pending,
+          processing,
+          shipped,
+          totalSpent,
+          cancelRate,
+          notReceivedRate,
+          riskLevel,
         }
       }
     });
