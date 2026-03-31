@@ -464,7 +464,18 @@
       .review-grid-wrap { grid-template-columns: 1fr !important; }
       #detailRelatedGrid { grid-template-columns: repeat(2,1fr) !important; }
     }
-</style>
+
+    .related-card {
+  transition: all 0.2s ease;
+}
+.related-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+}
+.addRelatedProduct:active {
+  transform: scale(0.96);
+}
+</style> 
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased" dir="ltr">
   
@@ -3265,48 +3276,94 @@
       }
 
       function loadRelatedProducts() {
-        if (cart.length === 0) return;
+  const youMayAlsoLikeSection = document.getElementById('youMayAlsoLikeSection');
+  const container = document.getElementById('relatedProductsContainer');
+  if (!container) return;
 
-        const firstCartItem = cart[0];
-        const productSource = (window._ffhApiProducts && window._ffhApiProducts.length) ? window._ffhApiProducts : products;
-        const relatedProducts = productSource.filter(p => 
-          p.category === firstCartItem.category && 
-          p.id !== firstCartItem.id
-        ).slice(0, 4);
+  // কার্ট খালি থাকলে সেকশন লুকিয়ে ফেলো
+  if (cart.length === 0) {
+    if (youMayAlsoLikeSection) youMayAlsoLikeSection.classList.add('hidden');
+    return;
+  }
 
-        const relatedProductsContainer = document.getElementById('relatedProductsContainer');
-        if (relatedProducts.length === 0) {
-          document.getElementById('youMayAlsoLikeSection').classList.add('hidden');
-          return;
-        }
+  // প্রথম কার্ট আইটেমের ক্যাটাগরি অনুযায়ী রিলেটেড পণ্য বের করো
+  const firstCartItem = cart[0];
+  const productSource = (window._ffhApiProducts && window._ffhApiProducts.length)
+    ? window._ffhApiProducts
+    : (typeof products !== 'undefined' ? products : []);
 
-        let html = '';
-        relatedProducts.forEach(product => {
-          html += `
-            <div class="flex-shrink-0 bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition" style="width: 281px; height: 97px; display: flex; gap: 10px;">
-              <img src="${product.img}" alt="${product.name}" class="w-16 h-16 object-contain flex-shrink-0">
-              <div class="flex-1 flex flex-col justify-between min-w-0">
-                <p class="font-semibold text-gray-900 text-xs line-clamp-2">${product.name}</p>
-                <p class="text-gray-600 text-xs">৳${product.price.toLocaleString()}</p>
-                <button class="addRelatedProduct bg-orange-500 hover:bg-orange-600 text-white font-semibold py-1 px-2 rounded text-xs transition w-fit flex items-center gap-0.5" data-id="${product.id}">
-                  <span>+</span>
-                  <span>Add</span>
-                </button>
-              </div>
-            </div>
-          `;
-        });
-        relatedProductsContainer.innerHTML = html;
+  let related = productSource.filter(p =>
+    p.category === firstCartItem.category && p.id !== firstCartItem.id
+  ).slice(0, 4);
 
-        document.querySelectorAll('.addRelatedProduct').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            const product = productSource.find(p => p.id === id);
-            if (product) addToCart(product, 1);
-          });
-        });
+  // পর্যাপ্ত পণ্য না থাকলে অন্য ক্যাটাগরি থেকেও আনা যেতে পারে (অপশনাল)
+  if (related.length < 2) {
+    const others = productSource.filter(p => p.id !== firstCartItem.id).slice(0, 4);
+    related = related.concat(others).slice(0, 4);
+  }
+
+  if (related.length === 0) {
+    if (youMayAlsoLikeSection) youMayAlsoLikeSection.classList.add('hidden');
+    return;
+  }
+
+  // সেকশন দেখাও
+  if (youMayAlsoLikeSection) youMayAlsoLikeSection.classList.remove('hidden');
+
+  // HTML তৈরি
+  let html = '';
+  related.forEach(product => {
+    html += `
+      <div class="related-card flex-shrink-0 bg-white rounded-lg border border-gray-200 hover:shadow-md transition cursor-pointer" 
+           style="width: 281px; height: 97px; display: flex; gap: 10px; padding: 8px;" 
+           data-id="${product.id}" data-api-id="${product._apiId || ''}">
+        <img src="${product.img}" alt="${product.name}" class="w-16 h-16 object-contain flex-shrink-0">
+        <div class="flex-1 flex flex-col justify-between min-w-0">
+          <p class="font-semibold text-gray-900 text-xs line-clamp-2">${product.name}</p>
+          <p class="text-gray-600 text-xs">৳${product.price.toLocaleString()}</p>
+          <button class="addRelatedProduct bg-orange-500 hover:bg-orange-600 text-white font-semibold py-1 px-2 rounded text-xs transition w-fit flex items-center gap-0.5" 
+                  data-id="${product.id}" data-api-id="${product._apiId || ''}">
+            <span>+</span> <span>Add</span>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+
+  // ইভেন্ট লিস্টেনার: Add বাটনে ক্লিক
+  container.querySelectorAll('.addRelatedProduct').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const product = productSource.find(p => p.id == id || p._apiId == id);
+      if (product && typeof addToCart === 'function') {
+        addToCart(product, 1);
+      } else {
+        console.warn('Product not found for id:', id);
       }
+    });
+  });
 
+  // ইভেন্ট লিস্টেনার: পুরো কার্ডে ক্লিক (পণ্য ডিটেইল পেজে যাবে)
+  container.querySelectorAll('.related-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // Add বাটনে ক্লিক করলে ডিটেইল পেজে যাবে না
+      if (e.target.closest('.addRelatedProduct')) return;
+      const id = card.getAttribute('data-id');
+      const product = productSource.find(p => p.id == id || p._apiId == id);
+      if (product) {
+        if (typeof _ffhShowApiDetail === 'function' && window._ffhApiProducts) {
+          _ffhShowApiDetail(product);
+        } else if (typeof showProductDetailPage === 'function') {
+          showProductDetailPage(product.id);
+        } else {
+          window.location.href = `?product=${product.id}`;
+        }
+      }
+    });
+  });
+}
       function updateOrderSummary() {
         if (orderSummaryItems) {
           if (cart.length === 0) {
