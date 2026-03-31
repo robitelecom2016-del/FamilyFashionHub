@@ -402,15 +402,10 @@
     }
     .detail-main-grid {
       display: grid;
-      grid-template-columns: 280px 1fr 220px;
+      grid-template-columns: 280px 1fr 260px;
       gap: 14px;
       align-items: start;
     }
-    /* More Products scroll area custom scrollbar */
-    #relatedProductsGrid::-webkit-scrollbar { width: 4px; }
-    #relatedProductsGrid::-webkit-scrollbar-track { background: transparent; }
-    #relatedProductsGrid::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
-    #relatedProductsGrid::-webkit-scrollbar-thumb:hover { background: #f97316; }
     @media (max-width: 1024px) {
       .detail-main-grid {
         grid-template-columns: 1fr 1fr;
@@ -1142,26 +1137,15 @@
               <span style="font-size:13px;font-weight:700;color:#111827;background:#f3f4f6;padding:4px 12px;border:1px solid #d1d5db;">Family Fashion Hub</span>
             </div>
           </div>
-          <!-- ===== MORE PRODUCTS PANEL ===== -->
-          <div id="moreProductsPanel" style="background:white;border:1px solid #e5e7eb;display:flex;flex-direction:column;overflow:hidden;">
-            <!-- Header -->
-            <div style="padding:10px 13px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-              <div style="display:flex;align-items:center;gap:7px;">
-                <span style="display:inline-block;width:3px;height:16px;background:#f97316;border-radius:2px;"></span>
-                <span id="moreProductsLabel" style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.3px;">More Products</span>
-              </div>
-              <div style="display:flex;gap:5px;">
-                <button id="moreProdScrollUp" onclick="moreProductsScroll(-1)" title="উপরে" style="width:26px;height:26px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:background 0.2s;line-height:1;" onmouseover="this.style.background='#f97316'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&#8593;</button>
-                <button id="moreProdScrollDown" onclick="moreProductsScroll(1)" title="নিচে" style="width:26px;height:26px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:background 0.2s;line-height:1;" onmouseover="this.style.background='#f97316'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&#8595;</button>
+          <div style="background:white;border:1px solid #e5e7eb;">
+            <div style="padding:11px 14px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:14px;font-weight:700;color:#111827;">More Products</span>
+              <div style="display:flex;gap:4px;">
+                <button style="width:24px;height:24px;border:1px solid #d1d5db;background:white;cursor:pointer;font-size:12px;color:#374151;">&lt;</button>
+                <button style="width:24px;height:24px;border:1px solid #d1d5db;background:white;cursor:pointer;font-size:12px;color:#374151;">&gt;</button>
               </div>
             </div>
-            <!-- Scroll Area — fixed height -->
-            <div id="relatedProductsGrid" style="height:397.45px;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:#e5e7eb transparent;flex:1;"></div>
-            <!-- Bottom fade + count indicator -->
-            <div id="moreProductsCountBar" style="padding:5px 13px;background:#fafafa;border-top:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-              <span id="moreProductsCount" style="font-size:11px;color:#9ca3af;"></span>
-              <span style="font-size:10px;color:#d1d5db;">↑↓ স্ক্রল করুন</span>
-            </div>
+            <div id="relatedProductsGrid"></div>
           </div>
         </div>
         <div style="margin-top:20px;background:white;border:1px solid #e5e7eb;">
@@ -2920,72 +2904,33 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
       };
 
       function showRelatedProducts(category, currentId) {
-        const related = products.filter(p => p.category === category && p.id !== currentId);
-        const allRelated = related.length > 0 ? related : products.filter(p => p.id !== currentId).slice(0, 15);
-        const display = allRelated.slice(0, 20);
-
+        const related = products.filter(p => p.category === category && p.id !== currentId).slice(0, 8);
+        
         relatedProductsGrid.innerHTML = '';
-
-        // count bar আপডেট
-        const countEl = document.getElementById('moreProductsCount');
-        if (countEl) countEl.textContent = display.length > 0 ? `${display.length}টি পণ্য` : '';
-
-        // arrow visibility আপডেট
-        _updateMoreProductsArrows();
-
-        if (display.length === 0) {
-          relatedProductsGrid.innerHTML = '<div style="padding:30px 16px;text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">😔</div><p style="color:#9ca3af;font-size:13px;">কোনো পণ্য নেই</p></div>';
+        if (related.length === 0) {
+          relatedProductsGrid.innerHTML = '<p style="padding:16px;color:#9ca3af;font-size:13px;text-align:center;">কোনো পণ্য নেই</p>';
           return;
         }
-
-        display.forEach((p, idx) => {
-          const savePct = p.oldPrice > p.price ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : 0;
+        
+        related.forEach(p => {
           const item = document.createElement('div');
           item.dataset.id = p.id;
-          item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;background:white;transition:background 0.15s;position:relative;';
+          item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;background:white;transition:background 0.15s;';
           item.onmouseover = () => item.style.background = '#fff7ed';
           item.onmouseout = () => item.style.background = 'white';
           item.innerHTML = `
-            <div style="position:relative;flex-shrink:0;">
-              <img src="${p.img}" style="width:54px;height:54px;object-fit:cover;background:#f9fafb;border:1px solid #f3f4f6;border-radius:4px;" onerror="this.style.background='#f3f4f6'">
-              ${savePct > 0 ? `<div style="position:absolute;top:-4px;left:-4px;background:#ef4444;color:white;font-size:8px;font-weight:800;padding:2px 4px;border-radius:2px;line-height:1;">-${savePct}%</div>` : ''}
-            </div>
+            <img src="${p.img}" style="width:52px;height:52px;object-fit:contain;background:#f9fafb;flex-shrink:0;border:1px solid #f3f4f6;">
             <div style="flex:1;min-width:0;">
-              <div style="font-size:11.5px;font-weight:600;color:#111827;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px;">${p.name}</div>
-              <div style="display:flex;align-items:baseline;gap:5px;">
-                <span style="font-size:13px;font-weight:800;color:#f97316;">৳${p.price}</span>
-                ${p.oldPrice > p.price ? `<span style="font-size:10px;color:#9ca3af;text-decoration:line-through;">৳${p.oldPrice}</span>` : ''}
+              <div style="font-size:12px;font-weight:600;color:#111827;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.name}</div>
+              <div style="margin-top:3px;display:flex;align-items:baseline;gap:5px;">
+                <span style="font-size:13px;font-weight:700;color:#f97316;">৳${p.price}</span>
+                <span style="font-size:11px;color:#9ca3af;text-decoration:line-through;">৳${p.oldPrice}</span>
               </div>
             </div>
-            <div style="flex-shrink:0;color:#d1d5db;font-size:14px;">›</div>
           `;
           item.addEventListener('click', () => showProductDetailPage(p.id));
           relatedProductsGrid.appendChild(item);
         });
-
-        // scroll event — arrow state
-        relatedProductsGrid.addEventListener('scroll', _updateMoreProductsArrows, { passive: true });
-      }
-
-      // Arrow scroll ফাংশন
-      window.moreProductsScroll = function(dir) {
-        const grid = document.getElementById('relatedProductsGrid');
-        if (!grid) return;
-        grid.scrollBy({ top: dir * 180, behavior: 'smooth' });
-        setTimeout(_updateMoreProductsArrows, 350);
-      };
-
-      function _updateMoreProductsArrows() {
-        const grid = document.getElementById('relatedProductsGrid');
-        const upBtn = document.getElementById('moreProdScrollUp');
-        const downBtn = document.getElementById('moreProdScrollDown');
-        if (!grid || !upBtn || !downBtn) return;
-        const atTop = grid.scrollTop <= 4;
-        const atBottom = grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 4;
-        upBtn.style.opacity = atTop ? '0.35' : '1';
-        upBtn.style.pointerEvents = atTop ? 'none' : 'auto';
-        downBtn.style.opacity = atBottom ? '0.35' : '1';
-        downBtn.style.pointerEvents = atBottom ? 'none' : 'auto';
       }
 
       function showBottomRelatedProducts(category, currentId) {
@@ -4344,49 +4289,29 @@ function _ffhShowApiDetail(p) {
   var allProductsList = (window._ffhApiProducts && window._ffhApiProducts.length) ? window._ffhApiProducts : (typeof products !== 'undefined' ? products : []);
   var related = allProductsList.filter(function(item) {
     return item.category === p.category && item.id !== p.id;
-  });
-  // ক্যাটাগরিতে কিছু না থাকলে সব পণ্য থেকে নাও
-  if (related.length === 0) {
-    related = allProductsList.filter(function(item) { return item.id !== p.id; });
-  }
-  related = related.slice(0, 20);
+  }).slice(0, 8);
 
   // সাইডবারের "More Products" কলাম
   var sidebarGrid = document.getElementById('relatedProductsGrid');
   if (sidebarGrid) {
-    var countEl2 = document.getElementById('moreProductsCount');
-    if (countEl2) countEl2.textContent = related.length > 0 ? related.length + 'টি পণ্য' : '';
     if (related.length === 0) {
-      sidebarGrid.innerHTML = '<div style="padding:30px 16px;text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">😔</div><p style="color:#9ca3af;font-size:13px;">কোনো সম্পর্কিত পণ্য নেই</p></div>';
+      sidebarGrid.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:13px;text-align:center;">কোনো সম্পর্কিত পণ্য নেই</div>';
     } else {
       sidebarGrid.innerHTML = '';
       related.forEach(function(rp) {
-        var savePct2 = (rp.oldPrice > rp.price) ? Math.round(((rp.oldPrice - rp.price) / rp.oldPrice) * 100) : 0;
         var itemDiv = document.createElement('div');
         itemDiv.dataset.id = rp.id;
-        itemDiv.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;background:white;transition:background 0.15s;position:relative;';
+        itemDiv.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;background:white;transition:background 0.15s;';
         itemDiv.onmouseover = function() { this.style.background = '#fff7ed'; };
         itemDiv.onmouseout = function() { this.style.background = 'white'; };
-        itemDiv.innerHTML = '<div style="position:relative;flex-shrink:0;">' +
-          '<img src="'+rp.img+'" style="width:54px;height:54px;object-fit:cover;background:#f9fafb;border:1px solid #f3f4f6;border-radius:4px;" onerror="this.style.background=\'#f3f4f6\'">' +
-          (savePct2 > 0 ? '<div style="position:absolute;top:-4px;left:-4px;background:#ef4444;color:white;font-size:8px;font-weight:800;padding:2px 4px;border-radius:2px;line-height:1;">-'+savePct2+'%</div>' : '') +
-          '</div>' +
-          '<div style="flex:1;min-width:0;"><div style="font-size:11.5px;font-weight:600;color:#111827;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px;">'+rp.name+'</div>' +
-          '<div style="display:flex;align-items:baseline;gap:5px;"><span style="font-size:13px;font-weight:800;color:#f97316;">৳'+rp.price+'</span>' +
-          (rp.oldPrice && rp.oldPrice > rp.price ? '<span style="font-size:10px;color:#9ca3af;text-decoration:line-through;">৳'+rp.oldPrice+'</span>' : '')+'</div></div>' +
-          '<div style="flex-shrink:0;color:#d1d5db;font-size:14px;">›</div>';
+        itemDiv.innerHTML = '<img src="'+rp.img+'" style="width:52px;height:52px;object-fit:contain;background:#f9fafb;flex-shrink:0;border:1px solid #f3f4f6;">' +
+          '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:#111827;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+rp.name+'</div>' +
+          '<div style="margin-top:3px;display:flex;align-items:baseline;gap:5px;"><span style="font-size:13px;font-weight:700;color:#f97316;">৳'+rp.price+'</span>' +
+          (rp.oldPrice ? '<span style="font-size:11px;color:#9ca3af;text-decoration:line-through;">৳'+rp.oldPrice+'</span>' : '')+'</div></div>';
         itemDiv.addEventListener('click', function() { _ffhShowApiDetail(rp); });
         sidebarGrid.appendChild(itemDiv);
       });
-      // scroll listener
-      sidebarGrid.addEventListener('scroll', function() {
-        if (typeof _updateMoreProductsArrows === 'function') _updateMoreProductsArrows();
-      }, { passive: true });
     }
-    // arrow state init
-    setTimeout(function() {
-      if (typeof _updateMoreProductsArrows === 'function') _updateMoreProductsArrows();
-    }, 100);
   }
 
   // নিচের "Related Products" গ্রিড
