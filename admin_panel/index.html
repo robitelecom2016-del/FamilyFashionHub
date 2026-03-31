@@ -720,7 +720,32 @@ tr:hover td { background: var(--bg); }
               </div>
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">"আরো পণ্য" কলামের শিরোনাম</label>
-                <input type="text" class="form-control form-control-sm" id="ly_moreProductsTitle" placeholder="More Products">
+                <input type="text" class="form-control form-control-sm" id="ly_moreProductsTitle" placeholder="More Products" oninput="layoutMoreProductsPreview()">
+              </div>
+
+              <!-- More Products Height & Scroll Controls -->
+              <div style="margin-top:14px;padding:14px;background:var(--primary-light);border-radius:10px;border:1px solid #c4b5fd;">
+                <p style="font-size:12px;font-weight:700;color:var(--primary-dark);margin-bottom:10px;"><i class="fas fa-ruler-vertical" style="margin-right:6px;"></i> "More Products" উচ্চতা ও স্ক্রল সেটিংস</p>
+
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label class="form-label" style="font-size:12px;">কলামের উচ্চতা (px) <span style="color:var(--primary);font-weight:700;">— ডিফল্ট: 397.45px</span></label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="number" class="form-control form-control-sm" id="ly_moreProductsHeight" placeholder="397.45" step="0.01" min="200" max="1000" oninput="layoutMoreProductsPreview()" style="flex:1;">
+                    <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">px</span>
+                  </div>
+                  <small style="color:var(--text-muted);font-size:11px;">এই উচ্চতার বাইরে কন্টেন্ট hidden থাকবে — স্ক্রল/arrow দিয়ে দেখা যাবে।</small>
+                </div>
+
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary-dark);">
+                  <input type="checkbox" id="ly_moreProductsScroll" onchange="layoutMoreProductsPreview()">
+                  Arrow বাটন দিয়ে স্ক্রল চালু রাখুন (↑ ↓)
+                </label>
+                <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:4px;">চালু থাকলে "More Products" কলামে উপর-নিচ arrow বাটন দেখাবে।</small>
+
+                <!-- Mini Preview -->
+                <div style="margin-top:12px;" id="moreProductsMiniPreview">
+                  <!-- JS দ্বারা আপডেট হবে -->
+                </div>
               </div>
             </div>
           </div>
@@ -2679,6 +2704,7 @@ const layoutDefaults = {
   showCareInstructions: true, showStockStatus: true, showMoreProducts: true,
   showReviewsTab: true,
   moreProductsTitle: 'More Products', brandLabel: 'Family Fashion Hub',
+  moreProductsHeight: 397.45, moreProductsScroll: true,
 };
 
 // সার্ভার থেকে layout লোড করে ফর্মে বসাও
@@ -2725,6 +2751,10 @@ function _fillLayoutForm(ly) {
   set('ly_showReviewsTab', ly.showReviewsTab);
   set('ly_brandLabel', ly.brandLabel);
   set('ly_moreProductsTitle', ly.moreProductsTitle);
+  set('ly_moreProductsHeight', ly.moreProductsHeight ?? 397.45);
+  set('ly_moreProductsScroll', ly.moreProductsScroll !== false ? true : false);
+  // preview রিফ্রেশ
+  setTimeout(layoutMoreProductsPreview, 0);
 }
 
 function _readLayoutForm() {
@@ -2758,6 +2788,8 @@ function _readLayoutForm() {
     showReviewsTab: get('ly_showReviewsTab'),
     brandLabel: get('ly_brandLabel') || 'Family Fashion Hub',
     moreProductsTitle: get('ly_moreProductsTitle') || 'More Products',
+    moreProductsHeight: parseFloat(get('ly_moreProductsHeight')) || 397.45,
+    moreProductsScroll: get('ly_moreProductsScroll'),
   };
 }
 
@@ -2776,6 +2808,55 @@ function layoutLivePreview() {
   } else {
     box.innerHTML = btns.join('');
   }
+  layoutMoreProductsPreview();
+}
+
+// More Products হাইট ও স্ক্রল মিনি-প্রিভিউ
+function layoutMoreProductsPreview() {
+  const box = document.getElementById('moreProductsMiniPreview');
+  if (!box) return;
+  const heightEl = document.getElementById('ly_moreProductsHeight');
+  const scrollEl = document.getElementById('ly_moreProductsScroll');
+  const titleEl = document.getElementById('ly_moreProductsTitle');
+  const height = parseFloat(heightEl && heightEl.value) || 397.45;
+  const scrollOn = scrollEl ? scrollEl.checked : true;
+  const title = (titleEl && titleEl.value.trim()) || 'More Products';
+
+  // preview উচ্চতা scaled down করা (max 140px দেখাবে)
+  const previewH = Math.min(140, Math.round(height * 0.35));
+
+  box.innerHTML = `
+    <div style="font-size:11px;color:var(--primary-dark);font-weight:600;margin-bottom:6px;">📐 ফ্রন্টএন্ড প্রিভিউ (scaled):</div>
+    <div style="display:flex;align-items:flex-start;gap:8px;">
+      <div style="flex:1;border:2px dashed #a78bfa;border-radius:8px;overflow:hidden;position:relative;background:#fff;height:${previewH}px;">
+        <div style="background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;">
+          <span><i class="fas fa-th-list" style="margin-right:5px;"></i>${title}</span>
+          <span style="font-size:9px;opacity:0.8;">${height}px</span>
+        </div>
+        <div style="padding:6px 8px;">
+          ${[1,2,3,4].map(i=>`
+            <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f3f4f6;">
+              <div style="width:28px;height:28px;background:#ede9fe;border-radius:5px;flex-shrink:0;"></div>
+              <div>
+                <div style="height:8px;background:#e5e7eb;border-radius:3px;width:80px;margin-bottom:3px;"></div>
+                <div style="height:7px;background:#f3f4f6;border-radius:3px;width:50px;"></div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:20px;background:linear-gradient(transparent,rgba(255,255,255,0.9));pointer-events:none;"></div>
+      </div>
+      ${scrollOn ? `
+      <div style="display:flex;flex-direction:column;gap:5px;justify-content:center;align-self:center;">
+        <button style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:default;font-size:12px;display:flex;align-items:center;justify-content:center;" title="উপরে স্ক্রল">&#8593;</button>
+        <button style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:default;font-size:12px;display:flex;align-items:center;justify-content:center;" title="নিচে স্ক্রল">&#8595;</button>
+      </div>` : `
+      <div style="font-size:10px;color:#9ca3af;width:36px;text-align:center;align-self:center;">Arrow<br>বন্ধ</div>`}
+    </div>
+    <div style="margin-top:6px;font-size:10px;color:var(--text-muted);">
+      ${scrollOn ? '✅ Arrow বাটন চালু — অতিরিক্ত পণ্য দেখা যাবে' : '⚠️ Arrow বাটন বন্ধ — শুধু প্রথম অংশ দেখাবে'}
+      &nbsp;|&nbsp; উচ্চতা: <b>${height}px</b>
+    </div>
+  `;
 }
 
 // সার্ভারে সেভ করো
