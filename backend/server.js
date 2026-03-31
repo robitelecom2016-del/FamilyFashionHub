@@ -646,6 +646,63 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// ===== PUBLIC ORDER TRACKING =====
+// যে কেউ Order ID দিয়ে অর্ডার ট্র্যাক করতে পারবে
+// লগইন করা user হলে full phone দেখাবে, না হলে masked phone দেখাবে
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.json({ success: false, message: 'অর্ডারটি পাওয়া যায়নি। Order ID টি সঠিক কিনা যাচাই করুন।' });
+
+    // Token থাকলে লগইন check করো
+    let isLoggedIn = false;
+    const token = (req.headers.authorization || '').split(' ')[1];
+    if (token) {
+      try {
+        jwt.verify(token, JWT_SECRET);
+        isLoggedIn = true;
+      } catch { isLoggedIn = false; }
+    }
+
+    // phone masking — প্রথম ৪ সংখ্যা দেখাবে বাকী * দিয়ে ঢাকবে
+    const rawPhone = order.phone || '';
+    const maskedPhone = isLoggedIn
+      ? rawPhone
+      : rawPhone.length > 4
+        ? rawPhone.slice(0, 4) + '*'.repeat(rawPhone.length - 4)
+        : rawPhone;
+
+    const statusLabels = {
+      pending:    { label: 'অপেক্ষমাণ',    color: '#f59e0b', icon: '🕐' },
+      processing: { label: 'প্রক্রিয়াধীন', color: '#3b82f6', icon: '⚙️' },
+      shipped:    { label: 'পাঠানো হয়েছে', color: '#8b5cf6', icon: '🚚' },
+      delivered:  { label: 'ডেলিভারি হয়েছে', color: '#10b981', icon: '✅' },
+      cancelled:  { label: 'বাতিল',         color: '#ef4444', icon: '❌' },
+    };
+
+    res.json({
+      success: true,
+      data: {
+        _id:          order._id,
+        customerName: order.customerName,
+        phone:        maskedPhone,
+        address:      order.address,
+        deliveryArea: order.deliveryArea,
+        items:        order.items,
+        total:        order.total,
+        subtotal:     order.subtotal,
+        status:       order.status,
+        statusInfo:   statusLabels[order.status] || { label: order.status, color: '#6b7280', icon: '📦' },
+        note:         order.note,
+        createdAt:    order.createdAt,
+        isLoggedIn,
+      },
+    });
+  } catch (e) {
+    res.json({ success: false, message: 'Invalid Order ID ফরম্যাট।' });
+  }
+});
+
 app.get('/api/admin/orders', adminMiddleware, async (req, res) => {
   try {
     const { status } = req.query;

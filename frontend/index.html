@@ -213,6 +213,7 @@
     .quick-add-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      #trackOrderPage { margin-top: 56px !important; }
     }
     @media (min-width: 768px) {
       #homePage { margin-top: 120px !important; }
@@ -222,6 +223,7 @@
       #loginPage { margin-top: 120px !important; }
       #registerPage { margin-top: 120px !important; }
       #dashboardPage { margin-top: 120px !important; }
+      #trackOrderPage { margin-top: 120px !important; }
     }
     @media (max-width: 767px) {
       #homePage { margin-top: 56px !important; }
@@ -231,6 +233,7 @@
       #loginPage { margin-top: 56px !important; }
       #registerPage { margin-top: 56px !important; }
       #dashboardPage { margin-top: 56px !important; }
+      #trackOrderPage { margin-top: 56px !important; }
     }
     .slider-dot { transition: width 0.2s; }
     #sliderContainer {
@@ -525,7 +528,7 @@
             </div>
           </div>
           <div class="hidden md:flex items-center gap-6">
-            <div class="text-center text-sm cursor-pointer hover:text-orange-600 transition">
+            <div class="text-center text-sm cursor-pointer hover:text-orange-600 transition" onclick="showTrackOrderPage()">
               <i class="fas fa-map-pin text-lg text-gray-700"></i>
               <p class="text-xs">Track Order</p>
             </div>
@@ -1327,6 +1330,95 @@
 
     </div>
 
+    <!-- ===== TRACK ORDER PAGE ===== -->
+    <div id="trackOrderPage" class="detail-page" style="margin-top:56px;width:100%;background:#f3f4f6;min-height:80vh;">
+      <style>
+        .track-step { display:flex; align-items:flex-start; gap:14px; position:relative; }
+        .track-step:not(:last-child)::after {
+          content:''; position:absolute; left:19px; top:40px;
+          width:2px; height:calc(100% + 12px);
+          background:#e5e7eb;
+        }
+        .track-step.done::after { background:#10b981; }
+        .track-dot {
+          width:40px; height:40px; border-radius:50%;
+          display:flex; align-items:center; justify-content:center;
+          font-size:16px; flex-shrink:0; border:2px solid #e5e7eb;
+          background:white; color:#9ca3af; position:relative; z-index:1;
+        }
+        .track-dot.done { background:#10b981; border-color:#10b981; color:white; }
+        .track-dot.active { background:#f97316; border-color:#f97316; color:white; box-shadow:0 0 0 4px rgba(249,115,22,0.2); }
+        .track-dot.cancelled { background:#ef4444; border-color:#ef4444; color:white; }
+        .track-item-card { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; display:flex; align-items:center; gap:12px; padding:12px 14px; }
+        @keyframes trackPulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+        .track-loading { animation:trackPulse 1.4s infinite; }
+        @media (max-width:600px) {
+          #trackSearchRow { flex-direction:column !important; }
+          #trackSearchRow input { min-width:unset !important; }
+          #trackCustomerGrid { grid-template-columns:1fr !important; }
+        }
+      </style>
+      <div style="max-width:820px;margin:0 auto;padding:28px 16px 56px;">
+
+        <!-- Breadcrumb -->
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#6b7280;margin-bottom:24px;flex-wrap:wrap;">
+          <a href="#" onclick="event.preventDefault();goToHome();" style="color:#374151;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:4px;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#374151'">
+            <i class="fas fa-home" style="font-size:12px;"></i> Home
+          </a>
+          <span style="color:#d1d5db;">›</span>
+          <span style="color:#f97316;font-weight:600;">Track Order</span>
+        </div>
+
+        <!-- Hero Search Box -->
+        <div style="background:white;border-radius:20px;padding:32px 28px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="width:68px;height:68px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 6px 20px rgba(249,115,22,0.35);">
+              <i class="fas fa-shipping-fast" style="color:white;font-size:26px;"></i>
+            </div>
+            <h1 style="font-size:1.5rem;font-weight:800;color:#111827;margin:0 0 6px;">অর্ডার ট্র্যাক করুন</h1>
+            <p style="font-size:13px;color:#6b7280;margin:0;">আপনার অর্ডার আইডি দিয়ে সর্বশেষ অবস্থা জানুন</p>
+          </div>
+          <div id="trackSearchRow" style="display:flex;gap:10px;flex-wrap:wrap;max-width:580px;margin:0 auto;">
+            <input type="text" id="trackOrderInput"
+              placeholder="অর্ডার আইডি লিখুন (যেমন: 6876abc123...)"
+              style="flex:1;min-width:200px;border:2px solid #e5e7eb;border-radius:10px;padding:13px 16px;font-size:14px;outline:none;font-family:inherit;transition:border-color 0.2s;"
+              onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'"
+              onkeydown="if(event.key==='Enter') trackOrderSearch()">
+            <button onclick="trackOrderSearch()" id="trackSearchBtn"
+              style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;padding:13px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:opacity 0.2s;box-shadow:0 4px 12px rgba(249,115,22,0.3);"
+              onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <i class="fas fa-search" style="margin-right:6px;"></i>ট্র্যাক করুন
+            </button>
+          </div>
+          <div id="trackOrderError" style="display:none;margin-top:12px;color:#ef4444;font-size:13px;font-weight:500;text-align:center;"></div>
+          <p style="font-size:12px;color:#9ca3af;margin:12px 0 0;text-align:center;">
+            💡 অর্ডার সফল হওয়ার পর confirmation popup-এ Order ID পাওয়া যায়
+          </p>
+        </div>
+
+        <!-- Result Area -->
+        <div id="trackOrderResult" style="display:none;"></div>
+
+        <!-- Info Tips Card -->
+        <div style="background:white;border-radius:14px;padding:20px 24px;box-shadow:0 2px 10px rgba(0,0,0,0.05);border-left:4px solid #f97316;">
+          <h4 style="font-size:14px;font-weight:700;color:#111827;margin:0 0 12px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-lightbulb" style="color:#f97316;"></i> অর্ডার আইডি কোথায় পাবেন?
+          </h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:#fff7ed;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;">
+              <strong>✅ Success Popup</strong><br>অর্ডার দেওয়ার পর সাথে সাথে দেখা যায়
+            </div>
+            <div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;font-size:12px;color:#166534;">
+              <strong>💬 WhatsApp / SMS</strong><br>কনফার্মেশন মেসেজে Order ID থাকে
+            </div>
+          </div>
+          <p style="font-size:12px;color:#6b7280;margin:10px 0 0;">আইডি না পেলে আমাদের সাথে সরাসরি যোগাযোগ করুন।</p>
+        </div>
+
+      </div>
+    </div>
+    <!-- ===== END TRACK ORDER PAGE ===== -->
+
     <div id="signInBreadcrumbPage" class="detail-page" style="margin-top:120px;width:100%;background:#fff;min-height:60vh;">
       <div class="mx-auto px-3 md:px-6 py-8" style="max-width:1200px;">
         <div style="display:flex;align-items:center;gap:8px;font-size:15px;color:#374151;margin-bottom:40px;">
@@ -1576,6 +1668,8 @@
       </div>
     </div>
 
+    <!-- ===== END TRACK ORDER PAGE ===== -->
+
     <section id="customerReviewSection" style="width:100%;background:#faf8f5;padding:60px 0 50px;">
       <div style="max-width:1200px;margin:0 auto;padding:0 20px;">
         <div style="text-align:center;margin-bottom:36px;">
@@ -1670,7 +1764,7 @@
       <div class="mx-auto px-4 md:px-6" style="max-width:1200px;">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
           <div><h3 class="font-bold text-lg text-white">👗 Family Fashion Hub</h3><p class="text-gray-400 mt-1 text-sm">Style for Every Family Moment</p></div>
-          <div><h4 class="font-semibold text-white">Customer Service</h4><ul class="space-y-1 mt-2 text-gray-400"><li class="hover:text-orange-400 cursor-pointer">Contact Us</li><li class="hover:text-orange-400 cursor-pointer">Returns</li><li class="hover:text-orange-400 cursor-pointer">Track Order</li></ul></div>
+          <div><h4 class="font-semibold text-white">Customer Service</h4><ul class="space-y-1 mt-2 text-gray-400"><li class="hover:text-orange-400 cursor-pointer">Contact Us</li><li class="hover:text-orange-400 cursor-pointer">Returns</li><li class="hover:text-orange-400 cursor-pointer" onclick="showTrackOrderPage()">Track Order</li></ul></div>
           <div><h4 class="font-semibold text-white">About Us</h4><ul class="space-y-1 mt-2 text-gray-400"><li class="hover:text-orange-400 cursor-pointer">Blog</li><li class="hover:text-orange-400 cursor-pointer">Career</li><li class="hover:text-orange-400 cursor-pointer">Terms & Conditions</li></ul></div>
           <div><h4 class="font-semibold text-white">Follow Us</h4><div class="flex gap-3 mt-2 text-xl"><i class="fab fa-facebook hover:text-orange-400 cursor-pointer"></i><i class="fab fa-instagram hover:text-orange-400 cursor-pointer"></i><i class="fab fa-twitter hover:text-orange-400 cursor-pointer"></i></div></div>
         </div>
@@ -1858,7 +1952,7 @@
         detailPage.classList.remove('active'); detailPage.classList.add('detail-page');
         const _cp = document.getElementById('categoryPage');
         if (_cp) { _cp.classList.remove('active'); _cp.classList.add('detail-page'); }
-        const ids = ['loginPage','registerPage','accountInfoPage','myOrdersPage','myReviewsPage','aboutUsPage','signInBreadcrumbPage'];
+        const ids = ['loginPage','registerPage','accountInfoPage','myOrdersPage','myReviewsPage','aboutUsPage','signInBreadcrumbPage','trackOrderPage'];
         ids.forEach(id => { const el = document.getElementById(id); if(el){el.classList.remove('active');el.classList.add('detail-page');} });
         const crs = document.getElementById('customerReviewSection');
         if (crs) crs.style.display = '';
@@ -2556,6 +2650,8 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         if (acp) { acp.classList.remove('active'); acp.classList.add('detail-page'); }
         const cp = document.getElementById('categoryPage');
         if (cp) { cp.classList.remove('active'); cp.classList.add('detail-page'); }
+        const tp = document.getElementById('trackOrderPage');
+        if (tp) { tp.classList.remove('active'); tp.classList.add('detail-page'); }
         const crs = document.getElementById('customerReviewSection');
         if (crs) crs.style.display = 'none';
         const mf = document.getElementById('mainFooter');
@@ -4490,6 +4586,251 @@ document.addEventListener('DOMContentLoaded', () => {
       return null;
     };
   })();
+</script>
+
+<!-- ===== TRACK ORDER SCRIPT ===== -->
+<script>
+(function() {
+
+  // সব পেজ লুকিয়ে Track Order পেজ দেখাবে
+  window.showTrackOrderPage = function() {
+    var pages = ['homePage','categoryPage','productDetailPage','loginPage','registerPage',
+                 'dashboardPage','signInBreadcrumbPage','allCategoriesPage','aboutUsPage'];
+    pages.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (id === 'homePage') { el.classList.add('hidden'); }
+      else { el.classList.remove('active'); el.classList.add('detail-page'); }
+    });
+    var sections = ['customerReviewSection','mainFooter','allProductsSection','ourCollectionSection','organicFeatureSection'];
+    sections.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    var tp = document.getElementById('trackOrderPage');
+    if (tp) { tp.classList.remove('detail-page'); tp.classList.add('active'); }
+    // Result রিসেট
+    var res = document.getElementById('trackOrderResult');
+    if (res) res.style.display = 'none';
+    var inp = document.getElementById('trackOrderInput');
+    if (inp) inp.value = '';
+    var err = document.getElementById('trackOrderError');
+    if (err) err.style.display = 'none';
+    if (typeof setMobileNavActive === 'function') setMobileNavActive('');
+    window.scrollTo({ top: 0 });
+  };
+
+  // Track Order সার্চ
+  window.trackOrderSearch = async function() {
+    var inp = document.getElementById('trackOrderInput');
+    var errEl = document.getElementById('trackOrderError');
+    var resultEl = document.getElementById('trackOrderResult');
+    var btn = document.getElementById('trackSearchBtn');
+    var orderId = (inp ? inp.value.trim() : '');
+
+    if (errEl) errEl.style.display = 'none';
+
+    if (!orderId) {
+      if (errEl) { errEl.textContent = '⚠️ অর্ডার আইডি দিন'; errEl.style.display = 'block'; }
+      if (inp) inp.focus();
+      return;
+    }
+
+    // Loading state
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>খোঁজা হচ্ছে...'; }
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<div style="background:white;border-radius:16px;border:1px solid #e5e7eb;padding:40px;text-align:center;"><div class="track-loading" style="font-size:2.5rem;">📦</div><p style="color:#6b7280;margin-top:12px;font-size:14px;">অর্ডার খোঁজা হচ্ছে...</p></div>';
+    }
+
+    try {
+      var API = window.FFH_API || 'https://familyfashionhub.onrender.com/api';
+      var token = localStorage.getItem('ffh_user_token') || '';
+      var headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      var res = await fetch(API + '/orders/' + encodeURIComponent(orderId), { headers: headers });
+      var data = await res.json();
+
+      if (!data.success) {
+        if (errEl) { errEl.textContent = '❌ ' + (data.message || 'অর্ডার পাওয়া যায়নি'); errEl.style.display = 'block'; }
+        if (resultEl) resultEl.style.display = 'none';
+        return;
+      }
+
+      renderTrackResult(data.data);
+
+    } catch(e) {
+      if (errEl) { errEl.textContent = '❌ সার্ভারের সাথে সংযোগ হচ্ছে না। আবার চেষ্টা করুন।'; errEl.style.display = 'block'; }
+      if (resultEl) resultEl.style.display = 'none';
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i>ট্র্যাক করুন'; }
+    }
+  };
+
+  function renderTrackResult(order) {
+    var resultEl = document.getElementById('trackOrderResult');
+    if (!resultEl) return;
+
+    var statusSteps = [
+      { key: 'pending',    label: 'অর্ডার প্রাপ্তি',    icon: '📝', desc: 'আপনার অর্ডার আমরা পেয়েছি' },
+      { key: 'processing', label: 'প্রক্রিয়াধীন',       icon: '🔄', desc: 'অর্ডার প্রস্তুত করা হচ্ছে' },
+      { key: 'shipped',    label: 'পাঠানো হয়েছে',       icon: '🚚', desc: 'কুরিয়ারে পাঠানো হয়েছে' },
+      { key: 'delivered',  label: 'ডেলিভারি সম্পন্ন',   icon: '✅', desc: 'পণ্য ডেলিভারি হয়েছে' },
+    ];
+
+    var statusOrder = ['pending','processing','shipped','delivered'];
+    var isCancelled = order.status === 'cancelled';
+    var currentIdx  = statusOrder.indexOf(order.status);
+
+    // স্ট্যাটাস badge color
+    var sInfo = order.statusInfo || {};
+    var statusColor = sInfo.color || '#6b7280';
+    var statusLabel = sInfo.label || order.status;
+    var statusIcon  = sInfo.icon  || '📦';
+
+    // তারিখ ফরম্যাট
+    var orderDate = '';
+    if (order.createdAt) {
+      var d = new Date(order.createdAt);
+      orderDate = d.toLocaleDateString('bn-BD', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
+    // পণ্য items HTML
+    var itemsHtml = (order.items || []).map(function(item) {
+      return '<div class="track-item-card">'
+        + '<img src="' + (item.img || '') + '" alt="' + (item.name||'') + '" style="width:60px;height:60px;object-fit:cover;border-radius:8px;background:#f3f4f6;flex-shrink:0;" onerror="this.src=\'\';this.style.background=\'#f3f4f6\';">'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (item.name||'পণ্য') + '</div>'
+        + '<div style="font-size:12px;color:#6b7280;margin-top:2px;">পরিমাণ: <strong>' + (item.quantity||1) + ' টি</strong></div>'
+        + '</div>'
+        + '<div style="text-align:right;flex-shrink:0;">'
+        + '<div style="font-size:14px;font-weight:700;color:#f97316;">৳' + ((item.price||0) * (item.quantity||1)) + '</div>'
+        + '<div style="font-size:11px;color:#9ca3af;">৳' + (item.price||0) + ' × ' + (item.quantity||1) + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    // স্টেপার HTML
+    var stepperHtml = '';
+    if (isCancelled) {
+      stepperHtml = '<div class="track-step" style="margin-bottom:16px;">'
+        + '<div class="track-dot cancelled">❌</div>'
+        + '<div style="padding-top:6px;">'
+        + '<div style="font-size:14px;font-weight:700;color:#ef4444;">অর্ডার বাতিল করা হয়েছে</div>'
+        + '<div style="font-size:12px;color:#6b7280;margin-top:2px;">এই অর্ডারটি বাতিল হয়েছে। বিস্তারিত জানতে আমাদের সাথে যোগাযোগ করুন।</div>'
+        + '</div></div>';
+    } else {
+      stepperHtml = statusSteps.map(function(step, idx) {
+        var isDone   = idx < currentIdx;
+        var isActive = idx === currentIdx;
+        var dotClass = isDone ? 'done' : (isActive ? 'active' : '');
+        var stepClass = isDone ? 'done' : '';
+        var labelColor = isActive ? '#f97316' : (isDone ? '#10b981' : '#9ca3af');
+        var descColor  = isActive ? '#374151' : (isDone ? '#6b7280' : '#d1d5db');
+        return '<div class="track-step ' + stepClass + '" style="margin-bottom:20px;">'
+          + '<div class="track-dot ' + dotClass + '">' + (isDone ? '✓' : step.icon) + '</div>'
+          + '<div style="padding-top:6px;">'
+          + '<div style="font-size:14px;font-weight:700;color:' + labelColor + ';">' + step.label + (isActive ? ' ← বর্তমান অবস্থা' : '') + '</div>'
+          + '<div style="font-size:12px;color:' + descColor + ';margin-top:2px;">' + step.desc + '</div>'
+          + '</div></div>';
+      }).join('');
+    }
+
+    // phone display hint
+    var phoneHint = order.isLoggedIn
+      ? ''
+      : '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;margin-left:8px;">🔒 লগইন করলে পূর্ণ নম্বর দেখা যাবে</span>';
+
+    resultEl.innerHTML =
+      // Status header card
+      '<div style="background:white;border-radius:16px;border:2px solid ' + statusColor + '22;padding:20px 22px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">'
+      + '<div>'
+      + '<div style="font-size:12px;color:#9ca3af;font-weight:500;margin-bottom:4px;">অর্ডার আইডি</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#374151;word-break:break-all;">#' + (order._id||'').slice(-12).toUpperCase() + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;">'
+      + '<span style="display:inline-flex;align-items:center;gap:6px;background:' + statusColor + '18;color:' + statusColor + ';font-size:13px;font-weight:700;padding:8px 16px;border-radius:30px;border:1.5px solid ' + statusColor + '44;">'
+      + statusIcon + ' ' + statusLabel + '</span>'
+      + '</div></div>'
+      + (orderDate ? '<div style="font-size:12px;color:#9ca3af;margin-top:8px;">📅 অর্ডার তারিখ: ' + orderDate + '</div>' : '')
+      + '</div>'
+
+      // Progress stepper
+      + '<div style="background:white;border-radius:16px;border:1px solid #e5e7eb;padding:24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">'
+      + '<h3 style="font-size:15px;font-weight:700;color:#111827;margin:0 0 20px;">📍 অর্ডারের গতিপথ</h3>'
+      + stepperHtml
+      + '</div>'
+
+      // Customer info
+      + '<div style="background:white;border-radius:16px;border:1px solid #e5e7eb;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">'
+      + '<h3 style="font-size:15px;font-weight:700;color:#111827;margin:0 0 16px;">👤 গ্রাহকের তথ্য</h3>'
+      + '<div id="trackCustomerGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+      + '<div style="background:#f9fafb;border-radius:8px;padding:12px 14px;">'
+      + '<div style="font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">নাম</div>'
+      + '<div style="font-size:14px;font-weight:600;color:#111827;">' + (order.customerName||'—') + '</div>'
+      + '</div>'
+      + '<div style="background:#f9fafb;border-radius:8px;padding:12px 14px;">'
+      + '<div style="font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">ফোন নম্বর</div>'
+      + '<div style="font-size:14px;font-weight:600;color:#111827;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' + (order.phone||'—') + phoneHint + '</div>'
+      + '</div>'
+      + '<div style="background:#f9fafb;border-radius:8px;padding:12px 14px;">'
+      + '<div style="font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">ঠিকানা</div>'
+      + '<div style="font-size:14px;font-weight:600;color:#111827;">' + (order.address||'—') + '</div>'
+      + '</div>'
+      + '<div style="background:#f9fafb;border-radius:8px;padding:12px 14px;">'
+      + '<div style="font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">ডেলিভারি এলাকা</div>'
+      + '<div style="font-size:14px;font-weight:600;color:#111827;">' + (order.deliveryArea||'—') + '</div>'
+      + '</div>'
+      + '</div>'
+      + (order.note ? '<div style="margin-top:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;"><strong>📝 নোট:</strong> ' + order.note + '</div>' : '')
+      + '</div>'
+
+      // Items
+      + '<div style="background:white;border-radius:16px;border:1px solid #e5e7eb;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">'
+      + '<h3 style="font-size:15px;font-weight:700;color:#111827;margin:0 0 14px;">🛍️ অর্ডারকৃত পণ্যসমূহ</h3>'
+      + '<div style="display:flex;flex-direction:column;gap:10px;">' + itemsHtml + '</div>'
+      + '<div style="border-top:2px dashed #e5e7eb;margin-top:16px;padding-top:14px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<span style="font-size:14px;font-weight:600;color:#6b7280;">মোট পরিমাণ</span>'
+      + '<span style="font-size:20px;font-weight:800;color:#f97316;">৳' + (order.total||0) + '</span>'
+      + '</div>'
+      + '</div>'
+
+      // Help note
+      + '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 18px;display:flex;align-items:flex-start;gap:10px;">'
+      + '<span style="font-size:20px;flex-shrink:0;">💬</span>'
+      + '<div style="font-size:13px;color:#1e40af;line-height:1.6;">'
+      + '<strong>সমস্যা আছে?</strong> আমাদের সাথে যোগাযোগ করুন। অর্ডার আইডি <strong>#' + (order._id||'').slice(-8).toUpperCase() + '</strong> উল্লেখ করুন।'
+      + '</div></div>';
+
+    resultEl.style.display = 'block';
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // hideAllPages-এ trackOrderPage যোগ
+  document.addEventListener('DOMContentLoaded', function() {
+    var origHideAll = window.hideAllPages;
+    if (typeof origHideAll === 'function') {
+      window.hideAllPages = function() {
+        origHideAll();
+        var tp = document.getElementById('trackOrderPage');
+        if (tp) { tp.classList.remove('active'); tp.classList.add('detail-page'); }
+      };
+    }
+
+    // goToHome-এ Track Order পেজ হাইড করা
+    var origGoToHome = window.goToHome;
+    if (typeof origGoToHome === 'function') {
+      window.goToHome = function() {
+        var tp = document.getElementById('trackOrderPage');
+        if (tp) { tp.classList.remove('active'); tp.classList.add('detail-page'); }
+        origGoToHome();
+      };
+    }
+  });
+
+})();
 </script>
 </body>
 </html>
