@@ -440,7 +440,7 @@ app.get('/api/admin/reviews', adminMiddleware, async (req, res) => {
 app.post('/api/reviews', async (req, res) => {
   try {
     const { name, phone, rating, comment, productId, productName } = req.body;
-    const review = await Review.create({ name, phone, rating: +rating, comment, productId, productName, approved: true });
+    const review = await Review.create({ name, phone, rating: +rating, comment, productId, productName });
     res.json({ success: true, data: review, message: 'রিভিউ সফলভাবে জমা হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
