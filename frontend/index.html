@@ -3815,6 +3815,17 @@
       }
     });
   })();
+
+  // পেজ রিফ্রেশ বা লোড হলে সবসময় টপে স্ক্রল করবে
+window.addEventListener('load', function() {
+  window.scrollTo(0, 0);
+});
+
+// অথবা more robust way (history scroll restoration বন্ধ করে)
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+window.scrollTo(0, 0);
   </script>
 <script>
 window.FFH_API = (function() {
@@ -4357,77 +4368,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-
-
-(function() {
-  const STORAGE_KEY = 'ffh_scroll_positions';
-
-  // বর্তমান পেজ চিহ্নিত করার জন্য ইউনিক আইডি
-  function getPageKey() {
-    // একটিভ পেজ সেকশনের আইডি ব্যবহার করি
-    const activePage = document.querySelector('.page-section.active, .home-page:not(.hidden), .detail-page.active');
-    if (activePage && activePage.id) return activePage.id;
-    // না পেলে পাথনেম ব্যবহার
-    return window.location.pathname || 'home';
-  }
-
-  // স্ক্রল পজিশন স্টোর
-  function saveScrollPosition() {
-    const key = getPageKey();
-    const scrollY = window.scrollY;
-    if (scrollY > 0) {
-      let positions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      positions[key] = scrollY;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
+ (function() {
+    // ব্রাউজারের ডিফল্ট স্ক্রল রিস্টোরেশন বন্ধ করুন
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
     }
-  }
-
-  // স্ক্রল পজিশন পুনরুদ্ধার
-  function restoreScrollPosition() {
-    const key = getPageKey();
-    const positions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    const targetY = positions[key];
-    if (targetY && targetY > 0) {
-      setTimeout(() => {
-        window.scrollTo({ top: targetY, behavior: 'auto' });
-      }, 100);
-    }
-  }
-
-  // স্ক্রল ইভেন্টে ডিবাউন্স করে সেভ
-  let scrollTimer;
-  window.addEventListener('scroll', function() {
-    if (scrollTimer) clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(saveScrollPosition, 300);
-  });
-
-  // পেজ আনলোডের আগে সেভ
-  window.addEventListener('beforeunload', saveScrollPosition);
-
-  // পেজ লোড হলে রিস্টোর
-  document.addEventListener('DOMContentLoaded', restoreScrollPosition);
-
-  // পেজ সেকশন পরিবর্তন হলে (ক্যাটাগরি, ডিটেইল ইত্যাদি) রিস্টোর
-  const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-        const target = mutation.target;
-        if (target.classList && 
-            (target.classList.contains('active') || 
-             (target.classList.contains('home-page') && !target.classList.contains('hidden')))) {
-          restoreScrollPosition();
-        }
-      }
+    // লোড হলে উপরে স্ক্রল করুন
+    window.addEventListener('load', function() {
+      window.scrollTo(0, 0);
     });
-  });
-
-  // সব পেজ কন্টেইনার পর্যবেক্ষণ
-  const containers = ['homePage', 'categoryPage', 'productDetailPage', 'loginPage', 'registerPage', 'dashboardPage', 'allCategoriesPage', 'aboutUsPage'];
-  containers.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) observer.observe(el, { attributes: true, attributeFilter: ['class'] });
-  });
-})();
+    // immediate effect for soft reloads
+    window.scrollTo(0, 0);
+  })();
 </script>
 </body>
 </html>
