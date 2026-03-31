@@ -3199,17 +3199,15 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         }
       });
 
-      // নতুন কোড (ঠিক):
-detailPageOrderNow.addEventListener('click', () => {
-  // কার্ট পপআপ ছাড়াই যোগ করো
-  const existing = cart.find(item => item.id === currentProduct.id);
-  if (existing) { existing.qty += qty; } 
-  else { cart.push({ ...currentProduct, qty }); }
-  updateCartUI();
-  // সরাসরি অর্ডার ফর্ম খোলো
-  updateOrderSummary();
-  paymentModal.classList.remove('invisible', 'opacity-0');
-});
+      detailPageOrderNow.addEventListener('click', () => {
+        if (currentProduct && !currentProduct.soldOut) {
+          const qty = parseInt(detailPageQty.value) || 1;
+          addToCart(currentProduct, qty);
+          updateOrderSummary();
+          paymentModal.classList.remove('invisible', 'opacity-0');
+        }
+      });
+
       function addToCart(product, qty = 1) {
         const existing = cart.find(item => item.id === product.id);
         if (existing) {
@@ -3891,12 +3889,12 @@ if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
 }
 window.scrollTo(0, 0);
-  </script>   
+  </script>
 <script>
 window.FFH_API = (function() {
   var h = window.location.hostname;
   if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
-  return 'https://familyfashionhub-yinq.onrender.com/api';
+  return 'https://familyfashionhub.onrender.com/api';
 })();
 let ffhUser = JSON.parse(localStorage.getItem('ffh_user') || 'null');
 let ffhToken = localStorage.getItem('ffh_user_token') || '';

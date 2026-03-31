@@ -1172,7 +1172,7 @@ tr:hover td { background: var(--bg); }
 
 <script>
 // ===== CONFIG =====
-let API_URL = localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub-yinq.onrender.com/api';
+let API_URL = localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub.onrender.com/api';
 let FRONTEND_URL = localStorage.getItem('ffh_frontend_url') || '';
 let adminToken = localStorage.getItem('ffh_admin_token') || '';
 let adminUser = JSON.parse(localStorage.getItem('ffh_admin_user') || 'null');
@@ -1189,7 +1189,7 @@ async function adminLogin() {
   try {
     const res = await fetch(API_URL + '/admin/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: phone, password })
+      body: JSON.stringify({ phone, password })
     });
     const data = await res.json();
     if (data.success) {
