@@ -38,12 +38,18 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
   z-index: 100; transition: transform 0.3s;
 }
 .sidebar-logo {
-  padding: 24px 20px 20px;
+  padding: 16px 20px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; gap: 12px;
 }
-.sidebar-logo h1 { color: #fff; font-size: 16px; font-weight: 700; line-height: 1.3; }
-.sidebar-logo span { color: var(--accent); }
-.sidebar-logo p { color: var(--sidebar-text); font-size: 11px; margin-top: 4px; }
+.sidebar-logo-img {
+  width: 46px; height: 46px; object-fit: contain;
+  border-radius: 10px; background: #fff; padding: 3px; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.sidebar-logo-text h1 { color: #fff; font-size: 14px; font-weight: 700; line-height: 1.3; }
+.sidebar-logo-text span { color: var(--accent); }
+.sidebar-logo-text p { color: var(--sidebar-text); font-size: 10px; margin-top: 2px; }
 
 .sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
 
@@ -345,8 +351,11 @@ tr:hover td { background: var(--bg); }
 <!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <h1>Family Fashion <span>Hub</span></h1>
-    <p>Admin Dashboard</p>
+    <img src="data:image/jpeg;base64,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" alt="Family Fashion Hub" class="sidebar-logo-img">
+    <div class="sidebar-logo-text">
+      <h1>Family Fashion <span>Hub</span></h1>
+      <p>Admin Dashboard</p>
+    </div>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-label">প্রধান</div>
@@ -354,6 +363,7 @@ tr:hover td { background: var(--bg); }
     <div class="nav-label">পরিচালনা</div>
     <button class="nav-item" onclick="showPage('products')"><i class="fas fa-tshirt"></i> পণ্য সমূহ</button>
     <button class="nav-item" onclick="showPage('orders')"><i class="fas fa-shopping-bag"></i> অর্ডার সমূহ <span class="badge" id="pendingBadge" style="display:none">0</span></button>
+    <button class="nav-item" onclick="showPage('orders');setTimeout(()=>{document.getElementById('phoneTrackInput').focus();},200)"><i class="fas fa-phone-alt"></i> গ্রাহক ট্র্যাকার</button>
     <button class="nav-item" onclick="showPage('reviews')"><i class="fas fa-star"></i> রিভিউ সমূহ</button>
     <button class="nav-item" onclick="showPage('users')"><i class="fas fa-users"></i> ব্যবহারকারী</button>
     <div class="nav-label">কনফিগারেশন</div>
@@ -431,6 +441,26 @@ tr:hover td { background: var(--bg); }
 
     <!-- ORDERS -->
     <div class="page-section" id="page-orders">
+      <!-- Customer Phone Tracker -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header" style="background:linear-gradient(135deg,#1e1b4b,#3730a3);border-radius:12px 12px 0 0;">
+          <h3 style="color:#fff;display:flex;align-items:center;gap:8px;"><i class="fas fa-phone-alt" style="color:#a5b4fc;"></i> গ্রাহক ফোন ট্র্যাকার</h3>
+          <span style="font-size:11px;color:#a5b4fc;">নম্বর দিয়ে অর্ডার ইতিহাস দেখুন</span>
+        </div>
+        <div class="card-body" style="padding:16px 20px;">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div class="search-input" style="flex:1;min-width:200px;max-width:340px;">
+              <i class="fas fa-phone"></i>
+              <input type="text" id="phoneTrackInput" placeholder="ফোন নম্বর লিখুন... (যেমন: 01712345678)" onkeydown="if(event.key==='Enter')trackPhone()" style="padding-left:36px;">
+            </div>
+            <button class="btn btn-primary" onclick="trackPhone()"><i class="fas fa-search"></i> ট্র্যাক করুন</button>
+            <button class="btn btn-light" onclick="clearPhoneTrack()" id="clearTrackBtn" style="display:none;"><i class="fas fa-times"></i> বন্ধ করুন</button>
+          </div>
+          <!-- Result Box -->
+          <div id="phoneTrackResult" style="display:none;margin-top:14px;"></div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="toolbar">
           <div class="search-input"><i class="fas fa-search"></i><input type="text" placeholder="অর্ডার খুঁজুন..." id="orderSearch" oninput="filterOrders()"></div>
@@ -2885,6 +2915,143 @@ async function saveProductLayout() {
   window.addEventListener('resize', fixLayoutGrid);
   window.addEventListener('DOMContentLoaded', fixLayoutGrid);
 })();
+
+// ===== CUSTOMER PHONE TRACKER =====
+async function trackPhone() {
+  const phoneRaw = (document.getElementById('phoneTrackInput').value || '').trim();
+  if (!phoneRaw) { toast('ফোন নম্বর লিখুন', 'error'); return; }
+  const resultBox = document.getElementById('phoneTrackResult');
+  const clearBtn = document.getElementById('clearTrackBtn');
+  resultBox.style.display = 'block';
+  clearBtn.style.display = 'inline-flex';
+  resultBox.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:8px;font-size:13px;">অনুসন্ধান করা হচ্ছে...</p></div>';
+  try {
+    const data = await api('/admin/orders?status=all');
+    if (!data.success) { resultBox.innerHTML = '<div class="empty-state"><p>ডেটা লোড হয়নি</p></div>'; return; }
+    const allO = data.data || [];
+    // Flexible phone match (partial or full)
+    const q = phoneRaw.replace(/\D/g, '');
+    const matched = allO.filter(o => {
+      const p = (o.phone || '').replace(/\D/g, '');
+      return p === q || p.endsWith(q) || p.includes(q);
+    });
+
+    if (!matched.length) {
+      resultBox.innerHTML = `
+        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;">
+          <i class="fas fa-search" style="font-size:22px;color:#92400e;"></i>
+          <div>
+            <p style="font-weight:700;color:#92400e;font-size:14px;">কোনো অর্ডার পাওয়া যায়নি</p>
+            <p style="font-size:12px;color:#78350f;margin-top:3px;">"${phoneRaw}" নম্বর থেকে এখন পর্যন্ত কোনো অর্ডার করা হয়নি।</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    // Stats calculation
+    const total = matched.length;
+    const delivered = matched.filter(o => o.status === 'delivered').length;
+    const cancelled = matched.filter(o => o.status === 'cancelled').length;
+    const pending   = matched.filter(o => o.status === 'pending').length;
+    const processing= matched.filter(o => o.status === 'processing').length;
+    const shipped   = matched.filter(o => o.status === 'shipped').length;
+    const notReceived = cancelled + pending; // রিসিভ করেনি (বাতিল + পেন্ডিং)
+    const totalSpent = matched.filter(o=>o.status==='delivered').reduce((s,o)=>s+(o.total||0),0);
+    const customerName = matched[0].customerName || '—';
+    const phone = matched[0].phone || phoneRaw;
+
+    // Risk rating
+    let riskLevel = 'low', riskColor = '#10b981', riskBg = '#d1fae5', riskText = '✅ বিশ্বস্ত গ্রাহক';
+    const cancelRate = total > 0 ? (cancelled / total) : 0;
+    if (cancelRate >= 0.6) { riskLevel='high'; riskColor='#ef4444'; riskBg='#fee2e2'; riskText='🚨 ঝুঁকিপূর্ণ গ্রাহক'; }
+    else if (cancelRate >= 0.3 || pending >= 2) { riskLevel='medium'; riskColor='#f59e0b'; riskBg='#fef3c7'; riskText='⚠️ সতর্কতা প্রয়োজন'; }
+
+    const orderRows = matched.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(o => {
+      const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
+      const date = new Date(o.createdAt).toLocaleDateString('bn-BD');
+      const statusColors = {pending:'#fef3c7',processing:'#dbeafe',shipped:'#ede9fe',delivered:'#d1fae5',cancelled:'#fee2e2'};
+      const statusTxtColors = {pending:'#92400e',processing:'#1e40af',shipped:'#5b21b6',delivered:'#065f46',cancelled:'#991b1b'};
+      return `<tr>
+        <td><span style="font-family:monospace;font-size:12px;font-weight:700;background:#f5f3ff;padding:3px 8px;border-radius:5px;color:#6d28d9;">#${sid}</span></td>
+        <td style="font-size:12px;">${date}</td>
+        <td style="font-weight:700;color:var(--primary);font-size:13px;">৳${o.total}</td>
+        <td><span style="background:${statusColors[o.status]||'#f3f4f6'};color:${statusTxtColors[o.status]||'#374151'};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;">${statusLabel(o.status)}</span></td>
+        <td><button class="btn btn-xs btn-info" onclick="viewOrder('${o._id}')"><i class="fas fa-eye"></i></button></td>
+      </tr>`;
+    }).join('');
+
+    resultBox.innerHTML = `
+      <div style="border:1.5px solid #a78bfa;border-radius:12px;overflow:hidden;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#4c1d95,#6d28d9);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+            <div>
+              <p style="color:#fff;font-weight:700;font-size:15px;">${customerName}</p>
+              <p style="color:#c4b5fd;font-size:12px;"><i class="fas fa-phone" style="margin-right:5px;"></i>${phone}</p>
+            </div>
+          </div>
+          <div style="background:${riskBg};color:${riskColor};padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;">${riskText}</div>
+        </div>
+        <!-- Stats Row -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0;border-bottom:1px solid #ede9fe;">
+          <div style="padding:12px 16px;text-align:center;border-right:1px solid #ede9fe;">
+            <p style="font-size:22px;font-weight:800;color:var(--primary);">${total}</p>
+            <span style="font-size:11px;color:var(--text-muted);">মোট অর্ডার</span>
+          </div>
+          <div style="padding:12px 16px;text-align:center;border-right:1px solid #ede9fe;">
+            <p style="font-size:22px;font-weight:800;color:#10b981;">${delivered}</p>
+            <span style="font-size:11px;color:var(--text-muted);">ডেলিভার্ড</span>
+          </div>
+          <div style="padding:12px 16px;text-align:center;border-right:1px solid #ede9fe;">
+            <p style="font-size:22px;font-weight:800;color:#ef4444;">${cancelled}</p>
+            <span style="font-size:11px;color:var(--text-muted);">বাতিল</span>
+          </div>
+          <div style="padding:12px 16px;text-align:center;border-right:1px solid #ede9fe;">
+            <p style="font-size:22px;font-weight:800;color:#f59e0b;">${pending}</p>
+            <span style="font-size:11px;color:var(--text-muted);">পেন্ডিং</span>
+          </div>
+          <div style="padding:12px 16px;text-align:center;border-right:1px solid #ede9fe;">
+            <p style="font-size:22px;font-weight:800;color:#8b5cf6;">${shipped}</p>
+            <span style="font-size:11px;color:var(--text-muted);">শিপড</span>
+          </div>
+          <div style="padding:12px 16px;text-align:center;">
+            <p style="font-size:18px;font-weight:800;color:var(--primary);">৳${totalSpent.toLocaleString()}</p>
+            <span style="font-size:11px;color:var(--text-muted);">মোট ব্যয়</span>
+          </div>
+        </div>
+        <!-- Not Received Warning -->
+        ${notReceived > 0 ? `<div style="background:#fef2f2;border-bottom:1px solid #fecaca;padding:10px 20px;display:flex;align-items:center;gap:10px;">
+          <i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:16px;"></i>
+          <div>
+            <p style="font-weight:700;color:#991b1b;font-size:13px;">⚠️ ${notReceived}টি অর্ডার রিসিভ করেনি</p>
+            <p style="font-size:11px;color:#b91c1c;">${cancelled}টি বাতিল + ${pending}টি এখনও পেন্ডিং — এই গ্রাহককে অর্ডার দেওয়ার আগে সতর্ক থাকুন।</p>
+          </div>
+        </div>` : `<div style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:10px 20px;display:flex;align-items:center;gap:10px;">
+          <i class="fas fa-check-circle" style="color:#10b981;font-size:16px;"></i>
+          <p style="font-weight:600;color:#065f46;font-size:13px;">✅ সব অর্ডার সঠিকভাবে রিসিভ করা হয়েছে।</p>
+        </div>`}
+        <!-- Orders Table -->
+        <div style="padding:0;">
+          <div style="padding:10px 16px;background:var(--bg);font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);">📋 অর্ডার ইতিহাস (সর্বশেষ প্রথমে)</div>
+          <div class="table-wrapper" style="border:none;border-radius:0;">
+            <table>
+              <thead><tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>মোট</th><th>স্ট্যাটাস</th><th>বিস্তারিত</th></tr></thead>
+              <tbody>${orderRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  } catch(e) {
+    resultBox.innerHTML = '<div class="empty-state"><p>ডেটা লোড করতে সমস্যা হয়েছে</p></div>';
+  }
+}
+
+function clearPhoneTrack() {
+  document.getElementById('phoneTrackInput').value = '';
+  document.getElementById('phoneTrackResult').style.display = 'none';
+  document.getElementById('clearTrackBtn').style.display = 'none';
+}
 
 // Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(o => {

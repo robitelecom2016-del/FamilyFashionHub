@@ -776,6 +776,49 @@ app.get('/api/admin/orders', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// ===== PHONE CUSTOMER TRACKING =====
+// নির্দিষ্ট ফোন নম্বরের সব অর্ডার ও পরিসংখ্যান
+app.get('/api/admin/orders/track/:phone', adminMiddleware, async (req, res) => {
+  try {
+    const phone = req.params.phone.replace(/\D/g, '');
+    if (!phone || phone.length < 5) return res.json({ success: false, message: 'ফোন নম্বর সঠিক নয়' });
+
+    // Flexible match: exact or ends with
+    const allOrders = await Order.find({}).sort({ createdAt: -1 });
+    const matched = allOrders.filter(o => {
+      const p = (o.phone || '').replace(/\D/g, '');
+      return p === phone || p.endsWith(phone) || p.includes(phone);
+    });
+
+    const total     = matched.length;
+    const delivered = matched.filter(o => o.status === 'delivered').length;
+    const cancelled = matched.filter(o => o.status === 'cancelled').length;
+    const pending   = matched.filter(o => o.status === 'pending').length;
+    const processing= matched.filter(o => o.status === 'processing').length;
+    const shipped   = matched.filter(o => o.status === 'shipped').length;
+    const notReceived = cancelled + pending;
+    const totalSpent = matched.filter(o=>o.status==='delivered').reduce((s,o)=>s+(o.total||0),0);
+    const cancelRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+
+    let riskLevel = 'low';
+    if (cancelRate >= 60) riskLevel = 'high';
+    else if (cancelRate >= 30 || pending >= 2) riskLevel = 'medium';
+
+    res.json({
+      success: true,
+      data: {
+        orders: matched,
+        summary: {
+          customerName: matched[0]?.customerName || '',
+          phone: matched[0]?.phone || phone,
+          total, delivered, cancelled, pending, processing, shipped,
+          notReceived, totalSpent, cancelRate, riskLevel,
+        }
+      }
+    });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 app.put('/api/admin/orders/:id', adminMiddleware, async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
