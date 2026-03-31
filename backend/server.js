@@ -651,7 +651,12 @@ app.post('/api/orders', async (req, res) => {
 // লগইন করা user হলে full phone দেখাবে, না হলে masked phone দেখাবে
 app.get('/api/orders/:id', async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    // MongoDB ObjectId format যাচাই করো — 24 hex characters
+    const { id } = req.params;
+    if (!id || !/^[a-fA-F0-9]{24}$/.test(id)) {
+      return res.json({ success: false, message: 'অর্ডারটি পাওয়া যায়নি। Order ID টি সঠিক কিনা যাচাই করুন।' });
+    }
+    const order = await Order.findById(id);
     if (!order) return res.json({ success: false, message: 'অর্ডারটি পাওয়া যায়নি। Order ID টি সঠিক কিনা যাচাই করুন।' });
 
     // Token থাকলে লগইন check করো
@@ -699,7 +704,7 @@ app.get('/api/orders/:id', async (req, res) => {
       },
     });
   } catch (e) {
-    res.json({ success: false, message: 'Invalid Order ID ফরম্যাট।' });
+    res.json({ success: false, message: 'অর্ডারটি পাওয়া যায়নি। Order ID টি সঠিক কিনা যাচাই করুন।' });
   }
 });
 
