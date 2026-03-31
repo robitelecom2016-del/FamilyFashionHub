@@ -316,7 +316,7 @@ tr:hover td { background: var(--bg); }
 <body>
 
 <!-- Login Page -->
-<div class="login-page" id="loginPage">
+<div class="login-page" id="loginPage" style="display:none;">
   <div class="login-card">
     <div class="login-logo">
       <div class="login-icon"><i class="fas fa-store"></i></div>
@@ -1233,7 +1233,7 @@ function showAdminPanel() {
 }
 
 // ===== INIT =====
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   // Load API URL from settings
   const savedApi = localStorage.getItem('ffh_admin_api');
   if (savedApi) API_URL = savedApi;
@@ -1248,16 +1248,44 @@ window.addEventListener('DOMContentLoaded', () => {
   refreshCategoryDropdowns();
 
   if (adminToken && adminUser) {
-    showAdminPanel();
-    // Server-dan category load kore refresh koro
-    loadCategoriesFromServer();
+    // Token server-এ verify করো — যদি valid হয় তাহলে panel দেখাও
+    const verified = await verifyToken();
+    if (verified) {
+      showAdminPanel();
+      loadCategoriesFromServer();
+    } else {
+      // Token expired বা invalid — localStorage clear করো, login দেখাও
+      adminToken = ''; adminUser = null;
+      localStorage.removeItem('ffh_admin_token');
+      localStorage.removeItem('ffh_admin_user');
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('mainContent').style.display = 'none';
+    }
+  } else {
+    // কোনো token নেই, সরাসরি login দেখাও
+    document.getElementById('loginPage').style.display = 'flex';
   }
   updateClock();
   setInterval(updateClock, 1000);
   document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
-  // Enter key for username field too
   document.getElementById('loginPhone').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
 });
+
+// Token server-এ verify করার function
+async function verifyToken() {
+  try {
+    const res = await fetch(API_URL + '/admin/stats', {
+      method: 'GET',
+      headers: { Authorization: 'Bearer ' + adminToken }
+    });
+    if (res.status === 401 || res.status === 403) return false;
+    const data = await res.json();
+    return data.success !== false;
+  } catch {
+    // সার্ভার unavailable হলেও লগইন থাকতে দাও (offline tolerance)
+    return true;
+  }
+}
 
 function updateClock() {
   const now = new Date();
