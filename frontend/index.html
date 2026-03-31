@@ -2504,81 +2504,8 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         showRelatedProducts(product.category, product.id);
         showBottomRelatedProducts(product.category, product.id);
         switchDetailTab('desc');
-        loadProductReviews(product._apiId || product.id);
         
         window.scrollTo({ top: 0 });
-      }
-
-
-      // ===== API থেকে পণ্যের রিভিউ লোড ও রেন্ডার =====
-      async function loadProductReviews(productId) {
-        const list    = document.getElementById('reviewsList');
-        const countEl = document.getElementById('reviewCountTab');
-        if (!list) return;
-        list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:8px 0;">রিভিউ লোড হচ্ছে...</p>';
-        try {
-          const res  = await fetch(window.FFH_API + '/reviews?productId=' + encodeURIComponent(String(productId)));
-          const data = await res.json();
-          if (!data.success || !data.data || !data.data.length) {
-            list.innerHTML = '<p style="color:#9ca3af;font-size:13px;">এখনো কোনো রিভিউ নেই।</p>';
-            if (countEl) countEl.textContent = '0';
-            _updateRatingBars([]);
-            return;
-          }
-          const reviews = data.data;
-          if (countEl) countEl.textContent = reviews.length;
-          _renderReviewItems(list, reviews);
-          _updateRatingBars(reviews);
-        } catch(e) {
-          list.innerHTML = '<p style="color:#9ca3af;font-size:13px;">রিভিউ লোড হয়নি।</p>';
-        }
-      }
-
-      function _renderReviewItems(list, reviews) {
-        list.innerHTML = '';
-        reviews.forEach(function(r) {
-          const filled  = '★'.repeat(r.rating);
-          const empty   = '☆'.repeat(5 - r.rating);
-          const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('bn-BD') : '';
-          const el      = document.createElement('div');
-          el.style.cssText = 'border-top:1px solid #f3f4f6;padding-top:12px;margin-top:12px;';
-          el.innerHTML =
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
-              '<span style="font-size:14px;font-weight:600;color:#374151;">' + (r.name || 'Anonymous') + '</span>' +
-              '<span style="color:#f97316;font-size:14px;">' + filled + '<span style="color:#d1d5db;">' + empty + '</span></span>' +
-              '<span style="font-size:12px;color:#6b7280;">' + dateStr + '</span>' +
-            '</div>' +
-            '<p style="font-size:13px;color:#374151;line-height:1.6;">' + (r.comment || '') + '</p>';
-          list.appendChild(el);
-        });
-      }
-
-      function _updateRatingBars(reviews) {
-        const recEl  = document.getElementById('recommendedDisplay');
-        const barsEl = document.getElementById('starBarsContainer');
-        if (!recEl || !barsEl) return;
-        const total = reviews.length;
-        if (!total) {
-          recEl.textContent = '0.00%';
-          barsEl.querySelectorAll('div').forEach(function(row) {
-            var bar = row.querySelector('div > div');
-            var sp  = row.querySelector('span:last-child');
-            if (bar) bar.style.width = '0%';
-            if (sp)  sp.textContent  = '0%';
-          });
-          return;
-        }
-        var pcts = [5,4,3,2,1].map(function(s) {
-          return Math.round(reviews.filter(function(r){ return r.rating === s; }).length / total * 100);
-        });
-        var rec = Math.round(reviews.filter(function(r){ return r.rating >= 4; }).length / total * 100);
-        recEl.textContent = rec.toFixed(2) + '%';
-        barsEl.querySelectorAll('div').forEach(function(row, i) {
-          var bar = row.querySelector('div > div');
-          var sp  = row.querySelector('span:last-child');
-          if (bar) bar.style.width  = (pcts[i] || 0) + '%';
-          if (sp)  sp.textContent   = (pcts[i] || 0) + '%';
-        });
       }
 
       window.showHomePage = function() { goToHome(); };
@@ -2849,14 +2776,12 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
       window.submitReview = async function() {
         const text   = document.getElementById('reviewTextInput').value.trim();
         const rating = document.getElementById('reviewRatingSelect').value;
-        if (!text || !rating) { ffhToast('রিভিউ এবং রেটিং উভয়ই দিন।', 'error'); return; }
+        if (!text || !rating) { alert('রিভিউ এবং রেটিং উভয়ই দিন।'); return; }
         if (!isLoggedIn) {
           pendingReview = { text, rating };
           showLoginPage('review');
           return;
         }
-        const btn = document.querySelector('[onclick="submitReview()"]');
-        if (btn) { btn.disabled = true; btn.textContent = 'জমা হচ্ছে...'; }
         try {
           const productId   = window._ffhCurrentDetailProduct?._apiId || window._ffhCurrentDetailProduct?.id || '';
           const productName = window._ffhCurrentDetailProduct?.name || '';
@@ -2874,21 +2799,38 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
           });
           const data = await res.json();
           if (data.success) {
-            document.getElementById('reviewTextInput').value  = '';
+            addReviewToList(text, rating);
+            document.getElementById('reviewTextInput').value = '';
             document.getElementById('reviewRatingSelect').value = '';
-            ffhToast('রিভিউ সফলভাবে জমা হয়েছে! ধন্যবাদ।', 'success');
-            await loadProductReviews(String(productId));
           } else {
-            ffhToast(data.message || 'রিভিউ সংরক্ষণ ব্যর্থ হয়েছে।', 'error');
+            alert(data.message || 'রিভিউ সংরক্ষণ ব্যর্থ।');
           }
         } catch(e) {
-          ffhToast('সার্ভার সংযোগ ব্যর্থ। আবার চেষ্টা করুন।', 'error');
-        } finally {
-          if (btn) { btn.disabled = false; btn.textContent = 'SUBMIT REVIEW'; }
+          addReviewToList(text, rating);
+          document.getElementById('reviewTextInput').value = '';
+          document.getElementById('reviewRatingSelect').value = '';
         }
       };
 
-      function addReviewToList() { /* deprecated */ }
+      function addReviewToList(text, rating) {
+        const reviewData = { text, rating: parseInt(rating), date: new Date().toLocaleDateString('bn-BD'), user: loggedInUser.name };
+        userReviews.push(reviewData);
+        const list = document.getElementById('reviewsList');
+        const stars = '★'.repeat(reviewData.rating) + '☆'.repeat(5 - reviewData.rating);
+        if (list.querySelector('p')) list.innerHTML = '';
+        const el = document.createElement('div');
+        el.style.cssText = 'border-top:1px solid #f3f4f6;padding-top:12px;margin-top:12px;';
+        el.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-size:14px;font-weight:600;color:#374151;">${reviewData.user}</span>
+            <span style="color:#f97316;font-size:14px;">${stars}</span>
+            <span style="font-size:12px;color:#6b7280;">${reviewData.date}</span>
+          </div>
+          <p style="font-size:13px;color:#374151;line-height:1.6;">${text}</p>
+        `;
+        list.appendChild(el);
+        alert('রিভিউ সফলভাবে জমা হয়েছে! ধন্যবাদ।');
+      }
 
       window.openDashboard = async function openDashboard(panel) {
         accountDropdown.style.display = 'none';
@@ -4952,54 +4894,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-})();
-</script>
-
-<!-- ===== FFH REVIEW TOAST ===== -->
-<style>
-#ffhToastWrap{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:999999;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;}
-.ffh-toast{min-width:280px;max-width:88vw;display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,0.22);font-family:'Hind Siliguri','Poppins',sans-serif;font-size:14px;font-weight:600;color:#fff;pointer-events:auto;opacity:0;transform:translateY(20px) scale(0.96);transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.34,1.4,0.64,1);}
-.ffh-toast.show{opacity:1;transform:translateY(0) scale(1);}
-.ffh-toast.t-success{background:linear-gradient(135deg,#065f46,#10b981);}
-.ffh-toast.t-error{background:linear-gradient(135deg,#7f1d1d,#ef4444);}
-.ffh-t-ico{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
-.ffh-t-body{flex:1;line-height:1.45;}
-.ffh-t-body small{display:block;font-size:11px;font-weight:400;opacity:0.78;margin-top:2px;}
-.ffh-t-close{background:rgba(255,255,255,0.18);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.2s;}
-.ffh-t-close:hover{background:rgba(255,255,255,0.35);}
-.ffh-t-bar{height:3px;border-radius:0 0 14px 14px;background:rgba(255,255,255,0.4);transform-origin:left;margin-top:-3px;}
-@keyframes ffhBarShrink{from{transform:scaleX(1)}to{transform:scaleX(0)}}
-</style>
-<div id="ffhToastWrap"></div>
-<script>
-(function(){
-  var _T={};
-  window.ffhToast=function(msg,type,sub){
-    type=type||'success';
-    sub=sub||(type==='success'?'রিভিউ পেজে সাথে সাথে দেখা যাচ্ছে।':'অনুগ্রহ করে আবার চেষ্টা করুন।');
-    var wrap=document.getElementById('ffhToastWrap');
-    if(!wrap)return;
-    var id='ft_'+Date.now();
-    var ico=type==='success'?'fa-check-circle':'fa-exclamation-circle';
-    var t=document.createElement('div');
-    t.className='ffh-toast t-'+type;
-    t.id=id;
-    t.innerHTML='<div class="ffh-t-ico"><i class="fas '+ico+'"></i></div>'
-      +'<div class="ffh-t-body">'+msg+'<small>'+sub+'</small></div>'
-      +'<button class="ffh-t-close" onclick="ffhToastClose(\''+id+'\')"><i class="fas fa-times"></i></button>';
-    var bar=document.createElement('div');
-    bar.className='ffh-t-bar';
-    bar.style.animation='ffhBarShrink 4.2s linear forwards';
-    wrap.appendChild(t);
-    wrap.appendChild(bar);
-    requestAnimationFrame(function(){requestAnimationFrame(function(){t.classList.add('show');});});
-    _T[id]=setTimeout(function(){ffhToastClose(id,bar);},4400);
-  };
-  window.ffhToastClose=function(id,bar){
-    var t=document.getElementById(id);
-    if(t){t.classList.remove('show');setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);if(bar&&bar.parentNode)bar.parentNode.removeChild(bar);},350);}
-    if(_T[id]){clearTimeout(_T[id]);delete _T[id];}
-  };
 })();
 </script>
 </body>
