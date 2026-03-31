@@ -3199,16 +3199,16 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         }
       });
 
-     detailPageOrderNow.addEventListener('click', () => {
-  if (currentProduct && !currentProduct.soldOut) {
-    const qty = parseInt(detailPageQty.value) || 1;
-    // কার্টে না এড করে buyNow ভেরিয়েবল সেট করুন
-    buyNowProduct = currentProduct;
-    buyNowQty = qty;
-    // অর্ডার সামারি আপডেট করুন buyNow আইটেম দিয়ে
-    updateOrderSummaryForBuyNow();
-    paymentModal.classList.remove('invisible', 'opacity-0');
-  }
+     // নতুন কোড (ঠিক):
+detailPageOrderNow.addEventListener('click', () => {
+  // কার্ট পপআপ ছাড়াই যোগ করো
+  const existing = cart.find(item => item.id === currentProduct.id);
+  if (existing) { existing.qty += qty; } 
+  else { cart.push({ ...currentProduct, qty }); }
+  updateCartUI();
+  // সরাসরি অর্ডার ফর্ম খোলো
+  updateOrderSummary();
+  paymentModal.classList.remove('invisible', 'opacity-0');
 });
       function addToCart(product, qty = 1) {
         const existing = cart.find(item => item.id === product.id);
@@ -4480,43 +4480,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return null;
     };
   })();
-
-
-  function updateOrderSummaryForBuyNow() {
-  const orderSummaryItems = document.getElementById('orderSummaryItems');
-  if (!orderSummaryItems) return;
-  
-  if (!buyNowProduct) {
-    orderSummaryItems.innerHTML = '<p class="text-gray-400">কোনো পণ্য নির্বাচন করা হয়নি</p>';
-    return;
-  }
-  
-  const totalPrice = buyNowProduct.price * buyNowQty;
-  orderSummaryItems.innerHTML = `
-    <div class="flex items-center gap-3 border-b pb-2">
-      <img src="${buyNowProduct.img}" class="order-summary-img" alt="${buyNowProduct.name}">
-      <div class="flex-1">
-        <p class="font-medium">${buyNowProduct.name}</p>
-        <p class="text-sm">${buyNowProduct.price} BDT x ${buyNowQty} = ${totalPrice} BDT</p>
-      </div>
-    </div>
-  `;
-  
-  updateFinalTotalForBuyNow(totalPrice);
-}
-
-
-function updateFinalTotalForBuyNow(subtotal) {
-  let delivery = 0;
-  const selectedRadio = document.querySelector('input[name="deliveryArea"]:checked');
-  if (selectedRadio) {
-    delivery = selectedRadio.value === 'dhaka' ? 80 : 130;
-  }
-  if (subtotal >= 1000) delivery = 0;
-  const final = subtotal + delivery;
-  const finalTotalSpan = document.getElementById('finalTotalAmount');
-  if (finalTotalSpan) finalTotalSpan.innerText = '৳' + final;
-}
 </script>
 </body>
 </html>
