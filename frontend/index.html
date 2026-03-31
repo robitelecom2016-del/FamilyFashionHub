@@ -3436,7 +3436,7 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
     });
   });
 }
-      function updateOrderSummary() {
+      window.updateOrderSummary = function updateOrderSummary() {
         if (orderSummaryItems) {
           if (cart.length === 0) {
             orderSummaryItems.innerHTML = '<p class="text-gray-400">কোনো পণ্য নির্বাচন করা হয়নি</p>';
@@ -4192,6 +4192,18 @@ function _ffhShowApiDetail(p) {
   if (cartBtn) {
     cartBtn.onclick = function() {
       if (typeof addToCart === 'function') addToCart(p);
+    };
+  }
+
+  // BUY NOW বাটন — Order Confirmation modal খুলবে
+  var buyNowBtn = document.getElementById('detailPageOrderNow');
+  if (buyNowBtn) {
+    buyNowBtn.onclick = function() {
+      var qty = parseInt(document.getElementById('detailPageQty')?.value) || 1;
+      if (typeof addToCart === 'function') addToCart(p, qty);
+      if (typeof updateOrderSummary === 'function') updateOrderSummary();
+      var modal = document.getElementById('paymentModal');
+      if (modal) modal.classList.remove('invisible', 'opacity-0');
     };
   }
 
