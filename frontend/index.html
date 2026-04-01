@@ -487,7 +487,23 @@
 .addRelatedProduct:active {
   transform: scale(0.96);
 }
-</style>  
+
+
+  /* Make category sidebar sticky on desktop */
+  @media (min-width: 768px) {
+    #catSidebar {
+      position: sticky;
+      top: 112px;  /* Fixed header height (mainNav + bottomNav) ~ 112px */
+      align-self: start;
+      transition: top 0.2s ease;
+    }
+    
+    /* Optional: add a subtle shadow when sticky to indicate it's fixed */
+    #catSidebar.sticky-active {
+      transition: box-shadow 0.2s;
+    }
+  }
+</style>     
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased" dir="ltr">
   
