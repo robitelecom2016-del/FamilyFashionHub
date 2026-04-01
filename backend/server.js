@@ -532,23 +532,48 @@ app.get('/api/admin/testimonials', adminMiddleware, async (req, res) => {
 });
 
 // Admin: নতুন testimonial তৈরি করো
-app.post('/api/admin/testimonials', adminMiddleware, async (req, res) => {
+app.post('/api/admin/testimonials', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
-    const { name, title, image, text, rating, enabled } = req.body;
+    const { name, title, text, rating, enabled } = req.body;
     if (!name || !text) return res.json({ success: false, message: 'নাম ও মন্তব্য আবশ্যিক' });
+
+    let imageUrl = req.body.image || '';
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'FamilyFashionHub/testimonials');
+      imageUrl = result.secure_url;
+    }
+
     const testimonial = await Testimonial.create({
-      name, title, image, text,
+      name, title: title || '', image: imageUrl, text,
       rating: rating || 5,
-      enabled: enabled !== undefined ? enabled : true,
+      enabled: enabled !== undefined ? (enabled === 'true' || enabled === true) : true,
     });
     res.json({ success: true, data: testimonial, message: 'টেস্টিমোনিয়াল যোগ হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
 // Admin: testimonial আপডেট করো
-app.put('/api/admin/testimonials/:id', adminMiddleware, async (req, res) => {
+app.put('/api/admin/testimonials/:id', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
-    const testimonial = await Testimonial.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const existing = await Testimonial.findById(req.params.id);
+    if (!existing) return res.json({ success: false, message: 'পাওয়া যায়নি' });
+
+    let imageUrl = existing.image || '';
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'FamilyFashionHub/testimonials');
+      imageUrl = result.secure_url;
+    }
+
+    const updateData = {
+      name:    req.body.name    || existing.name,
+      title:   req.body.title   !== undefined ? req.body.title   : existing.title,
+      text:    req.body.text    || existing.text,
+      rating:  req.body.rating  ? Number(req.body.rating) : existing.rating,
+      enabled: req.body.enabled !== undefined ? (req.body.enabled === 'true' || req.body.enabled === true) : existing.enabled,
+      image:   imageUrl,
+    };
+
+    const testimonial = await Testimonial.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json({ success: true, data: testimonial, message: 'টেস্টিমোনিয়াল আপডেট হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });

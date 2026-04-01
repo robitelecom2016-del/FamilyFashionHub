@@ -1502,17 +1502,18 @@ tr:hover td { background: var(--bg); }
     </div>
     <div class="modal-body">
       <input type="hidden" id="testimonialId">
+      <!-- NOTE: server schema: name, title, image, text, rating, enabled -->
       <div class="form-group">
         <label class="form-label">নাম *</label>
         <input type="text" class="form-control" id="testimonialName" placeholder="গ্রাহকের নাম">
       </div>
       <div class="form-group">
         <label class="form-label">পদবী / পরিচয়</label>
-        <input type="text" class="form-control" id="testimonialRole" placeholder="যেমন: নিয়মিত ক্রেতা">
+        <input type="text" class="form-control" id="testimonialTitle" placeholder="যেমন: নিয়মিত ক্রেতা">
       </div>
       <div class="form-group">
         <label class="form-label">মন্তব্য *</label>
-        <textarea class="form-control" id="testimonialComment" rows="4" placeholder="টেস্টিমোনিয়ালের টেক্সট লিখুন..."></textarea>
+        <textarea class="form-control" id="testimonialText" rows="4" placeholder="টেস্টিমোনিয়ালের টেক্সট লিখুন..."></textarea>
       </div>
       <div class="form-group">
         <label class="form-label">রেটিং (১–৫)</label>
@@ -3845,8 +3846,8 @@ function renderTestimonialsAdmin(list) {
             <tr>
               <td><img src="${t.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.name) + '&background=7c3aed&color=fff'}" style="width:40px;height:40px;object-fit:cover;border-radius:50%;border:2px solid var(--border);"></td>
               <td><strong>${t.name}</strong></td>
-              <td style="color:var(--text-muted);font-size:12px;">${t.role || '—'}</td>
-              <td style="max-width:220px;font-size:12px;">${(t.comment||'').slice(0,80)}${(t.comment||'').length>80?'...':''}</td>
+              <td style="color:var(--text-muted);font-size:12px;">${t.title || '—'}</td>
+              <td style="max-width:220px;font-size:12px;">${(t.text||'').slice(0,80)}${(t.text||'').length>80?'...':''}</td>
               <td>${'★'.repeat(t.rating||5)}</td>
               <td>
                 <span class="badge ${t.enabled ? 'badge-success' : 'badge-gray'}">${t.enabled ? 'সক্রিয়' : 'বন্ধ'}</span>
@@ -3867,8 +3868,8 @@ function renderTestimonialsAdmin(list) {
 function openTestimonialModal(id = null) {
   document.getElementById('testimonialId').value = '';
   document.getElementById('testimonialName').value = '';
-  document.getElementById('testimonialRole').value = '';
-  document.getElementById('testimonialComment').value = '';
+  document.getElementById('testimonialTitle').value = '';
+  document.getElementById('testimonialText').value = '';
   document.getElementById('testimonialRating').value = '5';
   document.getElementById('testimonialEnabled').checked = true;
   document.getElementById('testimonialImage').value = '';
@@ -3882,8 +3883,8 @@ function editTestimonial(id) {
   if (!t) return;
   document.getElementById('testimonialId').value = t._id;
   document.getElementById('testimonialName').value = t.name || '';
-  document.getElementById('testimonialRole').value = t.role || '';
-  document.getElementById('testimonialComment').value = t.comment || '';
+  document.getElementById('testimonialTitle').value = t.title || '';
+  document.getElementById('testimonialText').value = t.text || '';
   document.getElementById('testimonialRating').value = String(t.rating || 5);
   document.getElementById('testimonialEnabled').checked = !!t.enabled;
   document.getElementById('testimonialImage').value = '';
@@ -3899,22 +3900,22 @@ function editTestimonial(id) {
 }
 
 async function saveTestimonial() {
-  const id = document.getElementById('testimonialId').value;
-  const name = document.getElementById('testimonialName').value.trim();
-  const comment = document.getElementById('testimonialComment').value.trim();
-  if (!name || !comment) { toast('নাম ও মন্তব্য আবশ্যিক', 'error'); return; }
+  const id      = document.getElementById('testimonialId').value;
+  const name    = document.getElementById('testimonialName').value.trim();
+  const text    = document.getElementById('testimonialText').value.trim();
+  if (!name || !text) { toast('নাম ও মন্তব্য আবশ্যিক', 'error'); return; }
 
   const form = new FormData();
-  form.append('name', name);
-  form.append('role', document.getElementById('testimonialRole').value.trim());
-  form.append('comment', comment);
-  form.append('rating', document.getElementById('testimonialRating').value);
+  form.append('name',    name);
+  form.append('title',   document.getElementById('testimonialTitle').value.trim());
+  form.append('text',    text);
+  form.append('rating',  document.getElementById('testimonialRating').value);
   form.append('enabled', document.getElementById('testimonialEnabled').checked ? 'true' : 'false');
   const imgFile = document.getElementById('testimonialImage').files[0];
   if (imgFile) form.append('image', imgFile);
 
   try {
-    const url = id ? `/admin/testimonials/${id}` : '/admin/testimonials';
+    const url    = id ? `/admin/testimonials/${id}` : '/admin/testimonials';
     const method = id ? 'PUT' : 'POST';
     const res = await fetch(API_URL + url, {
       method,
@@ -3923,7 +3924,7 @@ async function saveTestimonial() {
     });
     const data = await res.json();
     if (data.success) {
-      toast(id ? 'টেস্টিমোনিয়াল আপডেট হয়েছে' : 'টেস্টিমোনিয়াল যোগ হয়েছে', 'success');
+      toast(id ? 'টেস্টিমোনিয়াল আপডেট হয়েছে ✓' : 'টেস্টিমোনিয়াল যোগ হয়েছে ✓', 'success');
       closeModal('testimonialModal');
       loadTestimonialsAdmin();
     } else {
@@ -3944,9 +3945,15 @@ async function deleteTestimonial(id) {
 
 async function toggleTestimonial(id, enabled) {
   try {
-    const data = await api('/admin/testimonials/' + id, 'PUT', { enabled });
-    if (data.success) { toast(enabled ? 'সক্রিয় করা হয়েছে' : 'বন্ধ করা হয়েছে'); loadTestimonialsAdmin(); }
-    else toast(data.message || 'সমস্যা', 'error');
+    const res = await fetch(API_URL + '/admin/testimonials/' + id + '/toggle', {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + adminToken, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(data.data.enabled ? 'সক্রিয় করা হয়েছে ✓' : 'বন্ধ করা হয়েছে', 'success');
+      loadTestimonialsAdmin();
+    } else toast(data.message || 'সমস্যা', 'error');
   } catch { toast('সার্ভার সমস্যা', 'error'); }
 }
 
@@ -4113,18 +4120,15 @@ async function loadSideBannerAdmin() {
   document.getElementById('sideBannerLink').value = '';
   document.getElementById('sideBannerInput').value = '';
   document.getElementById('sideBannerNewPreview').style.display = 'none';
+  document.getElementById('sideBannerPreview').style.display = 'none';
   try {
-    const res = await fetch(API_URL + '/sidebanner');
+    const res  = await fetch(API_URL + '/sidebanner');
     const data = await res.json();
-    if (data.success && data.data) {
-      const b = data.data;
+    const b    = data.success && data.data ? data.data : null;
+    if (b && b.image) {
+      document.getElementById('sideBannerPreviewImg').src = b.image;
+      document.getElementById('sideBannerPreview').style.display = 'block';
       if (b.link) document.getElementById('sideBannerLink').value = b.link;
-      if (b.image) {
-        document.getElementById('sideBannerPreviewImg').src = b.image;
-        document.getElementById('sideBannerPreview').style.display = 'block';
-      } else {
-        document.getElementById('sideBannerPreview').style.display = 'none';
-      }
     }
   } catch {
     document.getElementById('sideBannerPreview').style.display = 'none';
@@ -4189,16 +4193,20 @@ async function loadHeroSideImageAdmin() {
   document.getElementById('heroSideCurrentPreview').style.display = 'none';
 
   try {
-    const res = await fetch(API_URL + '/hero-side-image');
+    const res  = await fetch(API_URL + '/hero-side-image');
     const data = await res.json();
-    if (data.success && data.data && data.data.url) {
-      const d = data.data;
+    const d    = data.success && data.data ? data.data : null;
+    if (d && d.url) {
       document.getElementById('heroSideCurrentImg').src = d.url;
       document.getElementById('heroSideCurrentPreview').style.display = 'block';
       if (d.link) document.getElementById('heroSideLink').value = d.link;
       if (d.alt)  document.getElementById('heroSideAlt').value  = d.alt;
+    } else {
+      document.getElementById('heroSideCurrentPreview').style.display = 'none';
     }
-  } catch {}
+  } catch {
+    document.getElementById('heroSideCurrentPreview').style.display = 'none';
+  }
 }
 
 function previewHeroSideImage(input) {
