@@ -817,7 +817,7 @@
               </div>
             </div>
           </div>
-          <div class="hidden md:block md:col-span-4">
+          <div class="hidden md:block md:col-span-4" id="sideBannerContainer">
             <div class="rounded-lg shadow-lg overflow-hidden cursor-pointer" style="height:320px;" onclick="filterByCategory('trending')" title="Trending Products">
               <img src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=500&h=320&fit=crop&auto=format&q=85" alt="Side Banner" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
             </div>
@@ -866,23 +866,12 @@
 
       <section id="ourCollectionSection" class="px-4 md:px-6"><div class="mx-auto" style="max-width:1200px; margin-top: 30px;">
         <h2 class="text-2xl font-bold mb-4">Our Collection</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-shoes')">
-            <img src="https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop" alt="Baby Shoes">
-            <div class="collection-text">Baby Shoes</div>
-          </div>
-          <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-toys')">
-            <img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop" alt="Baby Toys">
-            <div class="collection-text">Baby Toys</div>
-          </div>
-          <div class="collection-card cursor-pointer" onclick="filterByCategory('women-cosmetics')">
-            <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop" alt="Cosmetics">
-            <div class="collection-text">Women's Cosmetics</div>
-          </div>
-          <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-dress')">
-            <img src="https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop" alt="Baby Dress">
-            <div class="collection-text">Baby Dress</div>
-          </div>
+        <div id="collectionGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- dynamic collection cards will be loaded here -->
+          <div class="collection-card" style="background:#f3f4f6;border-radius:12px;animation:ffhPulse 1.2s ease-in-out infinite;"></div>
+          <div class="collection-card" style="background:#f3f4f6;border-radius:12px;animation:ffhPulse 1.2s ease-in-out infinite;animation-delay:0.15s;"></div>
+          <div class="collection-card" style="background:#f3f4f6;border-radius:12px;animation:ffhPulse 1.2s ease-in-out infinite;animation-delay:0.3s;"></div>
+          <div class="collection-card" style="background:#f3f4f6;border-radius:12px;animation:ffhPulse 1.2s ease-in-out infinite;animation-delay:0.45s;"></div>
         </div>
       </section>
       
@@ -1567,43 +1556,10 @@
         </div>
         <div style="position:relative;overflow:hidden;">
           <div id="reviewSliderTrack" style="display:flex;transition:transform 0.6s ease;gap:0;">
-            <div class="review-slide" style="min-width:33.333%;padding:0 12px;box-sizing:border-box;">
-              <div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;">
-                <p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">২য় বার Ghorerbazar থেকে অর্ডার করলাম। আগের মেতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।</p>
-                <div style="display:flex;align-items:center;gap:12px;"><div style="width:46px;height:46px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="color:#9ca3af;font-size:20px;"></i></div><div><p style="font-weight:700;color:#111827;font-size:14px;">Ayesha Khan</p><p style="color:#6b7280;font-size:12px;">Banker</p></div></div>
-              </div>
-            </div>
-            <div class="review-slide" style="min-width:33.333%;padding:0 12px;box-sizing:border-box;">
-              <div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;">
-                <p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">In this world of doubt, Family Fashion Hub is a trustworthy brand. Both product quality and service are outstanding.</p>
-                <div style="display:flex;align-items:center;gap:12px;"><img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Fariha" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"><div><p style="font-weight:700;color:#111827;font-size:14px;">Fariha Akter Tumpa</p><p style="color:#6b7280;font-size:12px;">Entrepreneur</p></div></div>
-              </div>
-            </div>
-            <div class="review-slide" style="min-width:33.333%;padding:0 12px;box-sizing:border-box;">
-              <div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;">
-                <p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">I don't like ghee, but my father really loves it. So I bought some ghee for him. He said this ghee is the best he has ever had.</p>
-                <div style="display:flex;align-items:center;gap:12px;"><img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Shahriar" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"><div><p style="font-weight:700;color:#111827;font-size:14px;">Shahriar Khan Abir</p><p style="color:#6b7280;font-size:12px;">Service Holder</p></div></div>
-              </div>
-            </div>
-            <div class="review-slide" style="min-width:33.333%;padding:0 12px;box-sizing:border-box;">
-              <div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;">
-                <p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">The packaging of every product was so beautiful I almost didn't want to open it. Product quality is also excellent. Will order again.</p>
-                <div style="display:flex;align-items:center;gap:12px;"><img src="https://randomuser.me/api/portraits/men/54.jpg" alt="Rafiq" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"><div><p style="font-weight:700;color:#111827;font-size:14px;">Rafiqul Islam</p><p style="color:#6b7280;font-size:12px;">Teacher</p></div></div>
-              </div>
-            </div>
-            <div class="review-slide" style="min-width:33.333%;padding:0 12px;box-sizing:border-box;">
-              <div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;">
-                <p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">Shopping at Family Fashion Hub is truly an amazing experience. Completely satisfied with fast delivery and product quality.</p>
-                <div style="display:flex;align-items:center;gap:12px;"><img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Nadia" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"><div><p style="font-weight:700;color:#111827;font-size:14px;">Nadia Rahman</p><p style="color:#6b7280;font-size:12px;">Housewife</p></div></div>
-              </div>
-            </div>
+            <!-- dynamic testimonials will be loaded here -->
           </div>
         </div>
-        <div id="reviewDots" style="display:flex;justify-content:center;gap:8px;margin-top:28px;">
-          <button class="rev-dot active" onclick="goToReviewSlide(0)" style="width:28px;height:8px;border-radius:4px;border:none;background:#f97316;cursor:pointer;transition:all 0.3s;"></button>
-          <button class="rev-dot" onclick="goToReviewSlide(1)" style="width:8px;height:8px;border-radius:50%;border:none;background:#d1d5db;cursor:pointer;transition:all 0.3s;"></button>
-          <button class="rev-dot" onclick="goToReviewSlide(2)" style="width:8px;height:8px;border-radius:50%;border:none;background:#d1d5db;cursor:pointer;transition:all 0.3s;"></button>
-        </div>
+        <div id="reviewDots" style="display:flex;justify-content:center;gap:8px;margin-top:28px;"></div>
       </div>
     </section>
 
@@ -1614,38 +1570,120 @@
     </style>
 
     <script>
+      // ===== DYNAMIC TESTIMONIALS LOADER =====
       (function() {
-        const track = document.getElementById('reviewSliderTrack');
-        const dots = document.querySelectorAll('.rev-dot');
-        let totalSlides = 3;
-        let currentRevSlide = 0;
-        let revTimer;
-        function isMobile() { return window.innerWidth <= 768; }
-        function isTablet() { return window.innerWidth > 768 && window.innerWidth <= 1024; }
+        let _revCurrentSlide = 0;
+        let _revTimer;
+
+        function isMobile()  { return window.innerWidth <= 768; }
+        function isTablet()  { return window.innerWidth > 768 && window.innerWidth <= 1024; }
         function getSlidesPerView() { if (isMobile()) return 1; if (isTablet()) return 2; return 3; }
-        function getTotalSlides() { const perView = getSlidesPerView(); return 5 - perView + 1; }
-        window.goToReviewSlide = function(idx) {
-          const max = getTotalSlides();
-          currentRevSlide = Math.max(0, Math.min(idx, max - 1));
-          const perView = getSlidesPerView();
-          const slideWidth = 100 / perView;
-          track.style.transform = `translateX(-${currentRevSlide * slideWidth}%)`;
-          dots.forEach((d, i) => {
-            d.classList.toggle('active', i === currentRevSlide);
-            d.style.width = i === currentRevSlide ? '28px' : '8px';
-            d.style.borderRadius = i === currentRevSlide ? '4px' : '50%';
-            d.style.background = i === currentRevSlide ? '#f97316' : '#d1d5db';
+
+        function _updateRevSlider(total) {
+          const track = document.getElementById('reviewSliderTrack');
+          const allDots = document.querySelectorAll('.rev-dot');
+          if (!track) return;
+          const perView   = getSlidesPerView();
+          const slideW    = 100 / perView;
+          const maxSlide  = Math.max(0, total - perView);
+          _revCurrentSlide = Math.min(_revCurrentSlide, maxSlide);
+          track.style.transform = `translateX(-${_revCurrentSlide * slideW}%)`;
+          allDots.forEach((d, i) => {
+            const active = i === _revCurrentSlide;
+            d.classList.toggle('active', active);
+            d.style.width        = active ? '28px' : '8px';
+            d.style.borderRadius = active ? '4px'  : '50%';
+            d.style.background   = active ? '#f97316' : '#d1d5db';
           });
+        }
+
+        window.goToReviewSlide = function(idx) {
+          const track = document.getElementById('reviewSliderTrack');
+          if (!track) return;
+          const total   = track.querySelectorAll('.review-slide').length;
+          const perView = getSlidesPerView();
+          const max     = Math.max(0, total - perView);
+          _revCurrentSlide = Math.max(0, Math.min(idx, max));
+          _updateRevSlider(total);
         };
-        function startAutoSlide() {
-          revTimer = setInterval(() => {
-            const max = getTotalSlides();
-            currentRevSlide = (currentRevSlide + 1) % max;
-            goToReviewSlide(currentRevSlide);
+
+        function startRevAuto(total) {
+          clearInterval(_revTimer);
+          _revTimer = setInterval(() => {
+            const perView = getSlidesPerView();
+            const max     = Math.max(0, total - perView);
+            _revCurrentSlide = (_revCurrentSlide + 1) > max ? 0 : _revCurrentSlide + 1;
+            _updateRevSlider(total);
           }, 3500);
         }
-        startAutoSlide();
-        window.addEventListener('resize', () => { goToReviewSlide(0); });
+
+        window.loadTestimonials = async function() {
+          const track        = document.getElementById('reviewSliderTrack');
+          const dotsContainer = document.getElementById('reviewDots');
+          if (!track || !dotsContainer) return;
+
+          // fallback static data (ব্যবহার করা হবে যদি API ব্যর্থ হয়)
+          const fallbackData = [
+            { name: 'Ayesha Khan',       title: 'Banker',       image: '', text: '২য় বার অর্ডার করলাম। আগের মতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।' },
+            { name: 'Fariha Akter Tumpa', title: 'Entrepreneur', image: 'https://randomuser.me/api/portraits/women/44.jpg', text: 'In this world of doubt, Family Fashion Hub is a trustworthy brand. Both product quality and service are outstanding.' },
+            { name: 'Shahriar Khan Abir', title: 'Service Holder', image: 'https://randomuser.me/api/portraits/men/32.jpg', text: 'Bought a gift for my father. He said this was the best quality he has ever received. Highly recommended!' },
+            { name: 'Rafiqul Islam',      title: 'Teacher',      image: 'https://randomuser.me/api/portraits/men/54.jpg', text: 'The packaging was so beautiful I almost did not want to open it. Product quality is also excellent. Will order again.' },
+            { name: 'Nadia Rahman',       title: 'Housewife',    image: 'https://randomuser.me/api/portraits/women/68.jpg', text: 'Shopping at Family Fashion Hub is truly an amazing experience. Completely satisfied with fast delivery and product quality.' },
+          ];
+
+          let testimonials = [];
+          try {
+            const res  = await fetch(window.FFH_API + '/testimonials');
+            const data = await res.json();
+            testimonials = (data.success && Array.isArray(data.data) && data.data.length)
+              ? data.data : fallbackData;
+          } catch(e) {
+            console.warn('Testimonials fetch failed, using fallback');
+            testimonials = fallbackData;
+          }
+
+          // render slides
+          track.innerHTML = '';
+          dotsContainer.innerHTML = '';
+          testimonials.forEach((t, idx) => {
+            const slide = document.createElement('div');
+            slide.className = 'review-slide';
+            slide.style.cssText = 'min-width:33.333%;padding:0 12px;box-sizing:border-box;';
+            const avatar = t.image
+              ? `<img src="${t.image}" alt="${t.name}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+              : `<div style="width:46px;height:46px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="color:#9ca3af;font-size:20px;"></i></div>`;
+            slide.innerHTML = `
+              <div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;">
+                <p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">${t.text}</p>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  ${avatar}
+                  <div>
+                    <p style="font-weight:700;color:#111827;font-size:14px;">${t.name}</p>
+                    <p style="color:#6b7280;font-size:12px;">${t.title || ''}</p>
+                  </div>
+                </div>
+              </div>`;
+            track.appendChild(slide);
+
+            const dot = document.createElement('button');
+            dot.className = 'rev-dot' + (idx === 0 ? ' active' : '');
+            dot.style.cssText = `width:${idx===0?'28px':'8px'};height:8px;border-radius:${idx===0?'4px':'50%'};border:none;background:${idx===0?'#f97316':'#d1d5db'};cursor:pointer;transition:all 0.3s;`;
+            dot.onclick = () => window.goToReviewSlide(idx);
+            dotsContainer.appendChild(dot);
+          });
+
+          _revCurrentSlide = 0;
+          _updateRevSlider(testimonials.length);
+          startRevAuto(testimonials.length);
+        };
+
+        window.addEventListener('resize', () => {
+          const track = document.getElementById('reviewSliderTrack');
+          if (!track) return;
+          const total = track.querySelectorAll('.review-slide').length;
+          _revCurrentSlide = 0;
+          _updateRevSlider(total);
+        });
       })();
     </script>
 
@@ -3606,27 +3644,124 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
 
       window.currentSlide = function(index) {
         const container = document.getElementById('sliderContainer');
-        container.style.transform = `translateX(-${index * 100}%)`;
+        if (!container) return;
+        const slides = container.querySelectorAll('.min-w-full');
+        const total  = slides.length;
+        if (total === 0) return;
+        const safe = ((index % total) + total) % total;
+        container.style.transform = `translateX(-${safe * 100}%)`;
         document.querySelectorAll('.slider-dot').forEach((dot, i) => {
-          if (i === index) dot.classList.add('bg-green-600', 'w-8');
-          else dot.classList.remove('bg-green-600', 'w-8');
+          if (i === safe) { dot.classList.add('bg-orange-600','w-6'); dot.classList.remove('bg-gray-400','w-3'); }
+          else            { dot.classList.remove('bg-orange-600','w-6'); dot.classList.add('bg-gray-400','w-3'); }
         });
+        window._currentSlideIndex = safe;
       };
 
-      document.querySelectorAll('#sliderContainer .min-w-full img').forEach(img => {
-        img.parentElement.addEventListener('mouseenter', () => { img.style.transform = 'scale(1.04)'; });
-        img.parentElement.addEventListener('mouseleave', () => { img.style.transform = 'scale(1)'; });
-      });
+      // ── Slider hover zoom ──
+      function attachSliderHover() {
+        document.querySelectorAll('#sliderContainer .min-w-full img').forEach(img => {
+          img.parentElement.addEventListener('mouseenter', () => { img.style.transform = 'scale(1.04)'; });
+          img.parentElement.addEventListener('mouseleave', () => { img.style.transform = 'scale(1)'; });
+        });
+      }
+      attachSliderHover();
 
-      let autoSlideIndex = 0;
-      const totalSlides = 4;
-      setInterval(() => {
-        autoSlideIndex = (autoSlideIndex + 1) % totalSlides;
-        currentSlide(autoSlideIndex);
+      // ── Auto slide ──
+      window._currentSlideIndex = 0;
+      window._sliderTimer = setInterval(() => {
+        const container = document.getElementById('sliderContainer');
+        if (!container) return;
+        const total = container.querySelectorAll('.min-w-full').length || 4;
+        window._currentSlideIndex = (window._currentSlideIndex + 1) % total;
+        currentSlide(window._currentSlideIndex);
       }, 4000);
 
+      // ── Dynamic slider loader ──
+      window.renderSlider = function(images) {
+        const container      = document.getElementById('sliderContainer');
+        const dotsContainer  = document.querySelector('#sliderWrapper .absolute.bottom-3');
+        if (!container || !dotsContainer) return;
+        container.innerHTML = '';
+        dotsContainer.innerHTML = '';
+        images.forEach((img, idx) => {
+          const slide = document.createElement('div');
+          slide.className = 'min-w-full relative cursor-pointer overflow-hidden';
+          slide.onclick = () => { if (typeof filterByCategory === 'function') filterByCategory(img.linkCategory || 'all'); };
+          slide.innerHTML = `<img src="${img.url}" alt="Slide ${idx+1}" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">`;
+          container.appendChild(slide);
+          const dot = document.createElement('button');
+          dot.className = `slider-dot ${idx === 0 ? 'w-6 bg-orange-600' : 'w-3 bg-gray-400'} h-2 rounded-full transition`;
+          dot.onclick = () => currentSlide(idx);
+          dotsContainer.appendChild(dot);
+        });
+        attachSliderHover();
+        currentSlide(0);
+      };
+
+      window.loadSliderImages = async function() {
+        try {
+          const res  = await fetch(window.FFH_API + '/slider-images');
+          const data = await res.json();
+          if (data.success && Array.isArray(data.data) && data.data.length) {
+            renderSlider(data.data);
+          }
+          // API 데이터 없으면 기존 static 슬라이드 유지
+        } catch(e) { console.warn('Slider load failed, using defaults'); }
+      };
+
+      // ── Dynamic side banner loader ──
+      window.loadSideBanner = async function() {
+        try {
+          const res  = await fetch(window.FFH_API + '/settings');
+          const data = await res.json();
+          if (data.success && data.data && data.data.sideBanner) {
+            const banner    = data.data.sideBanner;
+            const container = document.getElementById('sideBannerContainer');
+            if (container && banner.image) {
+              container.innerHTML = `<div class="rounded-lg shadow-lg overflow-hidden cursor-pointer" style="height:320px;" onclick="location.href='${banner.link || '#'}'">
+                <img src="${banner.image}" alt="Side Banner" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+              </div>`;
+            }
+          }
+        } catch(e) { console.warn('Side banner load failed'); }
+      };
+
+      // ── Dynamic collections loader ──
+      window.loadCollections = async function() {
+        try {
+          const res  = await fetch(window.FFH_API + '/settings');
+          const data = await res.json();
+          const collections = (data.success && data.data && Array.isArray(data.data.collections))
+            ? data.data.collections : [];
+          const grid = document.getElementById('collectionGrid');
+          if (!grid) return;
+          const enabled = collections.filter(c => c.enabled).slice(0, 4);
+          if (!enabled.length) {
+            // fallback to default static cards
+            grid.innerHTML = `
+              <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-shoes')"><img src="https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop" alt="Baby Shoes"><div class="collection-text">Baby Shoes</div></div>
+              <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-toys')"><img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop" alt="Baby Toys"><div class="collection-text">Baby Toys</div></div>
+              <div class="collection-card cursor-pointer" onclick="filterByCategory('women-cosmetics')"><img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop" alt="Cosmetics"><div class="collection-text">Women's Cosmetics</div></div>
+              <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-dress')"><img src="https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop" alt="Baby Dress"><div class="collection-text">Baby Dress</div></div>`;
+            return;
+          }
+          grid.innerHTML = enabled.map(c => `
+            <div class="collection-card cursor-pointer" onclick="filterByCategory('${c.category}')">
+              <img src="${c.image}" alt="${c.title}" style="width:100%;height:100%;object-fit:cover;">
+              <div class="collection-text">${c.title}</div>
+            </div>`).join('');
+        } catch(e) {
+          console.warn('Collections load failed');
+          const grid = document.getElementById('collectionGrid');
+          if (grid) grid.innerHTML = `
+            <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-shoes')"><img src="https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop" alt="Baby Shoes"><div class="collection-text">Baby Shoes</div></div>
+            <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-toys')"><img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop" alt="Baby Toys"><div class="collection-text">Baby Toys</div></div>
+            <div class="collection-card cursor-pointer" onclick="filterByCategory('women-cosmetics')"><img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop" alt="Cosmetics"><div class="collection-text">Women's Cosmetics</div></div>
+            <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-dress')"><img src="https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop" alt="Baby Dress"><div class="collection-text">Baby Dress</div></div>`;
+        }
+      };
+
       function init() {
-        const dummy = [];
         renderProductsByCategory('all', '');
         updateCartUI();
         setupEventListeners();
@@ -3873,6 +4008,15 @@ window.FFH_API = (function() {
   if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
   return 'https://familyfashionhub.onrender.com/api';
 })();
+
+// ===== DYNAMIC SECTION LOADERS — FFH_API defined হওয়ার পরেই চালাও =====
+document.addEventListener('DOMContentLoaded', function() {
+  // slider images, side banner, collections ও testimonials লোড করো
+  if (typeof loadSliderImages  === 'function') loadSliderImages();
+  if (typeof loadSideBanner    === 'function') loadSideBanner();
+  if (typeof loadCollections   === 'function') loadCollections();
+  if (typeof loadTestimonials  === 'function') loadTestimonials();
+});
 let ffhUser = JSON.parse(localStorage.getItem('ffh_user') || 'null');
 let ffhToken = localStorage.getItem('ffh_user_token') || '';
 

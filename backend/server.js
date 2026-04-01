@@ -88,6 +88,8 @@ mongoose.connect(process.env.MONGODB_URI)
     }
     
     autoSetupAdmin();
+    seedDefaultCollections();
+    seedSideBanner();
   })
   .catch(err => console.error('❌ MongoDB Error:', err));
 // ===== SCHEMAS =====
@@ -168,11 +170,23 @@ const orderSchema = new mongoose.Schema({
   createdAt:    { type: Date, default: Date.now },
 });
 
-const Product  = mongoose.model('Product',  productSchema);
-const Review   = mongoose.model('Review',   reviewSchema);
-const User     = mongoose.model('User',     userSchema);
-const Settings = mongoose.model('Settings', settingsSchema);
-const Order    = mongoose.model('Order',    orderSchema);
+// ===== TESTIMONIAL SCHEMA =====
+const testimonialSchema = new mongoose.Schema({
+  name:      { type: String, required: true },
+  title:     { type: String, default: '' },
+  image:     { type: String, default: '' },
+  text:      { type: String, required: true },
+  rating:    { type: Number, default: 5, min: 1, max: 5 },
+  enabled:   { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const Product    = mongoose.model('Product',     productSchema);
+const Review     = mongoose.model('Review',      reviewSchema);
+const User       = mongoose.model('User',        userSchema);
+const Settings   = mongoose.model('Settings',    settingsSchema);
+const Order      = mongoose.model('Order',       orderSchema);
+const Testimonial = mongoose.model('Testimonial', testimonialSchema);
 
 // ===== AUTO ADMIN SETUP =====
 // .env-এর ADMIN_USERNAME ও ADMIN_PASSWORD দিয়ে স্বয়ংক্রিয়ভাবে admin তৈরি করবে
@@ -203,6 +217,46 @@ async function autoSetupAdmin() {
   } catch (err) {
     console.error('❌ Auto admin setup error:', err.message);
   }
+}
+
+// ===== SEED DEFAULT COLLECTIONS =====
+async function seedDefaultCollections() {
+  try {
+    const existing = await Settings.findOne({ key: 'collections' });
+    if (!existing) {
+      const defaultCollections = [
+        { category: 'baby-shoes',      subcategory: '', image: 'https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop', title: 'Baby Shoes',       enabled: true },
+        { category: 'baby-toys',       subcategory: '', image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop', title: 'Baby Toys',        enabled: true },
+        { category: 'women-cosmetics', subcategory: '', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop', title: "Women's Cosmetics", enabled: true },
+        { category: 'baby-dress',      subcategory: '', image: 'https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop', title: 'Baby Dress',       enabled: true },
+      ];
+      await Settings.findOneAndUpdate(
+        { key: 'collections' },
+        { key: 'collections', value: defaultCollections },
+        { upsert: true }
+      );
+      console.log('✅ Default collections seeded');
+    }
+  } catch(err) { console.error('❌ seedDefaultCollections error:', err.message); }
+}
+
+// ===== SEED DEFAULT SIDE BANNER =====
+async function seedSideBanner() {
+  try {
+    const existing = await Settings.findOne({ key: 'sideBanner' });
+    if (!existing) {
+      const defaultSideBanner = {
+        image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=500&h=320&fit=crop&auto=format&q=85',
+        link: '#',
+      };
+      await Settings.findOneAndUpdate(
+        { key: 'sideBanner' },
+        { key: 'sideBanner', value: defaultSideBanner },
+        { upsert: true }
+      );
+      console.log('✅ Default side banner seeded');
+    }
+  } catch(err) { console.error('❌ seedSideBanner error:', err.message); }
 }
 
 // ===== AUTH HELPERS =====
@@ -456,6 +510,65 @@ app.delete('/api/reviews/:id', adminMiddleware, async (req, res) => {
   try {
     await Review.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'রিভিউ মুছে ফেলা হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== TESTIMONIAL ROUTES =====
+
+// Public: enabled testimonials পাঠাও
+app.get('/api/testimonials', async (req, res) => {
+  try {
+    const testimonials = await Testimonial.find({ enabled: true }).sort({ createdAt: -1 });
+    res.json({ success: true, data: testimonials });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// Admin: সব testimonials পাঠাও
+app.get('/api/admin/testimonials', adminMiddleware, async (req, res) => {
+  try {
+    const testimonials = await Testimonial.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: testimonials });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// Admin: নতুন testimonial তৈরি করো
+app.post('/api/admin/testimonials', adminMiddleware, async (req, res) => {
+  try {
+    const { name, title, image, text, rating, enabled } = req.body;
+    if (!name || !text) return res.json({ success: false, message: 'নাম ও মন্তব্য আবশ্যিক' });
+    const testimonial = await Testimonial.create({
+      name, title, image, text,
+      rating: rating || 5,
+      enabled: enabled !== undefined ? enabled : true,
+    });
+    res.json({ success: true, data: testimonial, message: 'টেস্টিমোনিয়াল যোগ হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// Admin: testimonial আপডেট করো
+app.put('/api/admin/testimonials/:id', adminMiddleware, async (req, res) => {
+  try {
+    const testimonial = await Testimonial.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ success: true, data: testimonial, message: 'টেস্টিমোনিয়াল আপডেট হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// Admin: testimonial মুছো
+app.delete('/api/admin/testimonials/:id', adminMiddleware, async (req, res) => {
+  try {
+    await Testimonial.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'টেস্টিমোনিয়াল মুছে ফেলা হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// Admin: testimonial enable/disable toggle
+app.put('/api/admin/testimonials/:id/toggle', adminMiddleware, async (req, res) => {
+  try {
+    const t = await Testimonial.findById(req.params.id);
+    if (!t) return res.json({ success: false, message: 'পাওয়া যায়নি' });
+    t.enabled = !t.enabled;
+    await t.save();
+    res.json({ success: true, data: t });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
