@@ -90,8 +90,11 @@ mongoose.connect(process.env.MONGODB_URI)
     autoSetupAdmin();
     seedDefaultCollections();
     seedSideBanner();
+    seedHeroSideImage();      // new
+    seedTestimonials();       // new
   })
   .catch(err => console.error('❌ MongoDB Error:', err));
+
 // ===== SCHEMAS =====
 
 const productSchema = new mongoose.Schema({
@@ -257,6 +260,64 @@ async function seedSideBanner() {
       console.log('✅ Default side banner seeded');
     }
   } catch(err) { console.error('❌ seedSideBanner error:', err.message); }
+}
+
+// ===== SEED DEFAULT HERO SIDE IMAGE =====
+async function seedHeroSideImage() {
+  try {
+    const existing = await Settings.findOne({ key: 'heroSideImage' });
+    if (!existing) {
+      const defaultHeroSide = {
+        url: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=500&h=320&fit=crop&auto=format&q=85',
+        publicId: '',
+        link: '#',
+        alt: 'Special Offer Banner'
+      };
+      await Settings.findOneAndUpdate(
+        { key: 'heroSideImage' },
+        { key: 'heroSideImage', value: defaultHeroSide },
+        { upsert: true }
+      );
+      console.log('✅ Default hero side image seeded');
+    }
+  } catch(err) { console.error('❌ seedHeroSideImage error:', err.message); }
+}
+
+// ===== SEED DEFAULT TESTIMONIALS =====
+async function seedTestimonials() {
+  try {
+    const count = await Testimonial.countDocuments();
+    if (count === 0) {
+      const defaultTestimonials = [
+        {
+          name: 'Ayesha Khan',
+          title: 'Banker',
+          image: '',
+          text: '২য় বার অর্ডার করলাম। আগের মতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।',
+          rating: 5,
+          enabled: true
+        },
+        {
+          name: 'Fariha Akter Tumpa',
+          title: 'Entrepreneur',
+          image: '',
+          text: 'Family Fashion Hub is a trustworthy brand. Both product quality and service are outstanding.',
+          rating: 5,
+          enabled: true
+        },
+        {
+          name: 'Shahriar Khan Abir',
+          title: 'Service Holder',
+          image: '',
+          text: 'পণ্যের মান এবং ডেলিভারি দুটোই অসাধারণ। আবার অর্ডার করব ইনশাআল্লাহ।',
+          rating: 5,
+          enabled: true
+        }
+      ];
+      await Testimonial.insertMany(defaultTestimonials);
+      console.log('✅ Default testimonials seeded');
+    }
+  } catch(err) { console.error('❌ seedTestimonials error:', err.message); }
 }
 
 // ===== AUTH HELPERS =====
