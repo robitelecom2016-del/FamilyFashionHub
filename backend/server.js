@@ -1330,6 +1330,114 @@ app.put('/api/admin/slider-images/reorder', adminMiddleware, async (req, res) =>
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// ===== HERO SIDE IMAGE API (Desktop mode: image beside slider) =====
+
+// GET — Public: হোমপেজ স্লাইডারের পাশের ইমেজ
+app.get('/api/hero-side-image', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'heroSideImage' });
+    res.json({ success: true, data: setting ? setting.value : null });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// POST — Admin: হোমপেজ স্লাইডারের পাশের ইমেজ আপলোড
+app.post('/api/admin/hero-side-image', adminMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    let imageData = null;
+
+    if (req.file) {
+      // Cloudinary-তে আপলোড
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'FamilyFashionHub/heroSide', resource_type: 'image' },
+          (err, result) => err ? reject(err) : resolve(result)
+        );
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+      });
+      imageData = { url: result.secure_url, publicId: result.public_id };
+    }
+
+    // link সেভ করো (image ছাড়াও link আপডেট করা যাবে)
+    const existing = await Settings.findOne({ key: 'heroSideImage' });
+    const currentData = (existing && existing.value) || {};
+    const updatedData = {
+      url: imageData ? imageData.url : (currentData.url || ''),
+      publicId: imageData ? imageData.publicId : (currentData.publicId || ''),
+      link: req.body.link || currentData.link || '',
+      alt: req.body.alt || currentData.alt || '',
+    };
+
+    await Settings.findOneAndUpdate(
+      { key: 'heroSideImage' },
+      { key: 'heroSideImage', value: updatedData },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, data: updatedData, message: 'হিরো সাইড ইমেজ সেভ হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// DELETE — Admin: হিরো সাইড ইমেজ মুছো
+app.delete('/api/admin/hero-side-image', adminMiddleware, async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'heroSideImage' });
+    if (setting && setting.value && setting.value.publicId) {
+      try { await cloudinary.uploader.destroy(setting.value.publicId); } catch (_) {}
+    }
+    await Settings.findOneAndUpdate(
+      { key: 'heroSideImage' },
+      { key: 'heroSideImage', value: { url: '', publicId: '', link: '', alt: '' } },
+      { upsert: true }
+    );
+    res.json({ success: true, data: null, message: 'হিরো সাইড ইমেজ মুছে ফেলা হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== SIDE BANNER API (Product page side banner) =====
+
+// GET — Public: সাইড ব্যানার
+app.get('/api/sidebanner', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'sideBanner' });
+    res.json({ success: true, data: setting ? setting.value : null });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// POST — Admin: সাইড ব্যানার আপলোড
+app.post('/api/admin/sidebanner', adminMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    let imageUrl = '';
+    let publicId = '';
+
+    const existing = await Settings.findOne({ key: 'sideBanner' });
+    const currentData = (existing && existing.value) || {};
+
+    if (req.file) {
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'FamilyFashionHub/sideBanner', resource_type: 'image' },
+          (err, result) => err ? reject(err) : resolve(result)
+        );
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+      });
+      imageUrl = result.secure_url;
+      publicId = result.public_id;
+    }
+
+    const updatedData = {
+      image: imageUrl || currentData.image || '',
+      publicId: publicId || currentData.publicId || '',
+      link: req.body.link || currentData.link || '',
+    };
+
+    await Settings.findOneAndUpdate(
+      { key: 'sideBanner' },
+      { key: 'sideBanner', value: updatedData },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, data: updatedData, message: 'সাইড ব্যানার সেভ হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // ===== MANUAL SETUP ADMIN (fallback) =====
 app.post('/api/setup-admin', async (req, res) => {
   try {

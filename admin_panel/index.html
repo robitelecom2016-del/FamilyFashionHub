@@ -375,6 +375,7 @@ tr:hover td { background: var(--bg); }
     <button class="nav-item" onclick="showPage('productlayout')"><i class="fas fa-columns"></i> পণ্য পেজ লেআউট</button>
     <button class="nav-item" onclick="showPage('testimonials')"><i class="fas fa-quote-left"></i> টেস্টিমোনিয়াল</button>
     <button class="nav-item" onclick="showPage('collections')"><i class="fas fa-th-large"></i> কালেকশন</button>
+    <button class="nav-item" onclick="showPage('heroside')"><i class="fas fa-image"></i> হিরো সাইড ইমেজ</button>
     <button class="nav-item" onclick="showPage('sidebanner')"><i class="fas fa-image"></i> সাইড ব্যানার</button>
     <button class="nav-item" onclick="showPage('settings');loadSliderImages()"><i class="fas fa-cog"></i> সেটিংস</button>
   </nav>
@@ -978,6 +979,95 @@ tr:hover td { background: var(--bg); }
   </div>
   <div id="collectionsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
     <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- ===== HERO SIDE IMAGE PAGE ===== -->
+<div class="page-section" id="page-heroside" style="display:none;">
+  <div class="card" style="max-width:680px;">
+    <div class="card-header">
+      <h3><i class="fas fa-desktop" style="color:var(--primary)"></i> ডেস্কটপ হিরো সাইড ইমেজ</h3>
+    </div>
+    <div class="card-body">
+      <div style="background:var(--primary-light);border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
+        <i class="fas fa-info-circle" style="color:var(--primary);font-size:18px;margin-top:2px;flex-shrink:0;"></i>
+        <div>
+          <p style="font-size:13px;font-weight:700;color:var(--primary-dark);">এই ইমেজটি কোথায় দেখায়?</p>
+          <p style="font-size:12px;color:var(--primary-dark);margin-top:4px;">ফ্রন্টএন্ডের হোমপেজে <strong>ডেস্কটপ মোডে</strong> মেইন স্লাইডারের ডান পাশে এই ইমেজটি দেখায়। মোবাইল ভিউতে সাধারণত লুকানো থাকে।</p>
+        </div>
+      </div>
+
+      <!-- Layout preview -->
+      <div style="background:#111827;border-radius:10px;padding:14px;margin-bottom:18px;">
+        <p style="font-size:11px;color:#6b7280;margin-bottom:8px;text-align:center;">ডেস্কটপ লেআউট প্রিভিউ</p>
+        <div style="display:grid;grid-template-columns:1fr 0.45fr;gap:8px;">
+          <div style="background:#1f2937;border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;">
+            <div style="text-align:center;">
+              <i class="fas fa-images" style="color:#6b7280;font-size:16px;display:block;margin-bottom:4px;"></i>
+              <span style="font-size:10px;color:#6b7280;">মেইন স্লাইডার</span>
+            </div>
+          </div>
+          <div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;border:2px dashed #a78bfa;">
+            <div style="text-align:center;">
+              <i class="fas fa-image" style="color:#c4b5fd;font-size:16px;display:block;margin-bottom:4px;"></i>
+              <span style="font-size:10px;color:#c4b5fd;">সাইড ইমেজ ← এখানে</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Image Preview -->
+      <div id="heroSideCurrentPreview" style="margin-bottom:16px;display:none;">
+        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;"><i class="fas fa-eye" style="color:var(--success);margin-right:4px;"></i> বর্তমান সাইড ইমেজ</p>
+        <div style="position:relative;display:inline-block;">
+          <img id="heroSideCurrentImg" src="" alt="Hero Side Image" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1.5px solid var(--border);">
+          <button onclick="deleteHeroSideImage()" style="position:absolute;top:6px;right:6px;background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-trash"></i> মুছুন</button>
+        </div>
+      </div>
+
+      <!-- Upload Zone -->
+      <div class="form-group">
+        <label class="form-label">নতুন ইমেজ আপলোড</label>
+        <div id="heroSideDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
+          onclick="document.getElementById('heroSideInput').click()"
+          ondragover="event.preventDefault();this.style.background='#ede9fe';"
+          ondragleave="this.style.background='#f5f3ff';"
+          ondrop="handleHeroSideDrop(event)">
+          <i class="fas fa-cloud-upload-alt" style="font-size:34px;color:var(--primary);display:block;margin-bottom:8px;"></i>
+          <p style="font-size:13px;color:var(--primary);font-weight:700;">ইমেজ এখানে ড্রাগ করুন বা ক্লিক করুন</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">PNG, JPG, WEBP — সর্বোচ্চ ১০MB</p>
+          <input type="file" id="heroSideInput" accept="image/*" style="display:none" onchange="previewHeroSideImage(this)">
+        </div>
+        <!-- New image preview -->
+        <div id="heroSideNewPreview" style="display:none;margin-top:10px;">
+          <p style="font-size:12px;font-weight:600;color:var(--success);margin-bottom:6px;"><i class="fas fa-check-circle"></i> নতুন ইমেজ সিলেক্ট করা হয়েছে</p>
+          <img id="heroSideNewImg" src="" style="max-height:140px;border-radius:8px;border:1.5px solid var(--success);">
+        </div>
+      </div>
+
+      <!-- Link -->
+      <div class="form-group">
+        <label class="form-label">ইমেজ লিংক <span style="font-size:11px;color:var(--text-muted);">(ক্লিক করলে যাবে — ঐচ্ছিক)</span></label>
+        <input type="text" class="form-control" id="heroSideLink" placeholder="যেমন: /category/sale বা https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alt টেক্সট <span style="font-size:11px;color:var(--text-muted);">(SEO ও accessibility — ঐচ্ছিক)</span></label>
+        <input type="text" class="form-control" id="heroSideAlt" placeholder="যেমন: Special Offer Banner">
+      </div>
+
+      <!-- Upload Progress -->
+      <div id="heroSideProgress" style="display:none;margin-bottom:14px;">
+        <div style="background:#e5e7eb;border-radius:999px;height:8px;overflow:hidden;">
+          <div id="heroSideProgressBar" style="background:var(--primary);height:100%;width:0%;transition:width 0.3s;"></div>
+        </div>
+        <p id="heroSideProgressText" style="font-size:12px;color:var(--text-muted);margin-top:4px;">আপলোড হচ্ছে...</p>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="saveHeroSideImage()"><i class="fas fa-save"></i> সেভ করুন</button>
+        <button class="btn btn-light" onclick="loadHeroSideImageAdmin()"><i class="fas fa-undo"></i> রিসেট</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1678,6 +1768,7 @@ const pageMeta = {
   settings: { title: 'সেটিংস', breadcrumb: 'Home / Settings' },
   testimonials: { title: 'টেস্টিমোনিয়াল', breadcrumb: 'Home / Testimonials' },
   collections: { title: 'কালেকশন', breadcrumb: 'Home / Collections' },
+  heroside: { title: 'হিরো সাইড ইমেজ', breadcrumb: 'Home / Hero Side Image' },
   sidebanner: { title: 'সাইড ব্যানার', breadcrumb: 'Home / Side Banner' },
 };
 
@@ -1700,6 +1791,7 @@ function showPage(page) {
   if (page === 'settings') { loadSettings(); setTimeout(loadSliderImages, 100); }
   if (page === 'testimonials') loadTestimonialsAdmin();
   if (page === 'collections') loadCollectionsAdmin();
+  if (page === 'heroside') loadHeroSideImageAdmin();
   if (page === 'sidebanner') loadSideBannerAdmin();
 }
 
@@ -4087,7 +4179,119 @@ async function saveSideBanner() {
   } catch { toast('সার্ভার সমস্যা', 'error'); }
 }
 
-// Testimonial image preview on file select
+// ============================================================
+// ===== HERO SIDE IMAGE ADMIN (ডেস্কটপে স্লাইডারের পাশের ইমেজ) =====
+// ============================================================
+
+async function loadHeroSideImageAdmin() {
+  // Reset form
+  document.getElementById('heroSideLink').value = '';
+  document.getElementById('heroSideAlt').value = '';
+  document.getElementById('heroSideInput').value = '';
+  document.getElementById('heroSideNewPreview').style.display = 'none';
+  document.getElementById('heroSideCurrentPreview').style.display = 'none';
+
+  try {
+    const res = await fetch(API_URL + '/hero-side-image');
+    const data = await res.json();
+    if (data.success && data.data && data.data.url) {
+      const d = data.data;
+      document.getElementById('heroSideCurrentImg').src = d.url;
+      document.getElementById('heroSideCurrentPreview').style.display = 'block';
+      if (d.link) document.getElementById('heroSideLink').value = d.link;
+      if (d.alt)  document.getElementById('heroSideAlt').value  = d.alt;
+    }
+  } catch {}
+}
+
+function previewHeroSideImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('heroSideNewImg').src = e.target.result;
+    document.getElementById('heroSideNewPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleHeroSideDrop(event) {
+  event.preventDefault();
+  document.getElementById('heroSideDropZone').style.background = '#f5f3ff';
+  const file = Array.from(event.dataTransfer.files).find(f => f.type.startsWith('image/'));
+  if (!file) return;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const input = document.getElementById('heroSideInput');
+  input.files = dt.files;
+  previewHeroSideImage(input);
+}
+
+async function saveHeroSideImage() {
+  const prog     = document.getElementById('heroSideProgress');
+  const bar      = document.getElementById('heroSideProgressBar');
+  const progText = document.getElementById('heroSideProgressText');
+
+  prog.style.display = 'block';
+  bar.style.width = '20%';
+  progText.textContent = 'আপলোড হচ্ছে...';
+
+  const form = new FormData();
+  form.append('link', document.getElementById('heroSideLink').value.trim());
+  form.append('alt',  document.getElementById('heroSideAlt').value.trim());
+  const imgFile = document.getElementById('heroSideInput').files[0];
+  if (imgFile) form.append('image', imgFile);
+
+  try {
+    bar.style.width = '50%';
+    const res = await fetch(API_URL + '/admin/hero-side-image', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + adminToken },
+      body: form
+    });
+    const data = await res.json();
+    bar.style.width = '100%';
+    if (data.success) {
+      progText.textContent = 'সফলভাবে সেভ হয়েছে!';
+      toast('হিরো সাইড ইমেজ সেভ হয়েছে!', 'success');
+      // update current preview
+      if (data.data && data.data.url) {
+        document.getElementById('heroSideCurrentImg').src = data.data.url;
+        document.getElementById('heroSideCurrentPreview').style.display = 'block';
+      }
+      document.getElementById('heroSideInput').value = '';
+      document.getElementById('heroSideNewPreview').style.display = 'none';
+    } else {
+      progText.textContent = 'সমস্যা হয়েছে!';
+      toast(data.message || 'সেভ ব্যর্থ হয়েছে', 'error');
+    }
+  } catch {
+    progText.textContent = 'সার্ভার সংযোগ ব্যর্থ!';
+    toast('সার্ভার সমস্যা', 'error');
+  }
+  setTimeout(() => { prog.style.display = 'none'; bar.style.width = '0%'; }, 2500);
+}
+
+async function deleteHeroSideImage() {
+  confirm('হিরো সাইড ইমেজটি মুছে ফেলবেন?', async () => {
+    try {
+      const res = await fetch(API_URL + '/admin/hero-side-image', {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + adminToken }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast('হিরো সাইড ইমেজ মুছে ফেলা হয়েছে');
+        document.getElementById('heroSideCurrentPreview').style.display = 'none';
+        document.getElementById('heroSideCurrentImg').src = '';
+      } else {
+        toast(data.message || 'সমস্যা', 'error');
+      }
+    } catch { toast('সার্ভার সমস্যা', 'error'); }
+  });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   const tImg = document.getElementById('testimonialImage');
   if (tImg) {
