@@ -3102,6 +3102,12 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         });
       });
 
+      if (categoryPage) {
+  categoryPage.classList.remove('detail-page');
+  categoryPage.classList.add('active');
+  categoryPage.style.display = '';   // ← restore
+}
+
       function performSearch() {
         const term = searchInput.value.trim();
         hideSuggestions();
@@ -4150,6 +4156,12 @@ window.FFH_API = (function() {
   } else {
     _runAllLoaders();
   }
+
+  if (catPage) {
+  catPage.classList.remove('active');
+  catPage.classList.add('detail-page');
+  catPage.style.display = 'none';   // ← force hide
+}
 
   window.addEventListener('resize', function() {
     window._revCurrentSlide = 0;
