@@ -1,3 +1,4 @@
+<!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -497,7 +498,156 @@
 .addRelatedProduct:active {
   transform: scale(0.96);
 }
-</style>   
+
+
+/* bottomNavBar - আগের width:100vw সরিয়ে দিন */
+#bottomNavBar {
+  width: 100% !important;
+  margin-left: 0 !important;
+  position: relative;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+/* ভেতরের কন্টেইনার ঠিক রাখা */
+#bottomNavBar .mx-auto {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+}
+
+@media (max-width: 767px) {
+  #catSidebar {
+    width: 100% !important;
+    padding: 0 0 12px 0;
+  }
+  #catProductGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  /* প্রাইস রেঞ্জ স্লাইডার ঠিক রাখা */
+  #priceSliderWrap {
+    padding: 0 12px;
+  }
+  #priceMinInput, #priceMaxInput {
+    font-size: 12px;
+    padding: 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  #allCatGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+  #allCatGrid > div {
+    padding: 12px 12px !important;
+  }
+  #allCatGrid svg {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-image-wrapper {
+    height: 130px !important;
+  }
+  .card-content {
+    padding: 10px 8px !important;
+  }
+  .card-title {
+    font-size: 12px !important;
+    line-height: 1.3;
+  }
+  .price-new, .price-old {
+    font-size: 13px !important;
+  }
+  .quick-add-btn {
+    font-size: 10px !important;
+    padding: 6px 4px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #detailRelatedGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+  .detail-main-grid > div:last-child {
+    margin-top: 16px;
+  }
+  #relatedProductsGrid > div {
+    padding: 8px 10px;
+  }
+}
+
+#mobileMenu {
+  width: 280px !important;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1);
+}
+#mobileMenu.open {
+  transform: translateX(0);
+}
+#closeMenuBtn {
+  left: 260px !important;
+  top: 20px !important;
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,240,0.98);
+}
+@media (max-width: 480px) {
+  #mobileMenu {
+    width: 100% !important;
+  }
+  #closeMenuBtn {
+    left: auto !important;
+    right: 16px;
+    top: 16px;
+  }
+}
+/* সাবমেনু অ্যানিমেশন স্মুথ */
+.mob-acc-sub {
+  transition: max-height 0.28s ease-out;
+}
+
+@media (max-width: 767px) {
+  #cartPopup > div {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+  #paymentModal > div {
+    width: 95% !important;
+    max-width: 95%;
+    border-radius: 20px;
+    padding: 16px;
+  }
+  #orderSummaryItems .order-summary-img {
+    width: 50px;
+    height: 50px;
+  }
+}
+@media (max-width: 560px) {
+  .feat-cat-card {
+    padding: 12px 10px !important;
+  }
+  .feat-cat-card svg {
+    width: 40px;
+    height: 40px;
+  }
+  .feat-cat-card span:first-child {
+    font-size: 12px !important;
+  }
+}
+@media (max-width: 767px) {
+  #sliderContainer .min-w-full img {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+  }
+}
+</style>    
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased" dir="ltr">
   
@@ -871,11 +1021,6 @@
       </style>
 
       <section id="allProductsSection" class="px-4 md:px-6"><div class="mx-auto" style="max-width:1200px;">
-        <div id="allProductsBreadcrumb" style="display:none;align-items:center;gap:4px;font-size:13px;margin-bottom:12px;flex-wrap:wrap;color:#6b7280;">
-          <a href="#" onclick="event.preventDefault();goToHome();" style="color:#374151;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:4px;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#374151'"><i class="fas fa-home" style="font-size:12px;"></i> Home</a>
-          <span style="color:#d1d5db;margin:0 2px;">›</span>
-          <span id="allProductsBreadcrumbLabel" style="color:#f97316;font-weight:600;">All Products</span>
-        </div>
         <h2 id="categoryTitle" class="text-3xl font-bold mb-6 border-l-8 border-green-500 pl-4">🌿 All Products</h2>
         <div id="productGrid" class="product-grid"></div>
       </section>
@@ -1648,11 +1793,6 @@
 
   <div id="allCategoriesPage" class="detail-page" style="margin-top:50px;width:100%;min-height:60vh;background:#f9fafb;padding-bottom:80px;">
     <div class="mx-auto px-4 py-6" style="max-width:1200px; margin-top: -20px;">
-      <div style="display:flex;align-items:center;gap:4px;font-size:13px;margin-bottom:14px;flex-wrap:wrap;color:#6b7280;">
-        <a href="#" onclick="event.preventDefault();goToHome();" style="color:#374151;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:4px;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#374151'"><i class="fas fa-home" style="font-size:12px;"></i> Home</a>
-        <span style="color:#d1d5db;margin:0 2px;">›</span>
-        <span style="color:#f97316;font-weight:600;">সকল ক্যাটাগরি</span>
-      </div>
       <div class="flex items-center gap-3 mb-6">
         <button onclick="hideAllCategoriesPage()" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm"><i class="fas fa-arrow-left text-gray-700"></i></button>
         <div><h2 style="font-size:1.25rem;font-weight:800;color:#111827;margin:0;">সকল ক্যাটাগরি</h2><div style="height:3px;width:40px;background:#f97316;border-radius:2px;margin-top:4px;"></div></div>
@@ -1832,9 +1972,6 @@
         if (ofs) ofs.style.display = '';
         const dp2 = document.getElementById('dashboardPage');
         if (dp2) { dp2.classList.remove('active'); dp2.classList.add('detail-page'); }
-        // Home এ গেলে allProducts breadcrumb লুকাও
-        var _apb = document.getElementById('allProductsBreadcrumb');
-        if (_apb) _apb.style.display = 'none';
         window.scrollTo({ top: 0 });
       }
       
@@ -2409,11 +2546,6 @@
           renderProductsByCategory('all', searchInput.value.trim());
           let titleText = '🌿 All Products';
           categoryTitle.innerText = titleText;
-          // breadcrumb আপডেট
-          var _apbl = document.getElementById('allProductsBreadcrumbLabel');
-          if (_apbl) _apbl.innerText = 'All Products';
-          var _apb = document.getElementById('allProductsBreadcrumb');
-          if (_apb) _apb.style.display = 'flex';
           window.scrollTo({ top: 0 });
         } else {
           showCategoryPage(cat, sub || '');
@@ -2591,21 +2723,13 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         else if (product.category === 'baby_care') catName = '🛁 Baby Care';
         else if (product.category === 'baby_bedding') catName = '👶 Essentials';
         else if (product.category === 'trending') catName = '🔥 Trending';
-        
-        // যদি "All Products" থেকে এসে থাকে তাহলে breadcrumb এ "All Products" দেখাও
-        if (currentCategory === 'all') {
-          detailCategory.innerText = 'All Products';
-          detailCategory.onclick = () => {
-            filterByCategory('all');
-          };
-        } else {
-          detailCategory.innerText = catName;
-          detailCategory.onclick = () => {
-            currentCategory = product.category;
-            showCategoryPage(product.category);
-          };
-        }
+        detailCategory.innerText = catName;
         detailNameBreadcrumb.innerText = product.name;
+        
+        detailCategory.onclick = () => {
+          currentCategory = product.category;
+          showCategoryPage(product.category);
+        };
         
         detailPageBadge.innerHTML = '';
         if (product.soldOut) {
