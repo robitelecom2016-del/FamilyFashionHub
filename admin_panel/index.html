@@ -958,7 +958,7 @@ tr:hover td { background: var(--bg); }
     </div><!-- end page-settings -->
 
     <!-- ===== TESTIMONIALS PAGE ===== -->
-<div class="page-section" id="page-testimonials" style="display:none;">
+<div class="page-section" id="page-testimonials">
   <div class="card">
     <div class="card-header">
       <h3><i class="fas fa-quote-left" style="color:var(--primary)"></i> টেস্টিমোনিয়াল ম্যানেজমেন্ট</h3>
@@ -969,7 +969,7 @@ tr:hover td { background: var(--bg); }
 </div>
 
 <!-- ===== COLLECTIONS PAGE ===== -->
-<div class="page-section" id="page-collections" style="display:none;">
+<div class="page-section" id="page-collections">
   <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
     <div>
       <h2 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;"><i class="fas fa-th-large" style="color:var(--primary);margin-right:8px;"></i>কালেকশন ম্যানেজমেন্ট</h2>
@@ -983,7 +983,7 @@ tr:hover td { background: var(--bg); }
 </div>
 
 <!-- ===== HERO SIDE IMAGE PAGE ===== -->
-<div class="page-section" id="page-heroside" style="display:none;">
+<div class="page-section" id="page-heroside">
   <div class="card" style="max-width:680px;">
     <div class="card-header">
       <h3><i class="fas fa-desktop" style="color:var(--primary)"></i> ডেস্কটপ হিরো সাইড ইমেজ</h3>
@@ -1072,7 +1072,7 @@ tr:hover td { background: var(--bg); }
 </div>
 
 <!-- ===== SIDE BANNER PAGE ===== -->
-<div class="page-section" id="page-sidebanner" style="display:none;">
+<div class="page-section" id="page-sidebanner">
   <div class="card" style="max-width:600px;">
     <div class="card-header">
       <h3><i class="fas fa-image" style="color:var(--primary)"></i> সাইড ব্যানার সেটিংস</h3>
@@ -1774,8 +1774,12 @@ const pageMeta = {
 };
 
 function showPage(page) {
-  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.page-section').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = '';
+  });
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) { pageEl.classList.add('active'); pageEl.style.display = ''; }
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   event.currentTarget.classList.add('active');
   const meta = pageMeta[page] || {};
