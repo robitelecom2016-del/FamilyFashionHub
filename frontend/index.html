@@ -911,6 +911,10 @@
             <span id="catMobilePageName" style="color:#f97316;font-weight:600;"></span>
           </div>
         </div>
+        <!-- Mobile subcategory filter pills -->
+        <div id="subcatFilterBarMobile" style="display:none;padding:6px 16px 10px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+          <div id="subcatPillsMobile" style="display:flex;gap:7px;flex-wrap:nowrap;white-space:nowrap;"></div>
+        </div>
         <div style="display:flex !important;flex-direction:row !important;align-items:center;justify-content:space-between;padding:8px 16px 12px 16px;gap:10px;flex-wrap:nowrap;">
           <div style="position:relative;flex:1;">
             <select id="catSortSelectMobile" onchange="sortCatProducts(this.value)" style="width:100%;appearance:none;-webkit-appearance:none;background:white;border:1.5px solid #e5e7eb;border-radius:6px;padding:9px 32px 9px 12px;font-size:13px;color:#374151;cursor:pointer;outline:none;font-weight:500;">
@@ -951,6 +955,11 @@
             <span style="font-size:12px;color:#6b7280;font-weight:500;">টি পণ্য পাওয়া গেছে</span>
           </div>
         </div>
+        <!-- ===== SUBCATEGORY FILTER BAR (Desktop) ===== -->
+        <div id="subcatFilterBar" style="display:none;margin-bottom:14px;background:white;border-radius:10px;border:1px solid #e5e7eb;padding:10px 14px;overflow-x:auto;">
+          <div id="subcatPills" style="display:flex;gap:8px;flex-wrap:nowrap;white-space:nowrap;"></div>
+        </div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;background:white;padding:12px 16px;border-radius:10px;border:1px solid #e5e7eb;">
           <span style="font-size:13px;color:#6b7280;" id="catResultText"></span>
           <div style="display:flex;align-items:center;gap:8px;">
@@ -1038,6 +1047,11 @@
       @media (max-width: 480px) {
         #catProductGrid { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
       }
+      #subcatFilterBarMobile::-webkit-scrollbar { display: none; }
+      #subcatFilterBarMobile { -ms-overflow-style: none; scrollbar-width: none; }
+      #subcatFilterBar::-webkit-scrollbar { height: 4px; }
+      #subcatFilterBar::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 2px; }
+      #subcatFilterBar::-webkit-scrollbar-thumb { background: #f97316; border-radius: 2px; }
       #priceMin::-webkit-slider-thumb, #priceMax::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; }
       #priceMin::-moz-range-thumb, #priceMax::-moz-range-thumb { width:20px; height:20px; opacity:0; }
       @media (max-width: 767px) {
@@ -2033,6 +2047,78 @@
                          ? window._ffhApiProducts
                          : products;
 
+        // store current filter state for re-renders after API load
+        window._ffhCurrentCat = cat;
+        window._ffhCurrentSub = sub || '';
+
+        // ─── Subcategory filter pills render ─────────────────────────────
+        (function renderSubcatPills(catVal, activeSub) {
+          var catData = null;
+          if (window._ffhNavCategories) {
+            catData = window._ffhNavCategories.find(function(c){ return c.value === catVal; });
+          }
+          var subs = (catData && catData.subcategories && catData.subcategories.length)
+            ? catData.subcategories : [];
+
+          // সব পণ্য (parent category)
+          var allCatProds = allProds.filter(function(p){ return p.category === catVal; });
+
+          var pillsBar     = document.getElementById('subcatFilterBar');
+          var pillsEl      = document.getElementById('subcatPills');
+          var pillsBarMob  = document.getElementById('subcatFilterBarMobile');
+          var pillsMobEl   = document.getElementById('subcatPillsMobile');
+
+          if (!subs.length) {
+            if (pillsBar)    pillsBar.style.display    = 'none';
+            if (pillsBarMob) pillsBarMob.style.display = 'none';
+            return;
+          }
+
+          if (pillsBar)    pillsBar.style.display    = 'block';
+          if (pillsBarMob) pillsBarMob.style.display = 'block';
+
+          function pillStyle(isActive) {
+            return isActive
+              ? 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #f97316;background:#f97316;color:white;transition:all 0.15s;flex-shrink:0;'
+              : 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:2px solid #e5e7eb;background:white;color:#374151;transition:all 0.15s;flex-shrink:0;';
+          }
+
+          function buildPills(container, isMobile) {
+            if (!container) return;
+            container.innerHTML = '';
+
+            // "সব পণ্য" pill (parent category)
+            var allBtn = document.createElement('button');
+            allBtn.style.cssText = pillStyle(!activeSub);
+            allBtn.innerHTML = 'সব পণ্য <span style="font-size:11px;opacity:0.85;margin-left:2px;">(' + allCatProds.length + ')</span>';
+            allBtn.onclick = function() {
+              window._ffhCurrentSub = '';
+              window.filterByCategory(catVal, '');
+            };
+            container.appendChild(allBtn);
+
+            // প্রতিটি subcategory pill
+            subs.forEach(function(s) {
+              var subCount = allProds.filter(function(p){
+                return p.category === catVal && p.subcategory === s.value;
+              }).length;
+              var isActive = activeSub === s.value;
+              var btn = document.createElement('button');
+              btn.style.cssText = pillStyle(isActive);
+              btn.innerHTML = s.label + ' <span style="font-size:11px;opacity:0.85;margin-left:2px;">(' + subCount + ')</span>';
+              btn.onclick = (function(sv){ return function() {
+                window._ffhCurrentSub = sv;
+                window.filterByCategory(catVal, sv);
+              }; })(s.value);
+              container.appendChild(btn);
+            });
+          }
+
+          buildPills(pillsEl, false);
+          buildPills(pillsMobEl, true);
+        })(cat, sub || '');
+        // ─────────────────────────────────────────────────────────────────
+
         if (cat === 'all') {
           catCurrentProducts = allProds.slice();
         } else if (sub) {
@@ -2047,10 +2133,6 @@
         } else {
           catCurrentProducts = allProds.filter(function(p){ return p.category === cat; });
         }
-
-        // store current filter state for re-renders after API load
-        window._ffhCurrentCat = cat;
-        window._ffhCurrentSub = sub || '';
 
         const prices = catCurrentProducts.map(function(p){ return p.price; });
         const pMin = prices.length ? Math.min.apply(null, prices) : 0;
@@ -2182,6 +2264,11 @@ badgeHtml = '';
           e.preventDefault();
           categoryPage.classList.remove('active');
           categoryPage.classList.add('detail-page');
+          // subcategory filter bar লুকাও
+          var _sbf2 = document.getElementById('subcatFilterBar');
+          var _sbfm2 = document.getElementById('subcatFilterBarMobile');
+          if (_sbf2)  _sbf2.style.display  = 'none';
+          if (_sbfm2) _sbfm2.style.display = 'none';
           const _crs2 = document.getElementById('customerReviewSection');
           if (_crs2) _crs2.style.display = '';
           const _mf2 = document.getElementById('mainFooter');
@@ -2201,6 +2288,11 @@ badgeHtml = '';
         e.preventDefault();
         categoryPage.classList.remove('active');
         categoryPage.classList.add('detail-page');
+        // subcategory filter bar লুকাও
+        var _sbf = document.getElementById('subcatFilterBar');
+        var _sbfm = document.getElementById('subcatFilterBarMobile');
+        if (_sbf)  _sbf.style.display  = 'none';
+        if (_sbfm) _sbfm.style.display = 'none';
         const _crs = document.getElementById('customerReviewSection');
         if (_crs) _crs.style.display = '';
         const _mf = document.getElementById('mainFooter');
@@ -2225,6 +2317,11 @@ badgeHtml = '';
           detailPage.classList.remove('active');
           detailPage.classList.add('detail-page');
           homePage.classList.remove('hidden');
+          // subcategory filter bar লুকাও
+          var _sbf  = document.getElementById('subcatFilterBar');
+          var _sbfm = document.getElementById('subcatFilterBarMobile');
+          if (_sbf)  _sbf.style.display  = 'none';
+          if (_sbfm) _sbfm.style.display = 'none';
           const _crs = document.getElementById('customerReviewSection');
           if (_crs) _crs.style.display = '';
           const _mf = document.getElementById('mainFooter');
@@ -4103,6 +4200,47 @@ function _ffhApplyApiProducts(apiMapped) {
       var pMin = prices.length ? Math.min.apply(null, prices) : 0;
       var pMax = prices.length ? Math.max.apply(null, prices) : 0;
       if (typeof initPriceSlider === 'function') initPriceSlider(pMin, pMax);
+
+      // subcategory pills re-render with fresh product counts
+      if (savedCat && savedCat !== 'all' && window._ffhNavCategories) {
+        var catData = window._ffhNavCategories.find(function(c){ return c.value === savedCat; });
+        var subs = (catData && catData.subcategories) ? catData.subcategories : [];
+        function _pillSt(active) {
+          return active
+            ? 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #f97316;background:#f97316;color:white;transition:all 0.15s;flex-shrink:0;'
+            : 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:2px solid #e5e7eb;background:white;color:#374151;transition:all 0.15s;flex-shrink:0;';
+        }
+        function _rebuildPills(container) {
+          if (!container || !subs.length) return;
+          container.innerHTML = '';
+          var allCatCount = apiMapped.filter(function(p){ return p.category === savedCat; }).length;
+          var allBtn = document.createElement('button');
+          allBtn.style.cssText = _pillSt(!savedSub);
+          allBtn.innerHTML = 'সব পণ্য <span style="font-size:11px;opacity:0.85;margin-left:2px;">(' + allCatCount + ')</span>';
+          allBtn.onclick = function() { window._ffhCurrentSub=''; window.filterByCategory(savedCat,''); };
+          container.appendChild(allBtn);
+          subs.forEach(function(s) {
+            var cnt = apiMapped.filter(function(p){ return p.category===savedCat && p.subcategory===s.value; }).length;
+            var isAct = savedSub === s.value;
+            var b = document.createElement('button');
+            b.style.cssText = _pillSt(isAct);
+            b.innerHTML = s.label + ' <span style="font-size:11px;opacity:0.85;margin-left:2px;">(' + cnt + ')</span>';
+            b.onclick = (function(sv){ return function(){ window._ffhCurrentSub=sv; window.filterByCategory(savedCat,sv); }; })(s.value);
+            container.appendChild(b);
+          });
+        }
+        if (subs.length) {
+          var pb  = document.getElementById('subcatFilterBar');
+          var pm  = document.getElementById('subcatFilterBarMobile');
+          var pEl = document.getElementById('subcatPills');
+          var pmEl= document.getElementById('subcatPillsMobile');
+          if (pb)  pb.style.display = 'block';
+          if (pm)  pm.style.display = 'block';
+          _rebuildPills(pEl);
+          _rebuildPills(pmEl);
+        }
+      }
+
       if (typeof applyCatFilters === 'function') applyCatFilters();
     }
   }
