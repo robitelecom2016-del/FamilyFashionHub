@@ -373,6 +373,9 @@ tr:hover td { background: var(--bg); }
     <div class="nav-label">কনফিগারেশন</div>
     <button class="nav-item" onclick="showPage('categories')"><i class="fas fa-tags"></i> ক্যাটাগরি</button>
     <button class="nav-item" onclick="showPage('productlayout')"><i class="fas fa-columns"></i> পণ্য পেজ লেআউট</button>
+    <button class="nav-item" onclick="showPage('testimonials')"><i class="fas fa-quote-left"></i> টেস্টিমোনিয়াল</button>
+    <button class="nav-item" onclick="showPage('collections')"><i class="fas fa-th-large"></i> কালেকশন</button>
+    <button class="nav-item" onclick="showPage('sidebanner')"><i class="fas fa-image"></i> সাইড ব্যানার</button>
     <button class="nav-item" onclick="showPage('settings');loadSliderImages()"><i class="fas fa-cog"></i> সেটিংস</button>
   </nav>
   <div class="sidebar-footer">
@@ -951,9 +954,79 @@ tr:hover td { background: var(--bg); }
           </div>
         </div>
       </div>
+    </div><!-- end page-settings -->
+
+    <!-- ===== TESTIMONIALS PAGE ===== -->
+<div class="page-section" id="page-testimonials" style="display:none;">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-quote-left" style="color:var(--primary)"></i> টেস্টিমোনিয়াল ম্যানেজমেন্ট</h3>
+      <button class="btn btn-primary btn-sm" onclick="openTestimonialModal()"><i class="fas fa-plus"></i> নতুন টেস্টিমোনিয়াল</button>
+    </div>
+    <div id="testimonialsTable"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<!-- ===== COLLECTIONS PAGE ===== -->
+<div class="page-section" id="page-collections" style="display:none;">
+  <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;"><i class="fas fa-th-large" style="color:var(--primary);margin-right:8px;"></i>কালেকশন ম্যানেজমেন্ট</h2>
+      <p style="font-size:13px;color:var(--text-muted);">সর্বোচ্চ ৪টি কালেকশন — ফ্রন্টএন্ডে হোমপেজে দেখাবে।</p>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openCollectionModal()"><i class="fas fa-plus"></i> নতুন কালেকশন</button>
+  </div>
+  <div id="collectionsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- ===== SIDE BANNER PAGE ===== -->
+<div class="page-section" id="page-sidebanner" style="display:none;">
+  <div class="card" style="max-width:600px;">
+    <div class="card-header">
+      <h3><i class="fas fa-image" style="color:var(--primary)"></i> সাইড ব্যানার সেটিংস</h3>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">ফ্রন্টএন্ডে পণ্য পেজের পাশে দেখানো ব্যানার ছবি এখান থেকে পরিবর্তন করুন।</p>
+
+      <!-- Current Preview -->
+      <div id="sideBannerPreview" style="margin-bottom:16px;display:none;">
+        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;"><i class="fas fa-eye" style="color:var(--success);margin-right:4px;"></i> বর্তমান ব্যানার</p>
+        <img id="sideBannerPreviewImg" src="" alt="Side Banner" style="max-width:100%;max-height:200px;object-fit:contain;border-radius:10px;border:1.5px solid var(--border);">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ব্যানার ছবি আপলোড</label>
+        <div id="sideBannerDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
+          onclick="document.getElementById('sideBannerInput').click()"
+          ondragover="event.preventDefault();this.style.background='#ede9fe';"
+          ondragleave="this.style.background='#f5f3ff';"
+          ondrop="handleSideBannerDrop(event)">
+          <i class="fas fa-cloud-upload-alt" style="font-size:32px;color:var(--primary);display:block;margin-bottom:8px;"></i>
+          <p style="font-size:13px;color:var(--primary);font-weight:700;">ছবি এখানে ড্রাগ করুন বা ক্লিক করুন</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">PNG, JPG, WEBP — সর্বোচ্চ ১০MB</p>
+          <input type="file" id="sideBannerInput" accept="image/*" style="display:none" onchange="previewSideBanner(this)">
+        </div>
+        <div id="sideBannerNewPreview" style="display:none;margin-top:10px;">
+          <p style="font-size:12px;font-weight:600;color:var(--success);margin-bottom:6px;"><i class="fas fa-check-circle"></i> নতুন ছবি সিলেক্ট করা হয়েছে</p>
+          <img id="sideBannerNewImg" src="" style="max-height:120px;border-radius:8px;border:1.5px solid var(--success);">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ব্যানার লিংক (ক্লিক করলে যাবে)</label>
+        <input type="text" class="form-control" id="sideBannerLink" placeholder="যেমন: /category/sale বা https://...">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" onclick="saveSideBanner()"><i class="fas fa-save"></i> সেভ করুন</button>
+        <button class="btn btn-light" onclick="loadSideBannerAdmin()"><i class="fas fa-undo"></i> রিসেট</button>
+      </div>
     </div>
   </div>
 </div>
+
+  </div><!-- end content-area -->
+</div><!-- end main-content -->
 
 <!-- ===== PRODUCT MODAL ===== -->
 <div class="modal-overlay" id="productModal">
@@ -1330,6 +1403,104 @@ tr:hover td { background: var(--bg); }
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- ===== TESTIMONIAL MODAL ===== -->
+<div class="modal-overlay" id="testimonialModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3 id="testimonialModalTitle">নতুন টেস্টিমোনিয়াল</h3>
+      <button class="modal-close" onclick="closeModal('testimonialModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="testimonialId">
+      <div class="form-group">
+        <label class="form-label">নাম *</label>
+        <input type="text" class="form-control" id="testimonialName" placeholder="গ্রাহকের নাম">
+      </div>
+      <div class="form-group">
+        <label class="form-label">পদবী / পরিচয়</label>
+        <input type="text" class="form-control" id="testimonialRole" placeholder="যেমন: নিয়মিত ক্রেতা">
+      </div>
+      <div class="form-group">
+        <label class="form-label">মন্তব্য *</label>
+        <textarea class="form-control" id="testimonialComment" rows="4" placeholder="টেস্টিমোনিয়ালের টেক্সট লিখুন..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">রেটিং (১–৫)</label>
+        <select class="form-control" id="testimonialRating">
+          <option value="5">⭐⭐⭐⭐⭐ (৫)</option>
+          <option value="4">⭐⭐⭐⭐ (৪)</option>
+          <option value="3">⭐⭐⭐ (৩)</option>
+          <option value="2">⭐⭐ (২)</option>
+          <option value="1">⭐ (১)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">প্রোফাইল ছবি</label>
+        <input type="file" class="form-control" id="testimonialImage" accept="image/*">
+        <div id="testimonialImgPreview" style="margin-top:8px;display:none;">
+          <img id="testimonialImgPreviewImg" src="" style="width:60px;height:60px;object-fit:cover;border-radius:50%;border:2px solid var(--primary);">
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="testimonialEnabled" checked> সক্রিয় (ফ্রন্টএন্ডে দেখাবে)
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('testimonialModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveTestimonial()"><i class="fas fa-save"></i> সেভ করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== COLLECTION MODAL ===== -->
+<div class="modal-overlay" id="collectionModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3 id="collectionModalTitle">নতুন কালেকশন</h3>
+      <button class="modal-close" onclick="closeModal('collectionModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="collectionId">
+      <div class="form-group">
+        <label class="form-label">শিরোনাম *</label>
+        <input type="text" class="form-control" id="collectionTitle" placeholder="যেমন: নতুন আগমন">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ক্যাটাগরি (লিংকের জন্য)</label>
+        <select class="form-control" id="collectionCategory">
+          <option value="">-- বেছে নিন --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">কাস্টম লিংক <span style="font-size:11px;color:var(--text-muted);">(ক্যাটাগরি না বেছে নিলে)</span></label>
+        <input type="text" class="form-control" id="collectionLink" placeholder="যেমন: /category/sale">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ছবি আপলোড</label>
+        <input type="file" class="form-control" id="collectionImage" accept="image/*" onchange="previewCollectionImg(this)">
+        <div id="collectionImgPreview" style="display:none;margin-top:8px;">
+          <img id="collectionImgPreviewImg" src="" style="max-height:120px;border-radius:8px;border:1.5px solid var(--border);">
+        </div>
+        <div id="collectionCurrentImg" style="display:none;margin-top:8px;">
+          <p style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">বর্তমান ছবি:</p>
+          <img id="collectionCurrentImgEl" src="" style="max-height:80px;border-radius:6px;border:1px solid var(--border);">
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="collectionEnabled" checked> সক্রিয় (ফ্রন্টএন্ডে দেখাবে)
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('collectionModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveCollection()"><i class="fas fa-save"></i> সেভ করুন</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== CONFIG =====
 let API_URL = localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub.onrender.com/api';
@@ -1505,6 +1676,9 @@ const pageMeta = {
   categories: { title: 'ক্যাটাগরি ব্যবস্থাপনা', breadcrumb: 'Home / Categories' },
   productlayout: { title: 'পণ্য পেজ লেআউট', breadcrumb: 'Home / Product Layout' },
   settings: { title: 'সেটিংস', breadcrumb: 'Home / Settings' },
+  testimonials: { title: 'টেস্টিমোনিয়াল', breadcrumb: 'Home / Testimonials' },
+  collections: { title: 'কালেকশন', breadcrumb: 'Home / Collections' },
+  sidebanner: { title: 'সাইড ব্যানার', breadcrumb: 'Home / Side Banner' },
 };
 
 function showPage(page) {
@@ -1524,6 +1698,9 @@ function showPage(page) {
   if (page === 'categories') loadCategoriesPage();
   if (page === 'productlayout') loadProductLayout();
   if (page === 'settings') { loadSettings(); setTimeout(loadSliderImages, 100); }
+  if (page === 'testimonials') loadTestimonialsAdmin();
+  if (page === 'collections') loadCollectionsAdmin();
+  if (page === 'sidebanner') loadSideBannerAdmin();
 }
 
 function toggleSidebar() {
@@ -3538,6 +3715,393 @@ document.getElementById('sliderImagesInput') && document.getElementById('sliderI
   const doReplace = !!window._sliderReplace;
   window._sliderReplace = false;
   uploadSliderImages(doReplace);
+});
+
+// ============================================================
+// ===== TESTIMONIALS ADMIN =====
+// ============================================================
+
+let _testimonials = [];
+
+async function loadTestimonialsAdmin() {
+  const el = document.getElementById('testimonialsTable');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const res = await fetch(API_URL + '/testimonials');
+    const data = await res.json();
+    _testimonials = data.success ? data.data : [];
+    renderTestimonialsAdmin(_testimonials);
+  } catch {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-quote-left"></i><p>লোড হয়নি</p></div>';
+  }
+}
+
+function renderTestimonialsAdmin(list) {
+  const el = document.getElementById('testimonialsTable');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-quote-left"></i><p>কোনো টেস্টিমোনিয়াল নেই। নতুন যোগ করুন।</p></div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-wrapper" style="border:none;border-radius:0;">
+      <table>
+        <thead><tr>
+          <th>ছবি</th><th>নাম</th><th>পদবী</th><th>মন্তব্য</th><th>রেটিং</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th>
+        </tr></thead>
+        <tbody>
+          ${list.map(t => `
+            <tr>
+              <td><img src="${t.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.name) + '&background=7c3aed&color=fff'}" style="width:40px;height:40px;object-fit:cover;border-radius:50%;border:2px solid var(--border);"></td>
+              <td><strong>${t.name}</strong></td>
+              <td style="color:var(--text-muted);font-size:12px;">${t.role || '—'}</td>
+              <td style="max-width:220px;font-size:12px;">${(t.comment||'').slice(0,80)}${(t.comment||'').length>80?'...':''}</td>
+              <td>${'★'.repeat(t.rating||5)}</td>
+              <td>
+                <span class="badge ${t.enabled ? 'badge-success' : 'badge-gray'}">${t.enabled ? 'সক্রিয়' : 'বন্ধ'}</span>
+              </td>
+              <td>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn btn-xs btn-info" onclick="editTestimonial('${t._id}')"><i class="fas fa-edit"></i></button>
+                  <button class="btn btn-xs ${t.enabled ? 'btn-warning' : 'btn-success'}" onclick="toggleTestimonial('${t._id}',${!t.enabled})" title="${t.enabled ? 'বন্ধ করুন' : 'চালু করুন'}"><i class="fas fa-${t.enabled ? 'eye-slash' : 'eye'}"></i></button>
+                  <button class="btn btn-xs btn-danger" onclick="deleteTestimonial('${t._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openTestimonialModal(id = null) {
+  document.getElementById('testimonialId').value = '';
+  document.getElementById('testimonialName').value = '';
+  document.getElementById('testimonialRole').value = '';
+  document.getElementById('testimonialComment').value = '';
+  document.getElementById('testimonialRating').value = '5';
+  document.getElementById('testimonialEnabled').checked = true;
+  document.getElementById('testimonialImage').value = '';
+  document.getElementById('testimonialImgPreview').style.display = 'none';
+  document.getElementById('testimonialModalTitle').textContent = 'নতুন টেস্টিমোনিয়াল';
+  openModal('testimonialModal');
+}
+
+function editTestimonial(id) {
+  const t = _testimonials.find(x => x._id === id);
+  if (!t) return;
+  document.getElementById('testimonialId').value = t._id;
+  document.getElementById('testimonialName').value = t.name || '';
+  document.getElementById('testimonialRole').value = t.role || '';
+  document.getElementById('testimonialComment').value = t.comment || '';
+  document.getElementById('testimonialRating').value = String(t.rating || 5);
+  document.getElementById('testimonialEnabled').checked = !!t.enabled;
+  document.getElementById('testimonialImage').value = '';
+  const prev = document.getElementById('testimonialImgPreview');
+  if (t.image) {
+    prev.style.display = 'block';
+    document.getElementById('testimonialImgPreviewImg').src = t.image;
+  } else {
+    prev.style.display = 'none';
+  }
+  document.getElementById('testimonialModalTitle').textContent = 'টেস্টিমোনিয়াল সম্পাদনা';
+  openModal('testimonialModal');
+}
+
+async function saveTestimonial() {
+  const id = document.getElementById('testimonialId').value;
+  const name = document.getElementById('testimonialName').value.trim();
+  const comment = document.getElementById('testimonialComment').value.trim();
+  if (!name || !comment) { toast('নাম ও মন্তব্য আবশ্যিক', 'error'); return; }
+
+  const form = new FormData();
+  form.append('name', name);
+  form.append('role', document.getElementById('testimonialRole').value.trim());
+  form.append('comment', comment);
+  form.append('rating', document.getElementById('testimonialRating').value);
+  form.append('enabled', document.getElementById('testimonialEnabled').checked ? 'true' : 'false');
+  const imgFile = document.getElementById('testimonialImage').files[0];
+  if (imgFile) form.append('image', imgFile);
+
+  try {
+    const url = id ? `/admin/testimonials/${id}` : '/admin/testimonials';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(API_URL + url, {
+      method,
+      headers: { Authorization: 'Bearer ' + adminToken },
+      body: form
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(id ? 'টেস্টিমোনিয়াল আপডেট হয়েছে' : 'টেস্টিমোনিয়াল যোগ হয়েছে', 'success');
+      closeModal('testimonialModal');
+      loadTestimonialsAdmin();
+    } else {
+      toast(data.message || 'সমস্যা হয়েছে', 'error');
+    }
+  } catch { toast('সার্ভার সমস্যা', 'error'); }
+}
+
+async function deleteTestimonial(id) {
+  confirm('এই টেস্টিমোনিয়ালটি মুছে ফেলবেন?', async () => {
+    try {
+      const data = await api('/admin/testimonials/' + id, 'DELETE');
+      if (data.success) { toast('মুছে ফেলা হয়েছে'); loadTestimonialsAdmin(); }
+      else toast(data.message || 'সমস্যা', 'error');
+    } catch { toast('সার্ভার সমস্যা', 'error'); }
+  });
+}
+
+async function toggleTestimonial(id, enabled) {
+  try {
+    const data = await api('/admin/testimonials/' + id, 'PUT', { enabled });
+    if (data.success) { toast(enabled ? 'সক্রিয় করা হয়েছে' : 'বন্ধ করা হয়েছে'); loadTestimonialsAdmin(); }
+    else toast(data.message || 'সমস্যা', 'error');
+  } catch { toast('সার্ভার সমস্যা', 'error'); }
+}
+
+// ============================================================
+// ===== COLLECTIONS ADMIN =====
+// ============================================================
+
+let _collections = [];
+
+async function loadCollectionsAdmin() {
+  const el = document.getElementById('collectionsGrid');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const res = await fetch(API_URL + '/collections');
+    const data = await res.json();
+    _collections = data.success ? data.data : [];
+    renderCollectionsAdmin(_collections);
+  } catch {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-th-large"></i><p>লোড হয়নি</p></div>';
+  }
+}
+
+function renderCollectionsAdmin(list) {
+  const el = document.getElementById('collectionsGrid');
+  if (!list.length) {
+    el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);border:1.5px dashed var(--border);border-radius:10px;">
+      <i class="fas fa-th-large" style="font-size:32px;opacity:0.3;display:block;margin-bottom:8px;"></i>
+      <p>কোনো কালেকশন নেই। নতুন কালেকশন যোগ করুন।</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = list.map(c => `
+    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      ${c.image ? `<img src="${c.image}" style="width:100%;height:150px;object-fit:cover;display:block;">` :
+        `<div style="width:100%;height:150px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;"><i class="fas fa-image" style="font-size:40px;color:var(--primary);opacity:0.4;"></i></div>`}
+      <div style="padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <p style="font-size:15px;font-weight:700;color:var(--text);">${c.title || 'শিরোনাম নেই'}</p>
+          <span class="badge ${c.enabled ? 'badge-success' : 'badge-gray'}">${c.enabled ? 'সক্রিয়' : 'বন্ধ'}</span>
+        </div>
+        ${c.category ? `<p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"><i class="fas fa-tag" style="margin-right:4px;"></i>${c.category}</p>` : ''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-xs btn-info" onclick="editCollection('${c._id}')"><i class="fas fa-edit"></i> সম্পাদনা</button>
+          <button class="btn btn-xs ${c.enabled ? 'btn-warning' : 'btn-success'}" onclick="toggleCollection('${c._id}',${!c.enabled})">
+            <i class="fas fa-${c.enabled ? 'eye-slash' : 'eye'}"></i>
+          </button>
+          <button class="btn btn-xs btn-danger" onclick="deleteCollection('${c._id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openCollectionModal() {
+  document.getElementById('collectionId').value = '';
+  document.getElementById('collectionTitle').value = '';
+  document.getElementById('collectionCategory').value = '';
+  document.getElementById('collectionLink').value = '';
+  document.getElementById('collectionEnabled').checked = true;
+  document.getElementById('collectionImage').value = '';
+  document.getElementById('collectionImgPreview').style.display = 'none';
+  document.getElementById('collectionCurrentImg').style.display = 'none';
+  document.getElementById('collectionModalTitle').textContent = 'নতুন কালেকশন';
+  // Populate categories
+  populateCollectionCategories();
+  openModal('collectionModal');
+}
+
+function editCollection(id) {
+  const c = _collections.find(x => x._id === id);
+  if (!c) return;
+  document.getElementById('collectionId').value = c._id;
+  document.getElementById('collectionTitle').value = c.title || '';
+  document.getElementById('collectionLink').value = c.link || '';
+  document.getElementById('collectionEnabled').checked = !!c.enabled;
+  document.getElementById('collectionImage').value = '';
+  document.getElementById('collectionImgPreview').style.display = 'none';
+  const curImg = document.getElementById('collectionCurrentImg');
+  if (c.image) {
+    curImg.style.display = 'block';
+    document.getElementById('collectionCurrentImgEl').src = c.image;
+  } else {
+    curImg.style.display = 'none';
+  }
+  document.getElementById('collectionModalTitle').textContent = 'কালেকশন সম্পাদনা';
+  populateCollectionCategories(c.category);
+  openModal('collectionModal');
+}
+
+function populateCollectionCategories(selected = '') {
+  const sel = document.getElementById('collectionCategory');
+  const cats = window._allCategories || [];
+  sel.innerHTML = '<option value="">-- বেছে নিন --</option>' +
+    cats.map(c => `<option value="${c.value}" ${c.value === selected ? 'selected' : ''}>${c.label}</option>`).join('');
+}
+
+function previewCollectionImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('collectionImgPreviewImg').src = e.target.result;
+    document.getElementById('collectionImgPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveCollection() {
+  const id = document.getElementById('collectionId').value;
+  const title = document.getElementById('collectionTitle').value.trim();
+  if (!title) { toast('শিরোনাম আবশ্যিক', 'error'); return; }
+
+  const form = new FormData();
+  form.append('title', title);
+  form.append('category', document.getElementById('collectionCategory').value);
+  form.append('link', document.getElementById('collectionLink').value.trim());
+  form.append('enabled', document.getElementById('collectionEnabled').checked ? 'true' : 'false');
+  const imgFile = document.getElementById('collectionImage').files[0];
+  if (imgFile) form.append('image', imgFile);
+
+  // Check max 4 limit
+  if (!id && _collections.length >= 4) { toast('সর্বোচ্চ ৪টি কালেকশন যোগ করা যাবে', 'error'); return; }
+
+  try {
+    const url = id ? `/admin/collections/${id}` : '/admin/collections';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(API_URL + url, {
+      method,
+      headers: { Authorization: 'Bearer ' + adminToken },
+      body: form
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(id ? 'কালেকশন আপডেট হয়েছে' : 'কালেকশন যোগ হয়েছে', 'success');
+      closeModal('collectionModal');
+      loadCollectionsAdmin();
+    } else {
+      toast(data.message || 'সমস্যা হয়েছে', 'error');
+    }
+  } catch { toast('সার্ভার সমস্যা', 'error'); }
+}
+
+async function toggleCollection(id, enabled) {
+  try {
+    const data = await api('/admin/collections/' + id, 'PUT', { enabled });
+    if (data.success) { toast(enabled ? 'সক্রিয় করা হয়েছে' : 'বন্ধ করা হয়েছে'); loadCollectionsAdmin(); }
+    else toast(data.message || 'সমস্যা', 'error');
+  } catch { toast('সার্ভার সমস্যা', 'error'); }
+}
+
+async function deleteCollection(id) {
+  confirm('এই কালেকশনটি মুছে ফেলবেন?', async () => {
+    try {
+      const data = await api('/admin/collections/' + id, 'DELETE');
+      if (data.success) { toast('মুছে ফেলা হয়েছে'); loadCollectionsAdmin(); }
+      else toast(data.message || 'সমস্যা', 'error');
+    } catch { toast('সার্ভার সমস্যা', 'error'); }
+  });
+}
+
+// ============================================================
+// ===== SIDE BANNER ADMIN =====
+// ============================================================
+
+async function loadSideBannerAdmin() {
+  document.getElementById('sideBannerLink').value = '';
+  document.getElementById('sideBannerInput').value = '';
+  document.getElementById('sideBannerNewPreview').style.display = 'none';
+  try {
+    const res = await fetch(API_URL + '/sidebanner');
+    const data = await res.json();
+    if (data.success && data.data) {
+      const b = data.data;
+      if (b.link) document.getElementById('sideBannerLink').value = b.link;
+      if (b.image) {
+        document.getElementById('sideBannerPreviewImg').src = b.image;
+        document.getElementById('sideBannerPreview').style.display = 'block';
+      } else {
+        document.getElementById('sideBannerPreview').style.display = 'none';
+      }
+    }
+  } catch {
+    document.getElementById('sideBannerPreview').style.display = 'none';
+  }
+}
+
+function previewSideBanner(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('sideBannerNewImg').src = e.target.result;
+    document.getElementById('sideBannerNewPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleSideBannerDrop(event) {
+  event.preventDefault();
+  document.getElementById('sideBannerDropZone').style.background = '#f5f3ff';
+  const file = Array.from(event.dataTransfer.files).find(f => f.type.startsWith('image/'));
+  if (!file) return;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const input = document.getElementById('sideBannerInput');
+  input.files = dt.files;
+  previewSideBanner(input);
+}
+
+async function saveSideBanner() {
+  const form = new FormData();
+  form.append('link', document.getElementById('sideBannerLink').value.trim());
+  const imgFile = document.getElementById('sideBannerInput').files[0];
+  if (imgFile) form.append('image', imgFile);
+
+  try {
+    const res = await fetch(API_URL + '/admin/sidebanner', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + adminToken },
+      body: form
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('সাইড ব্যানার সেভ হয়েছে!', 'success');
+      loadSideBannerAdmin();
+    } else {
+      toast(data.message || 'সমস্যা হয়েছে', 'error');
+    }
+  } catch { toast('সার্ভার সমস্যা', 'error'); }
+}
+
+// Testimonial image preview on file select
+document.addEventListener('DOMContentLoaded', () => {
+  const tImg = document.getElementById('testimonialImage');
+  if (tImg) {
+    tImg.addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('testimonialImgPreviewImg').src = e.target.result;
+        document.getElementById('testimonialImgPreview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 });
 
 </script>
