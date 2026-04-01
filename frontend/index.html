@@ -652,8 +652,9 @@
       .mob-acc-sub a:last-child { border-bottom: none; }
       .mob-acc-sub a:hover { background: #fff1e6; color: #ea580c; }
       .mob-acc-sub a .sub-dot { width: 6px; height: 6px; border-radius: 50%; background: #f97316; flex-shrink: 0; }
-      .mob-acc-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding: 15px 20px; background:white; border:none; cursor:pointer; transition: background 0.15s; border-bottom: 1px solid #e9e9e9; }
+      .mob-acc-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding: 0 8px 0 0; background:white; border:none; cursor:pointer; transition: background 0.15s; border-bottom: 1px solid #e9e9e9; }
       .mob-acc-btn:hover { background: #fff8f3; }
+      .mob-acc-btn .btn-left { flex:1; display:flex; align-items:center; padding: 15px 0 15px 20px; }
       .mob-acc-btn .btn-left { display:flex; align-items:center; gap:10px; }
       .mob-acc-btn .btn-right { display:flex; align-items:center; gap:8px; }
       .mob-acc-btn .cat-label { font-size:15px; font-weight:500; color:#1f2937; }
@@ -1637,7 +1638,6 @@
         <div><h2 style="font-size:1.25rem;font-weight:800;color:#111827;margin:0;">সকল ক্যাটাগরি</h2><div style="height:3px;width:40px;background:#f97316;border-radius:2px;margin-top:4px;"></div></div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" id="allCatGrid">
-        <div onclick="filterByCategory('jamakapor');hideAllCategoriesPage();" data-catvalue="jamakapor" style="background:white;border:1.5px solid #f3e8d8;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;"><div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:13px;font-weight:600;color:#1f2937;">👗 জামাকাপড়</span><span class="ffh-allcat-count" style="display:none;font-size:10px;font-weight:700;color:white;background:#f97316;border-radius:8px;padding:1px 6px;width:fit-content;"></span></div><svg width="44" height="44" viewBox="0 0 64 64" fill="none"><path d="M20 14 L14 22 L22 24 L20 50 L44 50 L42 24 L50 22 L44 14 Q38 18 32 18 Q26 18 20 14Z" fill="#f97316"/><path d="M20 14 Q26 18 32 18 Q38 18 44 14 L40 10 Q36 12 32 12 Q28 12 24 10Z" fill="#fb923c"/></svg></div>
         <div onclick="filterByCategory('baby-shoes');hideAllCategoriesPage();" data-catvalue="baby-shoes" style="background:white;border:1.5px solid #f3e8d8;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;"><div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:13px;font-weight:600;color:#1f2937;">Baby Shoes</span><span class="ffh-allcat-count" style="display:none;font-size:10px;font-weight:700;color:white;background:#f97316;border-radius:8px;padding:1px 6px;width:fit-content;"></span></div><svg width="44" height="44" viewBox="0 0 64 64" fill="none"><ellipse cx="32" cy="50" rx="24" ry="6" fill="#fde68a" opacity="0.35"/><path d="M10 38 Q12 28 22 26 L40 25 Q50 25 53 32 L54 38 Q54 43 49 44 L13 44 Q9 43 10 38Z" fill="#f97316"/><path d="M22 26 L27 18 Q31 14 36 16 L40 25 L22 26Z" fill="#fb923c"/><path d="M15 44 Q14 47 16 48 L47 48 Q50 47 50 44" fill="#ea580c"/></svg></div>
         <div onclick="filterByCategory('baby-toys');hideAllCategoriesPage();" data-catvalue="baby-toys" style="background:white;border:1.5px solid #f3e8d8;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;"><div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:13px;font-weight:600;color:#1f2937;">বেবি Toys</span><span class="ffh-allcat-count" style="display:none;font-size:10px;font-weight:700;color:white;background:#f97316;border-radius:8px;padding:1px 6px;width:fit-content;"></span></div><svg width="44" height="44" viewBox="0 0 64 64" fill="none"><circle cx="24" cy="38" r="12" fill="#f97316"/><circle cx="43" cy="27" r="10" fill="#fb923c"/><rect x="22" y="12" width="4" height="14" rx="2" fill="#fdba74"/><circle cx="24" cy="11" r="3" fill="#f97316"/><rect x="40" y="7" width="4" height="12" rx="2" fill="#fdba74"/></svg></div>
         <div onclick="filterByCategory('women-cosmetics');hideAllCategoriesPage();" data-catvalue="women-cosmetics" style="background:white;border:1.5px solid #f3e8d8;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;"><div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:13px;font-weight:600;color:#1f2937;">Women's Cosmetics</span><span class="ffh-allcat-count" style="display:none;font-size:10px;font-weight:700;color:white;background:#f97316;border-radius:8px;padding:1px 6px;width:fit-content;"></span></div><svg width="44" height="44" viewBox="0 0 64 64" fill="none"><rect x="26" y="12" width="13" height="32" rx="6.5" fill="#f97316"/><rect x="28" y="9" width="9" height="7" rx="2.5" fill="#fb923c"/><ellipse cx="32" cy="42" rx="6.5" ry="3.5" fill="#ea580c"/><circle cx="46" cy="22" r="6" fill="#fbbf24"/></svg></div>
@@ -1841,7 +1841,6 @@
 
       const categoryMeta = {
         'all':               { title: 'সকল পণ্য',             icon: '🛍️', desc: 'আমাদের সমস্ত পণ্যের সংগ্রহ দেখুন' },
-        'jamakapor':         { title: 'জামাকাপড়',             icon: '👗', desc: 'সুতি থেকে শীতের পোশাক — সব ধরনের জামাকাপড়ের সংগ্রহ' },
         'baby-shoes':        { title: 'Baby Shoes',            icon: '👟', desc: 'শিশুর জন্য আরামদায়ক ও নিরাপদ জুতার সংগ্রহ' },
         'baby-toys':         { title: 'বেবি Toys',             icon: '🧸', desc: 'শিশুর মানসিক বিকাশে সহায়ক মজাদার খেলনা' },
         'women-cosmetics':   { title: "Women's Cosmetics",     icon: '💄', desc: 'প্রাকৃতিক উপাদানে তৈরি বিউটি প্রোডাক্ট' },
@@ -2133,23 +2132,7 @@
             catCurrentProducts = allProds.filter(function(p){ return p.category === cat; });
           }
         } else {
-          // parent category: show all products including all subcategory products
-          var _catData = window._ffhNavCategories
-            ? window._ffhNavCategories.find(function(c){ return c.value === cat; })
-            : null;
-          var _subVals = (_catData && _catData.subcategories)
-            ? _catData.subcategories.map(function(s){ return s.value; })
-            : [];
-          if (_subVals.length > 0) {
-            catCurrentProducts = allProds.filter(function(p){
-              return p.category === cat || _subVals.indexOf(p.subcategory) !== -1;
-            });
-            if (catCurrentProducts.length === 0) {
-              catCurrentProducts = allProds.filter(function(p){ return p.category === cat; });
-            }
-          } else {
-            catCurrentProducts = allProds.filter(function(p){ return p.category === cat; });
-          }
+          catCurrentProducts = allProds.filter(function(p){ return p.category === cat; });
         }
 
         const prices = catCurrentProducts.map(function(p){ return p.price; });
@@ -4285,20 +4268,7 @@ function _ffhUpdateAllCatCounts(products) {
     if (catVal === 'all') {
       count = products.length;
     } else {
-      // parent category: count own + all subcategory products
-      var _cd = window._ffhNavCategories
-        ? window._ffhNavCategories.find(function(c){ return c.value === catVal; })
-        : null;
-      var _svs = (_cd && _cd.subcategories)
-        ? _cd.subcategories.map(function(s){ return s.value; }) : [];
-      if (_svs.length > 0) {
-        count = products.filter(function(p){
-          return p.category === catVal || _svs.indexOf(p.subcategory) !== -1;
-        }).length;
-        if (count === 0) count = products.filter(function(p){ return p.category === catVal; }).length;
-      } else {
-        count = products.filter(function(p){ return p.category === catVal; }).length;
-      }
+      count = products.filter(function(p){ return p.category === catVal; }).length;
     }
     var badge = card.querySelector('.ffh-allcat-count');
     if (badge) {
@@ -4330,23 +4300,7 @@ function _ffhApplyApiProducts(apiMapped) {
         if (!catCurrentProducts.length)
           catCurrentProducts = apiMapped.filter(function(p){ return p.category === savedCat; });
       } else {
-        if (savedCat === 'all') {
-          catCurrentProducts = apiMapped.slice();
-        } else {
-          var _acd = window._ffhNavCategories
-            ? window._ffhNavCategories.find(function(c){ return c.value === savedCat; }) : null;
-          var _asvs = (_acd && _acd.subcategories)
-            ? _acd.subcategories.map(function(s){ return s.value; }) : [];
-          if (_asvs.length > 0) {
-            catCurrentProducts = apiMapped.filter(function(p){
-              return p.category === savedCat || _asvs.indexOf(p.subcategory) !== -1;
-            });
-            if (!catCurrentProducts.length)
-              catCurrentProducts = apiMapped.filter(function(p){ return p.category === savedCat; });
-          } else {
-            catCurrentProducts = apiMapped.filter(function(p){ return p.category === savedCat; });
-          }
-        }
+        catCurrentProducts = savedCat === 'all' ? apiMapped.slice() : apiMapped.filter(function(p){ return p.category === savedCat; });
       }
       var prices = catCurrentProducts.map(function(p){ return p.price; });
       var pMin = prices.length ? Math.min.apply(null, prices) : 0;
@@ -4752,12 +4706,6 @@ async function loadSiteSettings() {
 }
 
 var FFH_DEFAULT_CATS = [
-  { value:'jamakapor', label:'👗 জামাকাপড়', subcategories:[
-    {value:'suti_patla_jama',label:'সুতি পাতলা জামা'},
-    {value:'full_hatar_set',label:'ফুল হাতার আরামদায়ক সেট'},
-    {value:'topi_mojar_set',label:'টুপি, হাত মোজা ও পা মোজা'},
-    {value:'nakshi_katha',label:'নকশি কাঁথা / পাতলা কাঁথা'}
-  ]},
   { value:'baby_dress',  label:'🧸 Baby Dress', subcategories:[
     {value:'newborn_set',label:'Newborn Set (0-6 Months)'},
     {value:'cotton_dress',label:'Cotton Dress (Summer Comfort)'},
@@ -4961,17 +4909,17 @@ function renderDesktopNav(cats) {
     var subs = (cat.subcategories || []);
     var subHTML = subs.length > 0
       ? subs.map(function(s) {
-          return '<a href="#" onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'' + s.value + '\')"'
+          return '<a href="#' + cat.value + '/' + s.value + '" onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'' + s.value + '\')"'
                + ' class="block px-4 py-2 hover:bg-gray-100">' + s.label + '</a>';
         }).join('')
       : '<span style="display:block;padding:10px 16px;font-size:12px;color:#9ca3af;">কোনো সাব-ক্যাটাগরি নেই</span>';
 
     return '<div class="group relative">'
-         +   '<button class="hover:text-orange-400 transition py-2 flex items-center gap-1 whitespace-nowrap"'
-         +   ' onclick="ffhNavFilter(\'' + cat.value + '\',\'\')">'
+         +   '<a href="#' + cat.value + '" class="hover:text-orange-400 transition py-2 flex items-center gap-1 whitespace-nowrap"'
+         +   ' onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'\')">'
          +   cat.label
          +   ' <i class="fas fa-chevron-down text-xs"></i>'
-         +   '</button>'
+         +   '</a>'
          +   '<div class="">' + subHTML + '</div>'
          + '</div>';
   }).join('');
@@ -4999,14 +4947,17 @@ function renderMobileAccordion(cats) {
       : '<span style="padding:10px 20px 10px 52px;font-size:12px;color:#9ca3af;display:block;">কোনো সাব-ক্যাটাগরি নেই</span>';
 
     return '<div class="mob-acc-item">'
-         +   '<button class="mob-acc-btn" data-catvalue="' + cat.value + '" data-subsvalues="' + subValues.join(',') + '" onclick="mobAccToggle(\'' + accId + '\',this)">'
-         +     '<div class="btn-left"><span class="cat-label">' + cat.label + '</span>'
-         +     '<span class="ffh-cat-count-badge" style="display:none;font-size:10px;font-weight:700;color:white;background:#f97316;border-radius:8px;padding:1px 6px;margin-left:6px;"></span>'
-         +     '</div>'
+         +   '<div class="mob-acc-btn" data-catvalue="' + cat.value + '" data-subsvalues="' + subValues.join(',') + '">'
+         +     '<a href="#' + cat.value + '" class="btn-left" style="text-decoration:none;flex:1;" onclick="event.preventDefault();closeMobMenuAndFilter(\'' + cat.value + '\',\'\')">'
+         +       '<span class="cat-label">' + cat.label + '</span>'
+         +       '<span class="ffh-cat-count-badge" style="display:none;font-size:10px;font-weight:700;color:white;background:#f97316;border-radius:8px;padding:1px 6px;margin-left:6px;"></span>'
+         +     '</a>'
          +     '<div class="btn-right">'
-         +       '<span class="mob-acc-toggle" id="' + iconId + '">' + PLUS_SVG_DYN + '</span>'
+         +       '<button onclick="mobAccToggle(\'' + accId + '\',this)" style="background:none;border:none;cursor:pointer;padding:4px 8px;" aria-label="expand">'
+         +         '<span class="mob-acc-toggle" id="' + iconId + '">' + PLUS_SVG_DYN + '</span>'
+         +       '</button>'
          +     '</div>'
-         +   '</button>'
+         +   '</div>'
          +   '<div class="mob-acc-sub" id="' + accId + '">' + subLinks + '</div>'
          + '</div>';
   }).join('');
