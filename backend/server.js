@@ -225,10 +225,10 @@ async function seedDefaultCollections() {
     const existing = await Settings.findOne({ key: 'collections' });
     if (!existing) {
       const defaultCollections = [
-        { category: 'baby-shoes',      subcategory: '', image: 'https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop', title: 'Baby Shoes',       enabled: true },
-        { category: 'baby-toys',       subcategory: '', image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop', title: 'Baby Toys',        enabled: true },
-        { category: 'women-cosmetics', subcategory: '', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop', title: "Women's Cosmetics", enabled: true },
-        { category: 'baby-dress',      subcategory: '', image: 'https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop', title: 'Baby Dress',       enabled: true },
+        { _id: Date.now().toString() + '1', category: 'baby-shoes', image: 'https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop', title: 'Baby Shoes', enabled: true },
+        { _id: Date.now().toString() + '2', category: 'baby-toys', image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop', title: 'Baby Toys', enabled: true },
+        { _id: Date.now().toString() + '3', category: 'women-cosmetics', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop', title: "Women's Cosmetics", enabled: true },
+        { _id: Date.now().toString() + '4', category: 'baby-dress', image: 'https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop', title: 'Baby Dress', enabled: true },
       ];
       await Settings.findOneAndUpdate(
         { key: 'collections' },
@@ -1221,6 +1221,139 @@ app.post('/api/settings', adminMiddleware, async (req, res) => {
     }
     res.json({ success: true, message: 'সেটিংস আপডেট হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== COLLECTIONS API =====
+
+// Public: Get enabled collections (for frontend)
+app.get('/api/collections', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'collections' });
+    const collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    // Only return enabled collections for frontend
+    const enabled = collections.filter(c => c.enabled !== false);
+    res.json({ success: true, data: enabled });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// Admin: Get all collections (with disabled)
+app.get('/api/admin/collections', adminMiddleware, async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'collections' });
+    const collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    res.json({ success: true, data: collections });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// Admin: Create a new collection
+app.post('/api/admin/collections', adminMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    const { title, category, link, enabled } = req.body;
+    if (!title) return res.json({ success: false, message: 'শিরোনাম আবশ্যিক' });
+
+    let imageUrl = '';
+    let publicId = '';
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'FamilyFashionHub/collections');
+      imageUrl = result.secure_url;
+      publicId = result.public_id;
+    }
+
+    const newCollection = {
+      _id: Date.now().toString(), // simple unique id
+      title: title.trim(),
+      category: category || '',
+      link: link || '',
+      image: imageUrl,
+      publicId,
+      enabled: enabled === 'true' || enabled === true,
+      createdAt: new Date(),
+    };
+
+    const setting = await Settings.findOne({ key: 'collections' });
+    let collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    collections.push(newCollection);
+    await Settings.findOneAndUpdate(
+      { key: 'collections' },
+      { key: 'collections', value: collections },
+      { upsert: true }
+    );
+
+    res.json({ success: true, data: newCollection, message: 'কালেকশন যোগ হয়েছে' });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// Admin: Update collection
+app.put('/api/admin/collections/:id', adminMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, category, link, enabled } = req.body;
+
+    const setting = await Settings.findOne({ key: 'collections' });
+    let collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    const index = collections.findIndex(c => c._id === id);
+    if (index === -1) return res.json({ success: false, message: 'কালেকশন পাওয়া যায়নি' });
+
+    const old = collections[index];
+    let imageUrl = old.image;
+    let publicId = old.publicId;
+
+    if (req.file) {
+      // Delete old image from Cloudinary if exists
+      if (old.publicId) await cloudinary.uploader.destroy(old.publicId).catch(() => {});
+      const result = await uploadToCloudinary(req.file.buffer, 'FamilyFashionHub/collections');
+      imageUrl = result.secure_url;
+      publicId = result.public_id;
+    }
+
+    collections[index] = {
+      ...old,
+      title: title !== undefined ? title.trim() : old.title,
+      category: category !== undefined ? category : old.category,
+      link: link !== undefined ? link : old.link,
+      image: imageUrl,
+      publicId,
+      enabled: enabled !== undefined ? (enabled === 'true' || enabled === true) : old.enabled,
+    };
+
+    await Settings.findOneAndUpdate(
+      { key: 'collections' },
+      { key: 'collections', value: collections },
+      { upsert: true }
+    );
+
+    res.json({ success: true, data: collections[index], message: 'কালেকশন আপডেট হয়েছে' });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// Admin: Delete collection
+app.delete('/api/admin/collections/:id', adminMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const setting = await Settings.findOne({ key: 'collections' });
+    let collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    const removed = collections.find(c => c._id === id);
+    if (removed && removed.publicId) {
+      await cloudinary.uploader.destroy(removed.publicId).catch(() => {});
+    }
+    collections = collections.filter(c => c._id !== id);
+    await Settings.findOneAndUpdate(
+      { key: 'collections' },
+      { key: 'collections', value: collections },
+      { upsert: true }
+    );
+    res.json({ success: true, message: 'কালেকশন মুছে ফেলা হয়েছে' });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
 });
 
 // ===== STATS =====

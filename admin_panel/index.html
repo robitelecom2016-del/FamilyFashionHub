@@ -3815,20 +3815,19 @@ document.getElementById('sliderImagesInput') && document.getElementById('sliderI
 
 let _testimonials = [];
 
+
 async function loadTestimonialsAdmin() {
   const el = document.getElementById('testimonialsTable');
   if (!el) return;
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   try {
-    const res = await fetch(API_URL + '/testimonials');
-    const data = await res.json();
+    const data = await api('/admin/testimonials');   // <-- changed from /testimonials
     _testimonials = data.success ? data.data : [];
     renderTestimonialsAdmin(_testimonials);
   } catch {
     el.innerHTML = '<div class="empty-state"><i class="fas fa-quote-left"></i><p>লোড হয়নি</p></div>';
   }
 }
-
 function renderTestimonialsAdmin(list) {
   const el = document.getElementById('testimonialsTable');
   if (!list.length) {
@@ -3962,15 +3961,13 @@ async function loadCollectionsAdmin() {
   if (!el) return;
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   try {
-    const res = await fetch(API_URL + '/collections');
-    const data = await res.json();
+    const data = await api('/admin/collections');   // <-- changed to admin endpoint
     _collections = data.success ? data.data : [];
     renderCollectionsAdmin(_collections);
   } catch {
     el.innerHTML = '<div class="empty-state"><i class="fas fa-th-large"></i><p>লোড হয়নি</p></div>';
   }
 }
-
 function renderCollectionsAdmin(list) {
   const el = document.getElementById('collectionsGrid');
   if (!list.length) {
