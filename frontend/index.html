@@ -871,6 +871,11 @@
       </style>
 
       <section id="allProductsSection" class="px-4 md:px-6"><div class="mx-auto" style="max-width:1200px;">
+        <div id="allProductsBreadcrumb" style="display:none;align-items:center;gap:4px;font-size:13px;margin-bottom:12px;flex-wrap:wrap;color:#6b7280;">
+          <a href="#" onclick="event.preventDefault();goToHome();" style="color:#374151;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:4px;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#374151'"><i class="fas fa-home" style="font-size:12px;"></i> Home</a>
+          <span style="color:#d1d5db;margin:0 2px;">›</span>
+          <span id="allProductsBreadcrumbLabel" style="color:#f97316;font-weight:600;">All Products</span>
+        </div>
         <h2 id="categoryTitle" class="text-3xl font-bold mb-6 border-l-8 border-green-500 pl-4">🌿 All Products</h2>
         <div id="productGrid" class="product-grid"></div>
       </section>
@@ -1643,6 +1648,11 @@
 
   <div id="allCategoriesPage" class="detail-page" style="margin-top:50px;width:100%;min-height:60vh;background:#f9fafb;padding-bottom:80px;">
     <div class="mx-auto px-4 py-6" style="max-width:1200px; margin-top: -20px;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:13px;margin-bottom:14px;flex-wrap:wrap;color:#6b7280;">
+        <a href="#" onclick="event.preventDefault();goToHome();" style="color:#374151;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:4px;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#374151'"><i class="fas fa-home" style="font-size:12px;"></i> Home</a>
+        <span style="color:#d1d5db;margin:0 2px;">›</span>
+        <span style="color:#f97316;font-weight:600;">সকল ক্যাটাগরি</span>
+      </div>
       <div class="flex items-center gap-3 mb-6">
         <button onclick="hideAllCategoriesPage()" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm"><i class="fas fa-arrow-left text-gray-700"></i></button>
         <div><h2 style="font-size:1.25rem;font-weight:800;color:#111827;margin:0;">সকল ক্যাটাগরি</h2><div style="height:3px;width:40px;background:#f97316;border-radius:2px;margin-top:4px;"></div></div>
@@ -1822,6 +1832,9 @@
         if (ofs) ofs.style.display = '';
         const dp2 = document.getElementById('dashboardPage');
         if (dp2) { dp2.classList.remove('active'); dp2.classList.add('detail-page'); }
+        // Home এ গেলে allProducts breadcrumb লুকাও
+        var _apb = document.getElementById('allProductsBreadcrumb');
+        if (_apb) _apb.style.display = 'none';
         window.scrollTo({ top: 0 });
       }
       
@@ -2396,6 +2409,11 @@
           renderProductsByCategory('all', searchInput.value.trim());
           let titleText = '🌿 All Products';
           categoryTitle.innerText = titleText;
+          // breadcrumb আপডেট
+          var _apbl = document.getElementById('allProductsBreadcrumbLabel');
+          if (_apbl) _apbl.innerText = 'All Products';
+          var _apb = document.getElementById('allProductsBreadcrumb');
+          if (_apb) _apb.style.display = 'flex';
           window.scrollTo({ top: 0 });
         } else {
           showCategoryPage(cat, sub || '');
@@ -2573,13 +2591,21 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         else if (product.category === 'baby_care') catName = '🛁 Baby Care';
         else if (product.category === 'baby_bedding') catName = '👶 Essentials';
         else if (product.category === 'trending') catName = '🔥 Trending';
-        detailCategory.innerText = catName;
-        detailNameBreadcrumb.innerText = product.name;
         
-        detailCategory.onclick = () => {
-          currentCategory = product.category;
-          showCategoryPage(product.category);
-        };
+        // যদি "All Products" থেকে এসে থাকে তাহলে breadcrumb এ "All Products" দেখাও
+        if (currentCategory === 'all') {
+          detailCategory.innerText = 'All Products';
+          detailCategory.onclick = () => {
+            filterByCategory('all');
+          };
+        } else {
+          detailCategory.innerText = catName;
+          detailCategory.onclick = () => {
+            currentCategory = product.category;
+            showCategoryPage(product.category);
+          };
+        }
+        detailNameBreadcrumb.innerText = product.name;
         
         detailPageBadge.innerHTML = '';
         if (product.soldOut) {
