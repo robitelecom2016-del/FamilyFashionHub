@@ -12,13 +12,21 @@ const app = express();
 
 // ===== CORS CONFIG =====
 // Frontend ও Admin উভয় URL থেকে request গ্রহণ করবে
+// FRONTEND_URL ও ADMIN_URL-এ https:// না থাকলে স্বয়ংক্রিয়ভাবে যোগ হবে
+function normalizeOrigin(url) {
+  if (!url) return null;
+  url = url.trim().replace(/\/$/, ''); // trailing slash সরাও
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return 'https://' + url;
+}
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.ADMIN_URL,
+  normalizeOrigin(process.env.FRONTEND_URL),
+  normalizeOrigin(process.env.ADMIN_URL),
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
-];
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
