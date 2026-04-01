@@ -487,17 +487,6 @@
 .addRelatedProduct:active {
   transform: scale(0.96);
 }
-
-/* ডেস্কটপে সাইডবার স্টিকি */
-@media (min-width: 768px) {
-  #catSidebar {
-    position: sticky;
-    top: 120px;          /* হেডারের উচ্চতা অনুযায়ী সেট করুন */
-    height: calc(100vh - 120px);
-    overflow-y: auto;    /* সাইডবারের কন্টেন্ট বেশি হলে স্ক্রোল */
-    align-self: flex-start;
-  }
-}
 </style>     
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased" dir="ltr">
@@ -5050,14 +5039,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 })();
-
-
-function setStickyTop() {
-  const headerHeight = document.querySelector('#mainNav').offsetHeight;
-  document.querySelector('#catSidebar').style.top = headerHeight + 'px';
-}
-window.addEventListener('load', setStickyTop);
-window.addEventListener('resize', setStickyTop);
 </script>
 </body>
 </html>
