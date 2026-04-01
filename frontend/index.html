@@ -5300,5 +5300,146 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })();
 </script>
+
+<!-- ═══ DEEP LINKING SYSTEM ═══════════════════════════════════════════════ -->
+<script>
+(function() {
+
+  // ── 1. Hash → Page Navigator ──────────────────────────────────────────────
+  // hash format:
+  //   #category/subcategory   →  filterByCategory(category, subcategory)
+  //   #category               →  filterByCategory(category)
+  //   # or empty              →  goToHome()
+
+  function navigateToHash(hash) {
+    var h = (hash || '').replace(/^#/, '').trim();
+    if (!h) {
+      if (typeof window.goToHome === 'function') window.goToHome();
+      return;
+    }
+    var parts = h.split('/');
+    var cat   = decodeURIComponent(parts[0] || '');
+    var sub   = decodeURIComponent(parts[1] || '');
+    if (cat && typeof window.filterByCategory === 'function') {
+      window.filterByCategory(cat, sub);
+    } else if (cat) {
+      // filterByCategory এখনো ready না হলে products load হওয়ার পরে চালাও
+      window._ffhPendingHashNav = { cat: cat, sub: sub };
+    }
+  }
+
+  // ── 2. filterByCategory wrap করো যেন URL hash আপডেট হয় ──────────────────
+  function wrapFilterByCategory() {
+    var orig = window.filterByCategory;
+    if (!orig || orig._hashWrapped) return;
+    var wrapped = function(cat, sub) {
+      // URL hash আপডেট করো (history তে push করো)
+      var newHash = cat ? ('#' + encodeURIComponent(cat) + (sub ? '/' + encodeURIComponent(sub) : '')) : '#';
+      if (window.location.hash !== newHash) {
+        history.pushState({ cat: cat, sub: sub || '' }, '', newHash);
+      }
+      return orig.apply(this, arguments);
+    };
+    wrapped._hashWrapped = true;
+    wrapped._orig = orig;
+    window.filterByCategory = wrapped;
+  }
+
+  // goToHome wrap করো যেন hash clear হয়
+  function wrapGoToHome() {
+    var orig = window.goToHome;
+    if (!orig || orig._hashWrapped) return;
+    var wrapped = function() {
+      if (window.location.hash && window.location.hash !== '#') {
+        history.pushState({}, '', window.location.pathname + window.location.search);
+      }
+      return orig.apply(this, arguments);
+    };
+    wrapped._hashWrapped = true;
+    wrapped._orig = orig;
+    window.goToHome = wrapped;
+  }
+
+  // ── 3. popstate — ব্রাউজার back/forward button ────────────────────────────
+  window.addEventListener('popstate', function(e) {
+    var hash = window.location.hash;
+    if (!hash || hash === '#') {
+      var orig = window.goToHome;
+      // unwrap করে আসল goToHome চালাও (infinite loop এড়াতে)
+      if (orig && orig._hashWrapped) {
+        var inner = orig;
+        while (inner._hashWrapped && inner._orig) inner = inner._orig;
+        if (typeof inner === 'function') inner();
+      } else if (typeof orig === 'function') {
+        orig();
+      }
+    } else {
+      var h     = hash.replace(/^#/, '');
+      var parts = h.split('/');
+      var cat   = decodeURIComponent(parts[0] || '');
+      var sub   = decodeURIComponent(parts[1] || '');
+      var fn    = window.filterByCategory;
+      // unwrap করে আসল filterByCategory চালাও (infinite loop এড়াতে)
+      while (fn && fn._hashWrapped && fn._orig) fn = fn._orig;
+      if (typeof fn === 'function' && cat) fn(cat, sub || '');
+    }
+  });
+
+  // ── 4. DOM ready হলে wrap করো এবং hash পড়ো ─────────────────────────────
+  function init() {
+    wrapFilterByCategory();
+    wrapGoToHome();
+
+    // pending hash navigation (products load হওয়ার আগে এসেছিল)
+    if (window._ffhPendingHashNav) {
+      var p = window._ffhPendingHashNav;
+      window._ffhPendingHashNav = null;
+      if (typeof window.filterByCategory === 'function') {
+        window.filterByCategory(p.cat, p.sub || '');
+        return;
+      }
+    }
+
+    // page load-এ hash থাকলে সেই page-এ যাও
+    if (window.location.hash && window.location.hash !== '#') {
+      navigateToHash(window.location.hash);
+    }
+  }
+
+  // ── 5. Products load হওয়ার পরেও pending hash check ───────────────────────
+  var _origLoadProducts = window.loadProductsFromAPI;
+  if (typeof _origLoadProducts === 'function') {
+    window.loadProductsFromAPI = async function() {
+      var result = await _origLoadProducts.apply(this, arguments);
+      // products load শেষ হলে pending navigation চেক করো
+      setTimeout(function() {
+        wrapFilterByCategory();
+        wrapGoToHome();
+        if (window._ffhPendingHashNav) {
+          var p = window._ffhPendingHashNav;
+          window._ffhPendingHashNav = null;
+          if (typeof window.filterByCategory === 'function') {
+            window.filterByCategory(p.cat, p.sub || '');
+          }
+        } else if (window.location.hash && window.location.hash !== '#') {
+          navigateToHash(window.location.hash);
+        }
+      }, 100);
+      return result;
+    };
+  }
+
+  // ── 6. DOMContentLoaded ───────────────────────────────────────────────────
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      // filterByCategory ready হওয়ার জন্য একটু অপেক্ষা করো
+      setTimeout(init, 200);
+    });
+  } else {
+    setTimeout(init, 200);
+  }
+
+})();
+</script>
 </body>
 </html>
