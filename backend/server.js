@@ -1123,11 +1123,89 @@ app.get('/api/admin/stats', adminMiddleware, async (req, res) => {
       { $match: { status: 'delivered' } },
       { $group: { _id: null, total: { $sum: '$total' } } },
     ]);
-    const pendingOrders = await Order.countDocuments({ status: 'pending' });
+    const totalRevenue = await Order.aggregate([
+      { $match: { status: { $ne: 'cancelled' } } },
+      { $group: { _id: null, total: { $sum: '$total' } } },
+    ]);
+    const pendingOrders    = await Order.countDocuments({ status: 'pending' });
+    const processingOrders = await Order.countDocuments({ status: 'processing' });
+    const shippedOrders    = await Order.countDocuments({ status: 'shipped' });
+    const deliveredOrders  = await Order.countDocuments({ status: 'delivered' });
+    const cancelledOrders  = await Order.countDocuments({ status: 'cancelled' });
+    const pendingReviews   = await Review.countDocuments({ approved: false });
+    const featuredProducts = await Product.countDocuments({ featured: true });
+    const soldOutProducts  = await Product.countDocuments({ soldOut: true });
+    const onSaleProducts   = await Product.countDocuments({ onSale: true });
+    const sevenDaysAgo     = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentOrders     = await Order.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+    const recentRevenue    = await Order.aggregate([
+      { $match: { createdAt: { $gte: sevenDaysAgo }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: null, total: { $sum: '$total' } } },
+    ]);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayOrders = await Order.countDocuments({ createdAt: { $gte: today } });
+    const latestOrders = await Order.find().sort({ createdAt: -1 }).limit(5)
+      .select('shortId customerName total status createdAt phone');
     res.json({
       success: true,
-      data: { products, orders, users, reviews, revenue: revenue[0]?.total || 0, pendingOrders },
+      data: {
+        products, orders, users, reviews,
+        revenue: revenue[0]?.total || 0,
+        totalRevenue: totalRevenue[0]?.total || 0,
+        pendingOrders, processingOrders, shippedOrders, deliveredOrders, cancelledOrders,
+        pendingReviews, featuredProducts, soldOutProducts, onSaleProducts,
+        recentOrders, recentRevenue: recentRevenue[0]?.total || 0,
+        todayOrders, latestOrders,
+      },
     });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== SLIDER IMAGES API =====
+
+// GET — Public: frontend slider ও side image পড়বে
+app.get('/api/slider-images', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'sliderImages' });
+    const sideSetting = await Settings.findOne({ key: 'sideImage' });
+    res.json({
+      success: true,
+      data: {
+        sliderImages: (setting && setting.value) ? setting.value : [],
+        sideImage: (sideSetting && sideSetting.value) ? sideSetting.value : null,
+      }
+    });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// POST — Admin: slider images আপলোড (multiple, max 6)
+app.post('/api/admin/slider-images', adminMiddleware, upload.array('images', 6), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) return res.json({ success: false, message: 'কোনো ছবি নেই' });
+    // আগের slider images Cloudinary থেকে মুছো
+    const old = await Settings.findOne({ key: 'sliderImages' });
+    if (old && Array.isArray(old.value)) {
+      await Promise.all(old.value.filter(i => i.public_id).map(i => cloudinary.uploader.destroy(i.public_id).catch(() => {})));
+    }
+    const results = await uploadMultiple(req.files, 'FamilyFashionHub/slider');
+    const sliderImages = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
+    await Settings.findOneAndUpdate({ key: 'sliderImages' }, { key: 'sliderImages', value: sliderImages }, { upsert: true });
+    res.json({ success: true, data: sliderImages, message: 'স্লাইডার ছবি আপডেট হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// POST — Admin: side image আপলোড (single)
+app.post('/api/admin/side-image', adminMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.json({ success: false, message: 'কোনো ছবি নেই' });
+    const old = await Settings.findOne({ key: 'sideImage' });
+    if (old && old.value && old.value.public_id) {
+      await cloudinary.uploader.destroy(old.value.public_id).catch(() => {});
+    }
+    const result = await uploadToCloudinary(req.file.buffer, 'FamilyFashionHub/side');
+    const sideImage = { url: result.secure_url, public_id: result.public_id };
+    await Settings.findOneAndUpdate({ key: 'sideImage' }, { key: 'sideImage', value: sideImage }, { upsert: true });
+    res.json({ success: true, data: sideImage, message: 'সাইড ছবি আপডেট হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
