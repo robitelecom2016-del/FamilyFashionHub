@@ -5050,6 +5050,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 })();
+
+
+function setStickyTop() {
+  const header = document.querySelector('#mainNav');
+  const height = header ? header.offsetHeight : 120;
+  document.getElementById('catSidebar').style.top = height + 'px';
+}
+window.addEventListener('load', setStickyTop);
+window.addEventListener('resize', setStickyTop);
 </script>
 </body>
 </html>
