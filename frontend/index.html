@@ -5501,5 +5501,114 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })();
 </script>
+
+
+<script>
+// Fix for mobile category page: ensure category page is hidden when opening product details
+(function() {
+    // Wait for DOM and the existing functions to be ready
+    function enhanceCategoryCardClicks() {
+        // Override the product card click handling in the category page grid
+        const originalRenderCatGrid = window.renderCatGrid;
+        if (originalRenderCatGrid) {
+            window.renderCatGrid = function(list) {
+                // Call original to build grids
+                originalRenderCatGrid(list);
+                // After rendering, attach additional robust hide logic for mobile cards
+                attachRobustHideToCategoryCards();
+            };
+        }
+
+        function attachRobustHideToCategoryCards() {
+            // Target both desktop and mobile product grids inside category page
+            const grids = [
+                document.getElementById('catProductGrid'),
+                document.getElementById('catProductGridMobile')
+            ];
+            grids.forEach(grid => {
+                if (!grid) return;
+                // Find all product cards (including ones that might be added dynamically)
+                const cards = grid.querySelectorAll('.product-card');
+                cards.forEach(card => {
+                    // Remove any existing listener to avoid duplication, then add our safe one
+                    const newCard = card.cloneNode(true);
+                    card.parentNode.replaceChild(newCard, card);
+                    // Re-attach quick-add button listener (preserve existing functionality)
+                    const addBtn = newCard.querySelector('.cat-quick-add-btn, .quick-add-btn');
+                    if (addBtn && !addBtn.disabled) {
+                        addBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const prodId = newCard.dataset.id;
+                            const product = findProductById(prodId);
+                            if (product && typeof addToCart === 'function') addToCart(product);
+                        });
+                    }
+                    // Main click: hide category page, show detail page
+                    newCard.addEventListener('click', (e) => {
+                        if (e.target.closest('.cat-quick-add-btn, .quick-add-btn')) return;
+                        const prodId = newCard.dataset.id;
+                        const product = findProductById(prodId);
+                        if (product) {
+                            // Force hide category page before showing detail
+                            const catPage = document.getElementById('categoryPage');
+                            if (catPage) {
+                                catPage.classList.remove('active');
+                                catPage.classList.add('detail-page');
+                            }
+                            // Hide other sections (redundant but safe)
+                            const homePage = document.getElementById('homePage');
+                            if (homePage) homePage.classList.add('hidden');
+                            const reviewSec = document.getElementById('customerReviewSection');
+                            if (reviewSec) reviewSec.style.display = 'none';
+                            const footer = document.getElementById('mainFooter');
+                            if (footer) footer.style.display = 'none';
+                            const allProdsSec = document.getElementById('allProductsSection');
+                            if (allProdsSec) allProdsSec.style.display = 'none';
+                            const collectionSec = document.getElementById('ourCollectionSection');
+                            if (collectionSec) collectionSec.style.display = 'none';
+                            const organicSec = document.getElementById('organicFeatureSection');
+                            if (organicSec) organicSec.style.display = 'none';
+                            
+                            // Show detail page
+                            if (typeof _ffhShowApiDetail === 'function') {
+                                _ffhShowApiDetail(product);
+                            } else if (typeof showProductDetailPage === 'function') {
+                                showProductDetailPage(product.id);
+                            }
+                        }
+                    });
+                });
+            });
+        }
+
+        function findProductById(id) {
+            const allProducts = window._ffhApiProducts || window.products || [];
+            return allProducts.find(p => p.id == id);
+        }
+
+        // Run after every category page refresh (e.g., after filter, sort, pagination)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    attachRobustHideToCategoryCards();
+                }
+            });
+        });
+        const catPage = document.getElementById('categoryPage');
+        if (catPage) {
+            observer.observe(catPage, { childList: true, subtree: true });
+        }
+        // Initial attach
+        attachRobustHideToCategoryCards();
+    }
+
+    // Execute after page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', enhanceCategoryCardClicks);
+    } else {
+        enhanceCategoryCardClicks();
+    }
+})();
+</script>
 </body>
 </html>
