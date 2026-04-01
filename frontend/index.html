@@ -487,7 +487,7 @@
 .addRelatedProduct:active {
   transform: scale(0.96);
 }
-</style>     
+</style>  
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased" dir="ltr">
   
@@ -1570,121 +1570,25 @@
     </style>
 
     <script>
-      // ===== DYNAMIC TESTIMONIALS LOADER =====
-      (function() {
-        let _revCurrentSlide = 0;
-        let _revTimer;
-
-        function isMobile()  { return window.innerWidth <= 768; }
-        function isTablet()  { return window.innerWidth > 768 && window.innerWidth <= 1024; }
-        function getSlidesPerView() { if (isMobile()) return 1; if (isTablet()) return 2; return 3; }
-
-        function _updateRevSlider(total) {
-          const track = document.getElementById('reviewSliderTrack');
-          const allDots = document.querySelectorAll('.rev-dot');
-          if (!track) return;
-          const perView   = getSlidesPerView();
-          const slideW    = 100 / perView;
-          const maxSlide  = Math.max(0, total - perView);
-          _revCurrentSlide = Math.min(_revCurrentSlide, maxSlide);
-          track.style.transform = `translateX(-${_revCurrentSlide * slideW}%)`;
-          allDots.forEach((d, i) => {
-            const active = i === _revCurrentSlide;
-            d.classList.toggle('active', active);
-            d.style.width        = active ? '28px' : '8px';
-            d.style.borderRadius = active ? '4px'  : '50%';
-            d.style.background   = active ? '#f97316' : '#d1d5db';
-          });
-        }
-
-        window.goToReviewSlide = function(idx) {
-          const track = document.getElementById('reviewSliderTrack');
-          if (!track) return;
-          const total   = track.querySelectorAll('.review-slide').length;
-          const perView = getSlidesPerView();
-          const max     = Math.max(0, total - perView);
-          _revCurrentSlide = Math.max(0, Math.min(idx, max));
-          _updateRevSlider(total);
-        };
-
-        function startRevAuto(total) {
-          clearInterval(_revTimer);
-          _revTimer = setInterval(() => {
-            const perView = getSlidesPerView();
-            const max     = Math.max(0, total - perView);
-            _revCurrentSlide = (_revCurrentSlide + 1) > max ? 0 : _revCurrentSlide + 1;
-            _updateRevSlider(total);
-          }, 3500);
-        }
-
-        window.loadTestimonials = async function() {
-          const track        = document.getElementById('reviewSliderTrack');
-          const dotsContainer = document.getElementById('reviewDots');
-          if (!track || !dotsContainer) return;
-
-          // fallback static data (ব্যবহার করা হবে যদি API ব্যর্থ হয়)
-          const fallbackData = [
-            { name: 'Ayesha Khan',       title: 'Banker',       image: '', text: '২য় বার অর্ডার করলাম। আগের মতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।' },
-            { name: 'Fariha Akter Tumpa', title: 'Entrepreneur', image: 'https://randomuser.me/api/portraits/women/44.jpg', text: 'In this world of doubt, Family Fashion Hub is a trustworthy brand. Both product quality and service are outstanding.' },
-            { name: 'Shahriar Khan Abir', title: 'Service Holder', image: 'https://randomuser.me/api/portraits/men/32.jpg', text: 'Bought a gift for my father. He said this was the best quality he has ever received. Highly recommended!' },
-            { name: 'Rafiqul Islam',      title: 'Teacher',      image: 'https://randomuser.me/api/portraits/men/54.jpg', text: 'The packaging was so beautiful I almost did not want to open it. Product quality is also excellent. Will order again.' },
-            { name: 'Nadia Rahman',       title: 'Housewife',    image: 'https://randomuser.me/api/portraits/women/68.jpg', text: 'Shopping at Family Fashion Hub is truly an amazing experience. Completely satisfied with fast delivery and product quality.' },
-          ];
-
-          let testimonials = [];
-          try {
-            const res  = await fetch(window.FFH_API + '/testimonials');
-            const data = await res.json();
-            testimonials = (data.success && Array.isArray(data.data) && data.data.length)
-              ? data.data : fallbackData;
-          } catch(e) {
-            console.warn('Testimonials fetch failed, using fallback');
-            testimonials = fallbackData;
-          }
-
-          // render slides
-          track.innerHTML = '';
-          dotsContainer.innerHTML = '';
-          testimonials.forEach((t, idx) => {
-            const slide = document.createElement('div');
-            slide.className = 'review-slide';
-            slide.style.cssText = 'min-width:33.333%;padding:0 12px;box-sizing:border-box;';
-            const avatar = t.image
-              ? `<img src="${t.image}" alt="${t.name}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
-              : `<div style="width:46px;height:46px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="color:#9ca3af;font-size:20px;"></i></div>`;
-            slide.innerHTML = `
-              <div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;">
-                <p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">${t.text}</p>
-                <div style="display:flex;align-items:center;gap:12px;">
-                  ${avatar}
-                  <div>
-                    <p style="font-weight:700;color:#111827;font-size:14px;">${t.name}</p>
-                    <p style="color:#6b7280;font-size:12px;">${t.title || ''}</p>
-                  </div>
-                </div>
-              </div>`;
-            track.appendChild(slide);
-
-            const dot = document.createElement('button');
-            dot.className = 'rev-dot' + (idx === 0 ? ' active' : '');
-            dot.style.cssText = `width:${idx===0?'28px':'8px'};height:8px;border-radius:${idx===0?'4px':'50%'};border:none;background:${idx===0?'#f97316':'#d1d5db'};cursor:pointer;transition:all 0.3s;`;
-            dot.onclick = () => window.goToReviewSlide(idx);
-            dotsContainer.appendChild(dot);
-          });
-
-          _revCurrentSlide = 0;
-          _updateRevSlider(testimonials.length);
-          startRevAuto(testimonials.length);
-        };
-
-        window.addEventListener('resize', () => {
-          const track = document.getElementById('reviewSliderTrack');
-          if (!track) return;
-          const total = track.querySelectorAll('.review-slide').length;
-          _revCurrentSlide = 0;
-          _updateRevSlider(total);
+      /* ── Review slider helpers — goToReviewSlide ও _updateRevSlider
+         loadTestimonials সহ সব loader FFH_API-র পরে define হয়েছে ── */
+      window._revCurrentSlide = 0;
+      window.goToReviewSlide = function(idx) {
+        var track = document.getElementById('reviewSliderTrack');
+        if (!track) return;
+        var total   = track.querySelectorAll('.review-slide').length;
+        var perView = window.innerWidth <= 768 ? 1 : window.innerWidth <= 1024 ? 2 : 3;
+        var max     = Math.max(0, total - perView);
+        window._revCurrentSlide = Math.max(0, Math.min(idx, max));
+        track.style.transform = 'translateX(-' + (window._revCurrentSlide * (100 / perView)) + '%)';
+        document.querySelectorAll('.rev-dot').forEach(function(d, i) {
+          var active = i === window._revCurrentSlide;
+          d.classList.toggle('active', active);
+          d.style.width        = active ? '28px' : '8px';
+          d.style.borderRadius = active ? '4px'  : '50%';
+          d.style.background   = active ? '#f97316' : '#d1d5db';
         });
-      })();
+      };
     </script>
 
     <footer id="mainFooter" class="bg-gray-900 text-white mt-16 py-10" style="width:100%;">
@@ -3698,69 +3602,6 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
         currentSlide(0);
       };
 
-      window.loadSliderImages = async function() {
-        try {
-          const res  = await fetch(window.FFH_API + '/slider-images');
-          const data = await res.json();
-          if (data.success && Array.isArray(data.data) && data.data.length) {
-            renderSlider(data.data);
-          }
-          // API 데이터 없으면 기존 static 슬라이드 유지
-        } catch(e) { console.warn('Slider load failed, using defaults'); }
-      };
-
-      // ── Dynamic side banner loader ──
-      window.loadSideBanner = async function() {
-        try {
-          const res  = await fetch(window.FFH_API + '/settings');
-          const data = await res.json();
-          if (data.success && data.data && data.data.sideBanner) {
-            const banner    = data.data.sideBanner;
-            const container = document.getElementById('sideBannerContainer');
-            if (container && banner.image) {
-              container.innerHTML = `<div class="rounded-lg shadow-lg overflow-hidden cursor-pointer" style="height:320px;" onclick="location.href='${banner.link || '#'}'">
-                <img src="${banner.image}" alt="Side Banner" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
-              </div>`;
-            }
-          }
-        } catch(e) { console.warn('Side banner load failed'); }
-      };
-
-      // ── Dynamic collections loader ──
-      window.loadCollections = async function() {
-        try {
-          const res  = await fetch(window.FFH_API + '/settings');
-          const data = await res.json();
-          const collections = (data.success && data.data && Array.isArray(data.data.collections))
-            ? data.data.collections : [];
-          const grid = document.getElementById('collectionGrid');
-          if (!grid) return;
-          const enabled = collections.filter(c => c.enabled).slice(0, 4);
-          if (!enabled.length) {
-            // fallback to default static cards
-            grid.innerHTML = `
-              <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-shoes')"><img src="https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop" alt="Baby Shoes"><div class="collection-text">Baby Shoes</div></div>
-              <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-toys')"><img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop" alt="Baby Toys"><div class="collection-text">Baby Toys</div></div>
-              <div class="collection-card cursor-pointer" onclick="filterByCategory('women-cosmetics')"><img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop" alt="Cosmetics"><div class="collection-text">Women's Cosmetics</div></div>
-              <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-dress')"><img src="https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop" alt="Baby Dress"><div class="collection-text">Baby Dress</div></div>`;
-            return;
-          }
-          grid.innerHTML = enabled.map(c => `
-            <div class="collection-card cursor-pointer" onclick="filterByCategory('${c.category}')">
-              <img src="${c.image}" alt="${c.title}" style="width:100%;height:100%;object-fit:cover;">
-              <div class="collection-text">${c.title}</div>
-            </div>`).join('');
-        } catch(e) {
-          console.warn('Collections load failed');
-          const grid = document.getElementById('collectionGrid');
-          if (grid) grid.innerHTML = `
-            <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-shoes')"><img src="https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop" alt="Baby Shoes"><div class="collection-text">Baby Shoes</div></div>
-            <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-toys')"><img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop" alt="Baby Toys"><div class="collection-text">Baby Toys</div></div>
-            <div class="collection-card cursor-pointer" onclick="filterByCategory('women-cosmetics')"><img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop" alt="Cosmetics"><div class="collection-text">Women's Cosmetics</div></div>
-            <div class="collection-card cursor-pointer" onclick="filterByCategory('baby-dress')"><img src="https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop" alt="Baby Dress"><div class="collection-text">Baby Dress</div></div>`;
-        }
-      };
-
       function init() {
         renderProductsByCategory('all', '');
         updateCartUI();
@@ -4009,14 +3850,127 @@ window.FFH_API = (function() {
   return 'https://familyfashionhub.onrender.com/api';
 })();
 
-// ===== DYNAMIC SECTION LOADERS — FFH_API defined হওয়ার পরেই চালাও =====
-document.addEventListener('DOMContentLoaded', function() {
-  // slider images, side banner, collections ও testimonials লোড করো
-  if (typeof loadSliderImages  === 'function') loadSliderImages();
-  if (typeof loadSideBanner    === 'function') loadSideBanner();
-  if (typeof loadCollections   === 'function') loadCollections();
-  if (typeof loadTestimonials  === 'function') loadTestimonials();
-});
+// ============================================================
+// DYNAMIC LOADERS — FFH_API define হওয়ার পরে সব define ও call
+// ============================================================
+(function() {
+  var STATIC_COLLECTIONS = [
+    { category:'baby-shoes',      image:'https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop', title:'Baby Shoes' },
+    { category:'baby-toys',       image:'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop', title:'Baby Toys' },
+    { category:'women-cosmetics', image:'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop', title:"Women\'s Cosmetics" },
+    { category:'baby-dress',      image:'https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop', title:'Baby Dress' },
+  ];
+  var STATIC_TESTIMONIALS = [
+    { name:'Ayesha Khan',        title:'Banker',         image:'', text:'২য় বার অর্ডার করলাম। আগের মতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।' },
+    { name:'Fariha Akter Tumpa', title:'Entrepreneur',   image:'https://randomuser.me/api/portraits/women/44.jpg', text:'Family Fashion Hub is a trustworthy brand. Both product quality and service are outstanding.' },
+    { name:'Shahriar Khan Abir', title:'Service Holder', image:'https://randomuser.me/api/portraits/men/32.jpg',   text:'পণ্যের মান এবং ডেলিভারি দুটোই অসাধারণ। আবার অর্ডার করব ইনশাআল্লাহ।' },
+    { name:'Rafiqul Islam',      title:'Teacher',        image:'https://randomuser.me/api/portraits/men/54.jpg',   text:'The packaging was so beautiful I almost did not want to open it. Product quality is also excellent.' },
+    { name:'Nadia Rahman',       title:'Housewife',      image:'https://randomuser.me/api/portraits/women/68.jpg', text:'Shopping at Family Fashion Hub is truly an amazing experience. Completely satisfied with fast delivery and product quality.' },
+  ];
+
+  function _renderCollections(list) {
+    var grid = document.getElementById('collectionGrid');
+    if (!grid) return;
+    grid.innerHTML = list.map(function(c) {
+      return '<div class="collection-card cursor-pointer" onclick="filterByCategory(\'' + c.category + '\')"><img src="' + c.image + '" alt="' + c.title + '" style="width:100%;height:100%;object-fit:cover;"><div class="collection-text">' + c.title + '</div></div>';
+    }).join('');
+  }
+
+  function _renderTestimonials(list) {
+    var track = document.getElementById('reviewSliderTrack');
+    var dotsC = document.getElementById('reviewDots');
+    if (!track || !dotsC) return;
+    track.innerHTML = '';
+    dotsC.innerHTML = '';
+    list.forEach(function(t, idx) {
+      var avatar = t.image
+        ? '<img src="' + t.image + '" alt="' + t.name + '" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+        : '<div style="width:46px;height:46px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="color:#9ca3af;font-size:20px;"></i></div>';
+      var slide = document.createElement('div');
+      slide.className = 'review-slide';
+      slide.style.cssText = 'min-width:33.333%;padding:0 12px;box-sizing:border-box;';
+      slide.innerHTML = '<div style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);height:100%;"><p style="color:#4b5563;font-size:14px;line-height:1.8;margin-bottom:20px;">' + t.text + '</p><div style="display:flex;align-items:center;gap:12px;">' + avatar + '<div><p style="font-weight:700;color:#111827;font-size:14px;">' + t.name + '</p><p style="color:#6b7280;font-size:12px;">' + (t.title||'') + '</p></div></div></div>';
+      track.appendChild(slide);
+      var dot = document.createElement('button');
+      dot.className = 'rev-dot' + (idx === 0 ? ' active' : '');
+      dot.style.cssText = 'width:' + (idx===0?'28px':'8px') + ';height:8px;border-radius:' + (idx===0?'4px':'50%') + ';border:none;background:' + (idx===0?'#f97316':'#d1d5db') + ';cursor:pointer;transition:all 0.3s;';
+      (function(i){ dot.onclick = function(){ window.goToReviewSlide(i); }; })(idx);
+      dotsC.appendChild(dot);
+    });
+    window._revCurrentSlide = 0;
+    if (typeof window.goToReviewSlide === 'function') window.goToReviewSlide(0);
+    clearInterval(window._revTimer);
+    window._revTimer = setInterval(function() {
+      var tr = document.getElementById('reviewSliderTrack');
+      if (!tr) return;
+      var total   = tr.querySelectorAll('.review-slide').length;
+      var perView = window.innerWidth <= 768 ? 1 : window.innerWidth <= 1024 ? 2 : 3;
+      var max     = Math.max(0, total - perView);
+      window._revCurrentSlide = window._revCurrentSlide >= max ? 0 : window._revCurrentSlide + 1;
+      window.goToReviewSlide(window._revCurrentSlide);
+    }, 3500);
+  }
+
+  window.loadSliderImages = async function() {
+    try {
+      var res  = await fetch(window.FFH_API + '/slider-images');
+      var data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length) {
+        if (typeof window.renderSlider === 'function') window.renderSlider(data.data);
+      }
+    } catch(e) {}
+  };
+
+  window.loadSideBanner = async function() {
+    try {
+      var res  = await fetch(window.FFH_API + '/settings');
+      var data = await res.json();
+      if (data.success && data.data && data.data.sideBanner && data.data.sideBanner.image) {
+        var b  = data.data.sideBanner;
+        var el = document.getElementById('sideBannerContainer');
+        if (el) el.innerHTML = '<div class="rounded-lg shadow-lg overflow-hidden cursor-pointer" style="height:320px;" onclick="location.href=\''+( b.link||'#')+'\'" ><img src="' + b.image + '" alt="Side Banner" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;" onmouseover="this.style.transform=\'scale(1.04)\'" onmouseout="this.style.transform=\'scale(1)\'"></div>';
+      }
+    } catch(e) {}
+  };
+
+  window.loadCollections = async function() {
+    try {
+      var res  = await fetch(window.FFH_API + '/settings');
+      var data = await res.json();
+      var list = (data.success && data.data && Array.isArray(data.data.collections))
+        ? data.data.collections.filter(function(c){ return c.enabled; }).slice(0,4) : [];
+      _renderCollections(list.length ? list : STATIC_COLLECTIONS);
+    } catch(e) { _renderCollections(STATIC_COLLECTIONS); }
+  };
+
+  window.loadTestimonials = async function() {
+    try {
+      var res  = await fetch(window.FFH_API + '/testimonials');
+      var data = await res.json();
+      var list = (data.success && Array.isArray(data.data) && data.data.length) ? data.data : STATIC_TESTIMONIALS;
+      _renderTestimonials(list);
+    } catch(e) { _renderTestimonials(STATIC_TESTIMONIALS); }
+  };
+
+  function _runAllLoaders() {
+    window.loadSliderImages();
+    window.loadSideBanner();
+    window.loadCollections();
+    window.loadTestimonials();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _runAllLoaders);
+  } else {
+    _runAllLoaders();
+  }
+
+  window.addEventListener('resize', function() {
+    window._revCurrentSlide = 0;
+    if (typeof window.goToReviewSlide === 'function') window.goToReviewSlide(0);
+  });
+})();
+
 let ffhUser = JSON.parse(localStorage.getItem('ffh_user') || 'null');
 let ffhToken = localStorage.getItem('ffh_user_token') || '';
 
