@@ -497,12 +497,6 @@
 .addRelatedProduct:active {
   transform: scale(0.96);
 }
-
-@media (max-width: 640px) {
-  .detail-main-grid > div:last-child {
-    display: none;
-  }
-}
 </style>   
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased" dir="ltr">
@@ -2212,104 +2206,110 @@
         applyCatFilters();
       }
       function renderCatGrid(list) {
-        const grid  = document.getElementById('catProductGrid');
-        const empty = document.getElementById('catEmptyState');
-        const mGrid = document.getElementById('catProductGridMobile');
-        const mEmpty = document.getElementById('catEmptyStateMobile');
-        grid.innerHTML = '';
-        if (mGrid) mGrid.innerHTML = '';
-        if (list.length === 0) {
-          empty.style.display = 'block'; grid.style.display='none';
-          if (mEmpty) mEmpty.style.display = 'block';
-          if (mGrid) mGrid.style.display = 'none';
-          return;
-        }
-        empty.style.display = 'none'; grid.style.display = 'grid';
-        if (mEmpty) mEmpty.style.display = 'none';
-        if (mGrid) mGrid.style.display = 'grid';
+  const grid = document.getElementById('catProductGrid');
+  const empty = document.getElementById('catEmptyState');
+  const mGrid = document.getElementById('catProductGridMobile');
+  const mEmpty = document.getElementById('catEmptyStateMobile');
 
-        list.forEach(p => {
-          const card = document.createElement('div');
-          card.className = 'product-card bg-white border border-gray-100 shadow-sm';
-          card.dataset.id = p.id;
-          let badgeHtml = '';
-          // সব ব্যাজ বাদ
-badgeHtml = '';
-          let discountHtml = '';
-          if (p.oldPrice && p.price) {
-            const disc = Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
-            if (disc > 0) discountHtml = `<div class="discount-badge">Save: ${p.oldPrice - p.price}ট (-${disc}%)</div>`;
-          }
-          card.innerHTML = `
-            <div class="card-container">
-              ${discountHtml}${badgeHtml}
-              <div class="card-image-wrapper">
-                <img src="${p.img}" class="card-image" alt="${p.name}">
-              </div>
-              <div class="card-content">
-                <h3 class="card-title">${p.name}</h3>
-                <div class="card-price">
-                  <span class="price-new">${p.price}ট</span>
-                  <span class="price-old">${p.oldPrice}ট</span>
-                </div>
-                <button data-id="${p.id}" class="cat-quick-add-btn quick-add-btn" ${p.soldOut ? 'disabled' : ''}>
-                  🛒 Add To Cart
-                </button>
-              </div>
-            </div>`;
-          grid.appendChild(card);
-          if (mGrid) {
-            const mCard = card.cloneNode(true);
-            mGrid.appendChild(mCard);
-          }
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (mGrid) mGrid.innerHTML = '';
+
+  if (!list || list.length === 0) {
+    if (empty) { empty.style.display = 'block'; grid.style.display = 'none'; }
+    if (mEmpty) { mEmpty.style.display = 'block'; }
+    if (mGrid) mGrid.style.display = 'none';
+    return;
+  }
+
+  if (empty) { empty.style.display = 'none'; grid.style.display = 'grid'; }
+  if (mEmpty) mEmpty.style.display = 'none';
+  if (mGrid) mGrid.style.display = 'grid';
+
+  // Helper to find a product by id
+  function findProduct(pid) {
+    // primary source: API products (if loaded)
+    if (window._ffhApiProducts && window._ffhApiProducts.length) {
+      const found = window._ffhApiProducts.find(p => p.id == pid);
+      if (found) return found;
+    }
+    // fallback: current category list
+    return list.find(p => p.id == pid);
+  }
+
+  list.forEach(p => {
+    // build desktop card
+    const card = document.createElement('div');
+    card.className = 'product-card bg-white border border-gray-100 shadow-sm';
+    card.dataset.id = p.id;
+
+    let badgeHtml = '';
+    let discHtml = '';
+    if (p.oldPrice && p.price && p.oldPrice > p.price) {
+      const disc = Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
+      if (disc > 0) discHtml = `<div class="discount-badge">Save: ${p.oldPrice - p.price}ট (-${disc}%)</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="card-container">
+        ${discHtml}${badgeHtml}
+        <div class="card-image-wrapper">
+          <img src="${p.img}" class="card-image" alt="${p.name}" onerror="this.src='https://placehold.co/300x300?text=No+Image'">
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">${p.name}</h3>
+          <div class="card-price">
+            <span class="price-new">${p.price}ট</span>
+            <span class="price-old">${p.oldPrice}ট</span>
+          </div>
+          <button data-id="${p.id}" class="cat-quick-add-btn quick-add-btn" ${p.soldOut ? 'disabled' : ''}>
+            🛒 Add To Cart
+          </button>
+        </div>
+      </div>
+    `;
+
+    // attach click handler for "Add to Cart" (desktop)
+    const addBtn = card.querySelector('.cat-quick-add-btn:not([disabled])');
+    if (addBtn) {
+      addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const product = findProduct(addBtn.dataset.id);
+        if (product && typeof addToCart === 'function') addToCart(product);
+      });
+    }
+
+    // attach product detail click (desktop)
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.quick-add-btn')) return;
+      const product = findProduct(card.dataset.id);
+      if (product && typeof _ffhShowApiDetail === 'function') _ffhShowApiDetail(product);
+    });
+
+    grid.appendChild(card);
+
+    // --- Mobile clone ---
+    if (mGrid) {
+      const mCard = card.cloneNode(true);
+      mCard.dataset.id = p.id;   // ensure id is copied
+      // re-attach mobile specific handlers
+      const mAddBtn = mCard.querySelector('.cat-quick-add-btn:not([disabled])');
+      if (mAddBtn) {
+        mAddBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const product = findProduct(mAddBtn.dataset.id);
+          if (product && typeof addToCart === 'function') addToCart(product);
         });
-
-        // ─── click handlers: API products-aware ─────────────────────────
-        function _findProd(id) {
-          var src = (window._ffhApiProducts && window._ffhApiProducts.length) ? window._ffhApiProducts : products;
-          return src.find(function(pp){ return pp.id === id || pp.id === parseInt(id); });
-        }
-
-        grid.querySelectorAll('.cat-quick-add-btn:not([disabled])').forEach(function(btn) {
-          btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var prod = _findProd(btn.dataset.id);
-            if (prod && typeof addToCart === 'function') addToCart(prod);
-          });
-        });
-
-        grid.querySelectorAll('.product-card').forEach(function(card) {
-          card.addEventListener('click', function(e) {
-            if (e.target.classList.contains('quick-add-btn') || e.target.closest('.quick-add-btn')) return;
-            var prod = _findProd(card.dataset.id);
-            if (prod) {
-              if (typeof _ffhShowApiDetail === 'function') _ffhShowApiDetail(prod);
-              else if (typeof showProductDetailPage === 'function') showProductDetailPage(parseInt(card.dataset.id));
-            }
-          });
-        });
-
-        if (mGrid) {
-          mGrid.querySelectorAll('.cat-quick-add-btn:not([disabled])').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-              e.stopPropagation();
-              var prod = _findProd(btn.dataset.id);
-              if (prod && typeof addToCart === 'function') addToCart(prod);
-            });
-          });
-          mGrid.querySelectorAll('.product-card').forEach(function(card) {
-            card.addEventListener('click', function(e) {
-              if (e.target.classList.contains('quick-add-btn') || e.target.closest('.quick-add-btn')) return;
-              var prod = _findProd(card.dataset.id);
-              if (prod) {
-                if (typeof _ffhShowApiDetail === 'function') _ffhShowApiDetail(prod);
-                else if (typeof showProductDetailPage === 'function') showProductDetailPage(parseInt(card.dataset.id));
-              }
-            });
-          });
-        }
       }
-
+      mCard.addEventListener('click', (e) => {
+        if (e.target.closest('.quick-add-btn')) return;
+        const product = findProduct(mCard.dataset.id);
+        if (product && typeof _ffhShowApiDetail === 'function') _ffhShowApiDetail(product);
+      });
+      mGrid.appendChild(mCard);
+    }
+  });
+}
       const catSortMob = document.getElementById('catSortSelectMobile');
       if (catSortMob) {
         catSortMob.addEventListener('change', function() {
