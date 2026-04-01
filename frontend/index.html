@@ -488,12 +488,14 @@
   transform: scale(0.96);
 }
 
-
+/* ডেস্কটপ ভিউতে সাইডবার স্টিকি থাকবে */
 @media (min-width: 768px) {
   #catSidebar {
     position: sticky;
-    top: 112px;           /* Adjust based on your fixed header height */
-    align-self: start;
+    top: 120px;          /* হেডারের উচ্চতা অনুযায়ী সামঞ্জস্য করুন */
+    height: calc(100vh - 120px);
+    overflow-y: auto;    /* সাইডবারের কন্টেন্ট বেশি হলে স্ক্রোল হবে */
+    align-self: flex-start;
   }
 }
 </style>     
