@@ -227,11 +227,12 @@ async function seedDefaultCollections() {
   try {
     const existing = await Settings.findOne({ key: 'collections' });
     if (!existing) {
+      const ts = Date.now();
       const defaultCollections = [
-        { _id: Date.now().toString() + '1', category: 'baby-shoes', image: 'https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop', title: 'Baby Shoes', enabled: true },
-        { _id: Date.now().toString() + '2', category: 'baby-toys', image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop', title: 'Baby Toys', enabled: true },
-        { _id: Date.now().toString() + '3', category: 'women-cosmetics', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop', title: "Women's Cosmetics", enabled: true },
-        { _id: Date.now().toString() + '4', category: 'baby-dress', image: 'https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop', title: 'Baby Dress', enabled: true },
+        { _id: `col_${ts}_1`, category: 'baby-shoes', image: 'https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=400&h=300&fit=crop', title: 'Baby Shoes', enabled: true },
+        { _id: `col_${ts}_2`, category: 'baby-toys', image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop', title: 'Baby Toys', enabled: true },
+        { _id: `col_${ts}_3`, category: 'women-cosmetics', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=300&fit=crop', title: "Women's Cosmetics", enabled: true },
+        { _id: `col_${ts}_4`, category: 'baby-dress', image: 'https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=400&h=300&fit=crop', title: 'Baby Dress', enabled: true },
       ];
       await Settings.findOneAndUpdate(
         { key: 'collections' },
@@ -1350,7 +1351,7 @@ app.post('/api/admin/collections', adminMiddleware, upload.single('image'), asyn
     }
 
     const newCollection = {
-      _id: Date.now().toString(), // simple unique id
+      _id: `col_${Date.now()}`, // clearly string, never a number
       title: title.trim(),
       category: category || '',
       link: link || '',
@@ -1383,7 +1384,7 @@ app.put('/api/admin/collections/:id', adminMiddleware, upload.single('image'), a
 
     const setting = await Settings.findOne({ key: 'collections' });
     let collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
-    const index = collections.findIndex(c => c._id === id);
+    const index = collections.findIndex(c => String(c._id) === String(id));
     if (index === -1) return res.json({ success: false, message: 'কালেকশন পাওয়া যায়নি' });
 
     const old = collections[index];
@@ -1420,17 +1421,37 @@ app.put('/api/admin/collections/:id', adminMiddleware, upload.single('image'), a
   }
 });
 
+// ===== COLLECTION _id MIGRATION (পুরনো numeric _id কে string-এ রূপান্তর) =====
+app.post('/api/admin/collections/fix-ids', adminMiddleware, async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'collections' });
+    if (!setting || !Array.isArray(setting.value)) {
+      return res.json({ success: false, message: 'কোনো collection data নেই' });
+    }
+    const fixed = setting.value.map((c, i) => ({
+      ...c,
+      _id: c._id !== undefined ? String(c._id) : `col_${Date.now()}_${i}`,
+    }));
+    await Settings.findOneAndUpdate(
+      { key: 'collections' },
+      { key: 'collections', value: fixed },
+      { upsert: true }
+    );
+    res.json({ success: true, message: `${fixed.length}টি collection-এর _id fix হয়েছে`, data: fixed });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // Admin: Delete collection
 app.delete('/api/admin/collections/:id', adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const setting = await Settings.findOne({ key: 'collections' });
     let collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
-    const removed = collections.find(c => c._id === id);
+    const removed = collections.find(c => String(c._id) === String(id));
     if (removed && removed.publicId) {
       await cloudinary.uploader.destroy(removed.publicId).catch(() => {});
     }
-    collections = collections.filter(c => c._id !== id);
+    collections = collections.filter(c => String(c._id) !== String(id));
     await Settings.findOneAndUpdate(
       { key: 'collections' },
       { key: 'collections', value: collections },

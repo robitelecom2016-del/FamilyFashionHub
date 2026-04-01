@@ -3986,6 +3986,13 @@ async function loadCollectionsAdmin() {
       saveCategoriesToLocal();
     }
   } catch {}
+  // পুরনো numeric _id গুলো auto-fix করো (একবারই কাজ করে)
+  try {
+    await fetch(API_URL + '/admin/collections/fix-ids', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + adminToken }
+    });
+  } catch {}
   try {
     const data = await api('/admin/collections');
     if (!data.success) {
