@@ -3045,14 +3045,54 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
       function performSearch() {
         const term = searchInput.value.trim();
         hideSuggestions();
-        if (window._ffhApiProducts && window._ffhApiProducts.length) {
-          const filtered = window._ffhApiProducts.filter(p => p.name.toLowerCase().includes(term.toLowerCase()));
-          renderProductGrid(filtered);
-          if (categoryTitle) categoryTitle.innerText = term ? `🔍 Search: "${term}"` : '🌿 All Products';
-        } else {
-          renderProductsByCategory(currentCategory, term);
-        }
-        goToHome();
+        if (!term) return;
+        const productSource = (window._ffhApiProducts && window._ffhApiProducts.length) ? window._ffhApiProducts : products;
+        const filtered = productSource.filter(p => p.name.toLowerCase().includes(term.toLowerCase()));
+
+        // সার্চ রেজাল্ট categoryPage-এ দেখাও
+        var catPage = document.getElementById('categoryPage');
+        var homePg  = document.getElementById('homePage');
+        var detPg   = document.getElementById('productDetailPage');
+        if (homePg) homePg.classList.add('hidden');
+        if (detPg)  { detPg.classList.remove('active'); detPg.classList.add('detail-page'); }
+        if (catPage){ catPage.classList.remove('detail-page'); catPage.classList.add('active'); }
+
+        var _crs = document.getElementById('customerReviewSection');
+        var _mf  = document.getElementById('mainFooter');
+        var _aps = document.getElementById('allProductsSection');
+        var _ocs = document.getElementById('ourCollectionSection');
+        var _ofs = document.getElementById('organicFeatureSection');
+        if (_crs) _crs.style.display = 'none';
+        if (_mf)  _mf.style.display  = 'none';
+        if (_aps) _aps.style.display  = 'none';
+        if (_ocs) _ocs.style.display  = 'none';
+        if (_ofs) _ofs.style.display  = 'none';
+
+        // subcategory pills লুকাও
+        var _sbf  = document.getElementById('subcatFilterBar');
+        var _sbfm = document.getElementById('subcatFilterBarMobile');
+        if (_sbf)  _sbf.style.display  = 'none';
+        if (_sbfm) _sbfm.style.display = 'none';
+
+        // category page title সেট করো
+        var _catPageName  = document.getElementById('catPageName');
+        var _catPageTitle = document.getElementById('catPageTitle');
+        var _catPageIcon  = document.getElementById('catPageIcon');
+        var _catPageDesc  = document.getElementById('catPageDesc');
+        var _mobTitle     = document.getElementById('catMobileTitle');
+        var _mobPageName  = document.getElementById('catMobilePageName');
+        if (_catPageName)  _catPageName.innerText  = `🔍 "${term}"`;
+        if (_catPageTitle) _catPageTitle.innerText  = `Search: "${term}"`;
+        if (_catPageIcon)  _catPageIcon.innerText   = '🔍';
+        if (_catPageDesc)  _catPageDesc.innerText   = filtered.length + 'টি পণ্য পাওয়া গেছে';
+        if (_mobTitle)     _mobTitle.innerText      = `🔍 "${term}"`;
+        if (_mobPageName)  _mobPageName.innerText   = `Search: "${term}"`;
+
+        // catProductGrid ও catProductGridMobile-এ render করো
+        catCurrentProducts = filtered;
+        renderCatGrid(filtered);
+
+        window.scrollTo({ top: 0 });
       }
 
       const suggestBox = document.createElement('div');
@@ -3155,32 +3195,16 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
       });
       
       mobileSearchBtn.addEventListener('click', () => {
-        const term = mobileSearchInput.value.trim();
-        hideSuggestions();
-        if (window._ffhApiProducts && window._ffhApiProducts.length) {
-          const filtered = window._ffhApiProducts.filter(p => p.name.toLowerCase().includes(term.toLowerCase()));
-          renderProductGrid(filtered);
-          if (categoryTitle) categoryTitle.innerText = term ? `🔍 Search: "${term}"` : '🌿 All Products';
-        } else {
-          renderProductsByCategory(currentCategory, term);
-        }
+        searchInput.value = mobileSearchInput.value;
         mobileSearchBar.classList.add('hidden');
-        goToHome();
+        performSearch();
       });
       
       mobileSearchInput.addEventListener('keyup', (e) => {
         if (e.key === 'Enter') {
-          const term = mobileSearchInput.value.trim();
-          hideSuggestions();
-          if (window._ffhApiProducts && window._ffhApiProducts.length) {
-            const filtered = window._ffhApiProducts.filter(p => p.name.toLowerCase().includes(term.toLowerCase()));
-            renderProductGrid(filtered);
-            if (categoryTitle) categoryTitle.innerText = term ? `🔍 Search: "${term}"` : '🌿 All Products';
-          } else {
-            renderProductsByCategory(currentCategory, term);
-          }
+          searchInput.value = mobileSearchInput.value;
           mobileSearchBar.classList.add('hidden');
-          goToHome();
+          performSearch();
         }
         if (e.key === 'Escape') hideSuggestions();
       });
@@ -4909,14 +4933,14 @@ function renderDesktopNav(cats) {
     var subs = (cat.subcategories || []);
     var subHTML = subs.length > 0
       ? subs.map(function(s) {
-          return '<a href="#' + cat.value + '/' + s.value + '" onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'' + s.value + '\')"'
+          return '<a href="#' + cat.value + '/' + s.value + '" onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'' + s.value + '\');return false;"'
                + ' class="block px-4 py-2 hover:bg-gray-100">' + s.label + '</a>';
         }).join('')
       : '<span style="display:block;padding:10px 16px;font-size:12px;color:#9ca3af;">কোনো সাব-ক্যাটাগরি নেই</span>';
 
     return '<div class="group relative">'
          +   '<a href="#' + cat.value + '" class="hover:text-orange-400 transition py-2 flex items-center gap-1 whitespace-nowrap"'
-         +   ' onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'\')">'
+         +   ' onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'\');return false;">'
          +   cat.label
          +   ' <i class="fas fa-chevron-down text-xs"></i>'
          +   '</a>'
@@ -4939,7 +4963,7 @@ function renderMobileAccordion(cats) {
     var subValues = subs.map(function(s){ return s.value; });
     var subLinks = subs.length > 0
       ? subs.map(function(s) {
-          return '<a href="#" data-subcatval="' + s.value + '" onclick="event.preventDefault();closeMobMenuAndFilter(\'' + cat.value + '\',\'' + s.value + '\')">'
+          return '<a href="#' + cat.value + '/' + s.value + '" data-subcatval="' + s.value + '" onclick="event.preventDefault();closeMobMenuAndFilter(\'' + cat.value + '\',\'' + s.value + '\');return false;">'
                + '<span class="sub-dot"></span>' + s.label
                + '<span class="ffh-subcat-count-badge" style="margin-left:auto;font-size:10px;font-weight:700;color:#f97316;background:#fff7ed;border-radius:8px;padding:1px 6px;display:none;"></span>'
                + '</a>';
@@ -4948,7 +4972,7 @@ function renderMobileAccordion(cats) {
 
     return '<div class="mob-acc-item">'
          +   '<div class="mob-acc-btn" data-catvalue="' + cat.value + '" data-subsvalues="' + subValues.join(',') + '">'
-         +     '<a href="#' + cat.value + '" class="btn-left" style="text-decoration:none;flex:1;" onclick="event.preventDefault();closeMobMenuAndFilter(\'' + cat.value + '\',\'\')">'
+         +     '<a href="#' + cat.value + '" class="btn-left" style="text-decoration:none;flex:1;" onclick="event.preventDefault();closeMobMenuAndFilter(\'' + cat.value + '\',\'\');return false;">'
          +       '<span class="cat-label">' + cat.label + '</span>'
          +       '<span class="ffh-cat-count-badge" style="display:none;font-size:10px;font-weight:700;color:white;background:#f97316;border-radius:8px;padding:1px 6px;margin-left:6px;"></span>'
          +     '</a>'
@@ -4973,6 +4997,11 @@ function renderMobileAccordion(cats) {
 window.ffhNavFilter = function(catValue, subValue) {
   if (typeof filterByCategory === 'function') {
     filterByCategory(catValue, subValue || '');
+  } else {
+    // filterByCategory এখনো ready না হলে ৫০ms পরে আবার চেষ্টা করো
+    setTimeout(function() {
+      if (typeof filterByCategory === 'function') filterByCategory(catValue, subValue || '');
+    }, 50);
   }
 };
 
