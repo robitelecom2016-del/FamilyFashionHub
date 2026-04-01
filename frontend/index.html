@@ -488,13 +488,13 @@
   transform: scale(0.96);
 }
 
-/* ডেস্কটপ ভিউতে সাইডবার স্টিকি থাকবে */
+/* ডেস্কটপে সাইডবার স্টিকি */
 @media (min-width: 768px) {
   #catSidebar {
     position: sticky;
-    top: 120px;          /* হেডারের উচ্চতা অনুযায়ী সামঞ্জস্য করুন */
+    top: 120px;          /* হেডারের উচ্চতা অনুযায়ী সেট করুন */
     height: calc(100vh - 120px);
-    overflow-y: auto;    /* সাইডবারের কন্টেন্ট বেশি হলে স্ক্রোল হবে */
+    overflow-y: auto;    /* সাইডবারের কন্টেন্ট বেশি হলে স্ক্রোল */
     align-self: flex-start;
   }
 }
@@ -5053,9 +5053,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function setStickyTop() {
-  const header = document.querySelector('#mainNav');
-  const height = header ? header.offsetHeight : 120;
-  document.getElementById('catSidebar').style.top = height + 'px';
+  const headerHeight = document.querySelector('#mainNav').offsetHeight;
+  document.querySelector('#catSidebar').style.top = headerHeight + 'px';
 }
 window.addEventListener('load', setStickyTop);
 window.addEventListener('resize', setStickyTop);
