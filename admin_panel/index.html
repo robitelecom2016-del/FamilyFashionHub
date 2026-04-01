@@ -33,14 +33,15 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 250px; min-height: 100vh; background: var(--sidebar-bg);
+  width: 250px; height: 100vh; background: var(--sidebar-bg);
   display: flex; flex-direction: column; position: fixed; top: 0; left: 0;
-  z-index: 100; transition: transform 0.3s;
+  z-index: 100; transition: transform 0.3s; overflow: hidden;
 }
 .sidebar-logo {
   padding: 12px 20px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 .sidebar-logo-img {
   width: 120px; height: 48px; object-fit: contain;
@@ -48,7 +49,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 }
 .sidebar-logo-text { display: none; }
 
-.sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+.sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; overflow-x: hidden; min-height: 0; }
 
 /* চিকন কাস্টম স্ক্রলবার */
 .sidebar-nav::-webkit-scrollbar {
@@ -82,7 +83,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 .nav-item.active { background: var(--sidebar-active); color: #fff; }
 .nav-item .badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; padding: 2px 7px; border-radius: 999px; }
 
-.sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+.sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
 .sidebar-user { display: flex; align-items: center; gap: 10px; }
 .sidebar-user-avatar { width: 36px; height: 36px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; }
 .sidebar-user-info p { color: #fff; font-size: 13px; font-weight: 600; }
@@ -259,7 +260,7 @@ tr:hover td { background: var(--bg); }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
+  .sidebar { transform: translateX(-100%); height: 100vh; }
   .sidebar.open { transform: translateX(0); }
   .sidebar-overlay.show { display: block; }
   .main-content { margin-left: 0; }
@@ -958,162 +959,162 @@ tr:hover td { background: var(--bg); }
     </div><!-- end page-settings -->
 
     <!-- ===== TESTIMONIALS PAGE ===== -->
-<div class="page-section" id="page-testimonials">
-  <div class="card">
-    <div class="card-header">
-      <h3><i class="fas fa-quote-left" style="color:var(--primary)"></i> টেস্টিমোনিয়াল ম্যানেজমেন্ট</h3>
-      <button class="btn btn-primary btn-sm" onclick="openTestimonialModal()"><i class="fas fa-plus"></i> নতুন টেস্টিমোনিয়াল</button>
+    <div class="page-section" id="page-testimonials">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-quote-left" style="color:var(--primary)"></i> টেস্টিমোনিয়াল ম্যানেজমেন্ট</h3>
+          <button class="btn btn-primary btn-sm" onclick="openTestimonialModal()"><i class="fas fa-plus"></i> নতুন টেস্টিমোনিয়াল</button>
+        </div>
+        <div id="testimonialsTable"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
     </div>
-    <div id="testimonialsTable"><div class="loading"><div class="spinner"></div></div></div>
-  </div>
-</div>
 
-<!-- ===== COLLECTIONS PAGE ===== -->
-<div class="page-section" id="page-collections">
-  <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;"><i class="fas fa-th-large" style="color:var(--primary);margin-right:8px;"></i>কালেকশন ম্যানেজমেন্ট</h2>
-      <p style="font-size:13px;color:var(--text-muted);">সর্বোচ্চ ৪টি কালেকশন — ফ্রন্টএন্ডে হোমপেজে দেখাবে।</p>
-    </div>
-    <button class="btn btn-primary btn-sm" onclick="openCollectionModal()"><i class="fas fa-plus"></i> নতুন কালেকশন</button>
-  </div>
-  <div id="collectionsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
-    <div class="loading"><div class="spinner"></div></div>
-  </div>
-</div>
-
-<!-- ===== HERO SIDE IMAGE PAGE ===== -->
-<div class="page-section" id="page-heroside">
-  <div class="card" style="max-width:680px;">
-    <div class="card-header">
-      <h3><i class="fas fa-desktop" style="color:var(--primary)"></i> ডেস্কটপ হিরো সাইড ইমেজ</h3>
-    </div>
-    <div class="card-body">
-      <div style="background:var(--primary-light);border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
-        <i class="fas fa-info-circle" style="color:var(--primary);font-size:18px;margin-top:2px;flex-shrink:0;"></i>
+    <!-- ===== COLLECTIONS PAGE ===== -->
+    <div class="page-section" id="page-collections">
+      <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div>
-          <p style="font-size:13px;font-weight:700;color:var(--primary-dark);">এই ইমেজটি কোথায় দেখায়?</p>
-          <p style="font-size:12px;color:var(--primary-dark);margin-top:4px;">ফ্রন্টএন্ডের হোমপেজে <strong>ডেস্কটপ মোডে</strong> মেইন স্লাইডারের ডান পাশে এই ইমেজটি দেখায়। মোবাইল ভিউতে সাধারণত লুকানো থাকে।</p>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;"><i class="fas fa-th-large" style="color:var(--primary);margin-right:8px;"></i>কালেকশন ম্যানেজমেন্ট</h2>
+          <p style="font-size:13px;color:var(--text-muted);">সর্বোচ্চ ৪টি কালেকশন — ফ্রন্টএন্ডে হোমপেজে দেখাবে।</p>
         </div>
+        <button class="btn btn-primary btn-sm" onclick="openCollectionModal()"><i class="fas fa-plus"></i> নতুন কালেকশন</button>
       </div>
+      <div id="collectionsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
 
-      <!-- Layout preview -->
-      <div style="background:#111827;border-radius:10px;padding:14px;margin-bottom:18px;">
-        <p style="font-size:11px;color:#6b7280;margin-bottom:8px;text-align:center;">ডেস্কটপ লেআউট প্রিভিউ</p>
-        <div style="display:grid;grid-template-columns:1fr 0.45fr;gap:8px;">
-          <div style="background:#1f2937;border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;">
-            <div style="text-align:center;">
-              <i class="fas fa-images" style="color:#6b7280;font-size:16px;display:block;margin-bottom:4px;"></i>
-              <span style="font-size:10px;color:#6b7280;">মেইন স্লাইডার</span>
+    <!-- ===== HERO SIDE IMAGE PAGE ===== -->
+    <div class="page-section" id="page-heroside">
+      <div class="card" style="max-width:680px;">
+        <div class="card-header">
+          <h3><i class="fas fa-desktop" style="color:var(--primary)"></i> ডেস্কটপ হিরো সাইড ইমেজ</h3>
+        </div>
+        <div class="card-body">
+          <div style="background:var(--primary-light);border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
+            <i class="fas fa-info-circle" style="color:var(--primary);font-size:18px;margin-top:2px;flex-shrink:0;"></i>
+            <div>
+              <p style="font-size:13px;font-weight:700;color:var(--primary-dark);">এই ইমেজটি কোথায় দেখায়?</p>
+              <p style="font-size:12px;color:var(--primary-dark);margin-top:4px;">ফ্রন্টএন্ডের হোমপেজে <strong>ডেস্কটপ মোডে</strong> মেইন স্লাইডারের ডান পাশে এই ইমেজটি দেখায়। মোবাইল ভিউতে সাধারণত লুকানো থাকে।</p>
             </div>
           </div>
-          <div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;border:2px dashed #a78bfa;">
-            <div style="text-align:center;">
-              <i class="fas fa-image" style="color:#c4b5fd;font-size:16px;display:block;margin-bottom:4px;"></i>
-              <span style="font-size:10px;color:#c4b5fd;">সাইড ইমেজ ← এখানে</span>
+
+          <!-- Layout preview -->
+          <div style="background:#111827;border-radius:10px;padding:14px;margin-bottom:18px;">
+            <p style="font-size:11px;color:#6b7280;margin-bottom:8px;text-align:center;">ডেস্কটপ লেআউট প্রিভিউ</p>
+            <div style="display:grid;grid-template-columns:1fr 0.45fr;gap:8px;">
+              <div style="background:#1f2937;border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;">
+                <div style="text-align:center;">
+                  <i class="fas fa-images" style="color:#6b7280;font-size:16px;display:block;margin-bottom:4px;"></i>
+                  <span style="font-size:10px;color:#6b7280;">মেইন স্লাইডার</span>
+                </div>
+              </div>
+              <div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;border:2px dashed #a78bfa;">
+                <div style="text-align:center;">
+                  <i class="fas fa-image" style="color:#c4b5fd;font-size:16px;display:block;margin-bottom:4px;"></i>
+                  <span style="font-size:10px;color:#c4b5fd;">সাইড ইমেজ ← এখানে</span>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Current Image Preview -->
+          <div id="heroSideCurrentPreview" style="margin-bottom:16px;display:none;">
+            <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;"><i class="fas fa-eye" style="color:var(--success);margin-right:4px;"></i> বর্তমান সাইড ইমেজ</p>
+            <div style="position:relative;display:inline-block;">
+              <img id="heroSideCurrentImg" src="" alt="Hero Side Image" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1.5px solid var(--border);">
+              <button onclick="deleteHeroSideImage()" style="position:absolute;top:6px;right:6px;background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-trash"></i> মুছুন</button>
+            </div>
+          </div>
+
+          <!-- Upload Zone -->
+          <div class="form-group">
+            <label class="form-label">নতুন ইমেজ আপলোড</label>
+            <div id="heroSideDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
+              onclick="document.getElementById('heroSideInput').click()"
+              ondragover="event.preventDefault();this.style.background='#ede9fe';"
+              ondragleave="this.style.background='#f5f3ff';"
+              ondrop="handleHeroSideDrop(event)">
+              <i class="fas fa-cloud-upload-alt" style="font-size:34px;color:var(--primary);display:block;margin-bottom:8px;"></i>
+              <p style="font-size:13px;color:var(--primary);font-weight:700;">ইমেজ এখানে ড্রাগ করুন বা ক্লিক করুন</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">PNG, JPG, WEBP — সর্বোচ্চ ১০MB</p>
+              <input type="file" id="heroSideInput" accept="image/*" style="display:none" onchange="previewHeroSideImage(this)">
+            </div>
+            <!-- New image preview -->
+            <div id="heroSideNewPreview" style="display:none;margin-top:10px;">
+              <p style="font-size:12px;font-weight:600;color:var(--success);margin-bottom:6px;"><i class="fas fa-check-circle"></i> নতুন ইমেজ সিলেক্ট করা হয়েছে</p>
+              <img id="heroSideNewImg" src="" style="max-height:140px;border-radius:8px;border:1.5px solid var(--success);">
+            </div>
+          </div>
+
+          <!-- Link -->
+          <div class="form-group">
+            <label class="form-label">ইমেজ লিংক <span style="font-size:11px;color:var(--text-muted);">(ক্লিক করলে যাবে — ঐচ্ছিক)</span></label>
+            <input type="text" class="form-control" id="heroSideLink" placeholder="যেমন: /category/sale বা https://...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alt টেক্সট <span style="font-size:11px;color:var(--text-muted);">(SEO ও accessibility — ঐচ্ছিক)</span></label>
+            <input type="text" class="form-control" id="heroSideAlt" placeholder="যেমন: Special Offer Banner">
+          </div>
+
+          <!-- Upload Progress -->
+          <div id="heroSideProgress" style="display:none;margin-bottom:14px;">
+            <div style="background:#e5e7eb;border-radius:999px;height:8px;overflow:hidden;">
+              <div id="heroSideProgressBar" style="background:var(--primary);height:100%;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <p id="heroSideProgressText" style="font-size:12px;color:var(--text-muted);margin-top:4px;">আপলোড হচ্ছে...</p>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="saveHeroSideImage()"><i class="fas fa-save"></i> সেভ করুন</button>
+            <button class="btn btn-light" onclick="loadHeroSideImageAdmin()"><i class="fas fa-undo"></i> রিসেট</button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Current Image Preview -->
-      <div id="heroSideCurrentPreview" style="margin-bottom:16px;display:none;">
-        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;"><i class="fas fa-eye" style="color:var(--success);margin-right:4px;"></i> বর্তমান সাইড ইমেজ</p>
-        <div style="position:relative;display:inline-block;">
-          <img id="heroSideCurrentImg" src="" alt="Hero Side Image" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1.5px solid var(--border);">
-          <button onclick="deleteHeroSideImage()" style="position:absolute;top:6px;right:6px;background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-trash"></i> মুছুন</button>
+    <!-- ===== SIDE BANNER PAGE ===== -->
+    <div class="page-section" id="page-sidebanner">
+      <div class="card" style="max-width:600px;">
+        <div class="card-header">
+          <h3><i class="fas fa-image" style="color:var(--primary)"></i> সাইড ব্যানার সেটিংস</h3>
         </div>
-      </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">ফ্রন্টএন্ডে পণ্য পেজের পাশে দেখানো ব্যানার ছবি এখান থেকে পরিবর্তন করুন।</p>
 
-      <!-- Upload Zone -->
-      <div class="form-group">
-        <label class="form-label">নতুন ইমেজ আপলোড</label>
-        <div id="heroSideDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
-          onclick="document.getElementById('heroSideInput').click()"
-          ondragover="event.preventDefault();this.style.background='#ede9fe';"
-          ondragleave="this.style.background='#f5f3ff';"
-          ondrop="handleHeroSideDrop(event)">
-          <i class="fas fa-cloud-upload-alt" style="font-size:34px;color:var(--primary);display:block;margin-bottom:8px;"></i>
-          <p style="font-size:13px;color:var(--primary);font-weight:700;">ইমেজ এখানে ড্রাগ করুন বা ক্লিক করুন</p>
-          <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">PNG, JPG, WEBP — সর্বোচ্চ ১০MB</p>
-          <input type="file" id="heroSideInput" accept="image/*" style="display:none" onchange="previewHeroSideImage(this)">
+          <!-- Current Preview -->
+          <div id="sideBannerPreview" style="margin-bottom:16px;display:none;">
+            <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;"><i class="fas fa-eye" style="color:var(--success);margin-right:4px;"></i> বর্তমান ব্যানার</p>
+            <img id="sideBannerPreviewImg" src="" alt="Side Banner" style="max-width:100%;max-height:200px;object-fit:contain;border-radius:10px;border:1.5px solid var(--border);">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ব্যানার ছবি আপলোড</label>
+            <div id="sideBannerDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
+              onclick="document.getElementById('sideBannerInput').click()"
+              ondragover="event.preventDefault();this.style.background='#ede9fe';"
+              ondragleave="this.style.background='#f5f3ff';"
+              ondrop="handleSideBannerDrop(event)">
+              <i class="fas fa-cloud-upload-alt" style="font-size:32px;color:var(--primary);display:block;margin-bottom:8px;"></i>
+              <p style="font-size:13px;color:var(--primary);font-weight:700;">ছবি এখানে ড্রাগ করুন বা ক্লিক করুন</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">PNG, JPG, WEBP — সর্বোচ্চ ১০MB</p>
+              <input type="file" id="sideBannerInput" accept="image/*" style="display:none" onchange="previewSideBanner(this)">
+            </div>
+            <div id="sideBannerNewPreview" style="display:none;margin-top:10px;">
+              <p style="font-size:12px;font-weight:600;color:var(--success);margin-bottom:6px;"><i class="fas fa-check-circle"></i> নতুন ছবি সিলেক্ট করা হয়েছে</p>
+              <img id="sideBannerNewImg" src="" style="max-height:120px;border-radius:8px;border:1.5px solid var(--success);">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ব্যানার লিংক (ক্লিক করলে যাবে)</label>
+            <input type="text" class="form-control" id="sideBannerLink" placeholder="যেমন: /category/sale বা https://...">
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="saveSideBanner()"><i class="fas fa-save"></i> সেভ করুন</button>
+            <button class="btn btn-light" onclick="loadSideBannerAdmin()"><i class="fas fa-undo"></i> রিসেট</button>
+          </div>
         </div>
-        <!-- New image preview -->
-        <div id="heroSideNewPreview" style="display:none;margin-top:10px;">
-          <p style="font-size:12px;font-weight:600;color:var(--success);margin-bottom:6px;"><i class="fas fa-check-circle"></i> নতুন ইমেজ সিলেক্ট করা হয়েছে</p>
-          <img id="heroSideNewImg" src="" style="max-height:140px;border-radius:8px;border:1.5px solid var(--success);">
-        </div>
-      </div>
-
-      <!-- Link -->
-      <div class="form-group">
-        <label class="form-label">ইমেজ লিংক <span style="font-size:11px;color:var(--text-muted);">(ক্লিক করলে যাবে — ঐচ্ছিক)</span></label>
-        <input type="text" class="form-control" id="heroSideLink" placeholder="যেমন: /category/sale বা https://...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Alt টেক্সট <span style="font-size:11px;color:var(--text-muted);">(SEO ও accessibility — ঐচ্ছিক)</span></label>
-        <input type="text" class="form-control" id="heroSideAlt" placeholder="যেমন: Special Offer Banner">
-      </div>
-
-      <!-- Upload Progress -->
-      <div id="heroSideProgress" style="display:none;margin-bottom:14px;">
-        <div style="background:#e5e7eb;border-radius:999px;height:8px;overflow:hidden;">
-          <div id="heroSideProgressBar" style="background:var(--primary);height:100%;width:0%;transition:width 0.3s;"></div>
-        </div>
-        <p id="heroSideProgressText" style="font-size:12px;color:var(--text-muted);margin-top:4px;">আপলোড হচ্ছে...</p>
-      </div>
-
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="saveHeroSideImage()"><i class="fas fa-save"></i> সেভ করুন</button>
-        <button class="btn btn-light" onclick="loadHeroSideImageAdmin()"><i class="fas fa-undo"></i> রিসেট</button>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- ===== SIDE BANNER PAGE ===== -->
-<div class="page-section" id="page-sidebanner">
-  <div class="card" style="max-width:600px;">
-    <div class="card-header">
-      <h3><i class="fas fa-image" style="color:var(--primary)"></i> সাইড ব্যানার সেটিংস</h3>
-    </div>
-    <div class="card-body">
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">ফ্রন্টএন্ডে পণ্য পেজের পাশে দেখানো ব্যানার ছবি এখান থেকে পরিবর্তন করুন।</p>
-
-      <!-- Current Preview -->
-      <div id="sideBannerPreview" style="margin-bottom:16px;display:none;">
-        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;"><i class="fas fa-eye" style="color:var(--success);margin-right:4px;"></i> বর্তমান ব্যানার</p>
-        <img id="sideBannerPreviewImg" src="" alt="Side Banner" style="max-width:100%;max-height:200px;object-fit:contain;border-radius:10px;border:1.5px solid var(--border);">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">ব্যানার ছবি আপলোড</label>
-        <div id="sideBannerDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
-          onclick="document.getElementById('sideBannerInput').click()"
-          ondragover="event.preventDefault();this.style.background='#ede9fe';"
-          ondragleave="this.style.background='#f5f3ff';"
-          ondrop="handleSideBannerDrop(event)">
-          <i class="fas fa-cloud-upload-alt" style="font-size:32px;color:var(--primary);display:block;margin-bottom:8px;"></i>
-          <p style="font-size:13px;color:var(--primary);font-weight:700;">ছবি এখানে ড্রাগ করুন বা ক্লিক করুন</p>
-          <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">PNG, JPG, WEBP — সর্বোচ্চ ১০MB</p>
-          <input type="file" id="sideBannerInput" accept="image/*" style="display:none" onchange="previewSideBanner(this)">
-        </div>
-        <div id="sideBannerNewPreview" style="display:none;margin-top:10px;">
-          <p style="font-size:12px;font-weight:600;color:var(--success);margin-bottom:6px;"><i class="fas fa-check-circle"></i> নতুন ছবি সিলেক্ট করা হয়েছে</p>
-          <img id="sideBannerNewImg" src="" style="max-height:120px;border-radius:8px;border:1.5px solid var(--success);">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">ব্যানার লিংক (ক্লিক করলে যাবে)</label>
-        <input type="text" class="form-control" id="sideBannerLink" placeholder="যেমন: /category/sale বা https://...">
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-primary" onclick="saveSideBanner()"><i class="fas fa-save"></i> সেভ করুন</button>
-        <button class="btn btn-light" onclick="loadSideBannerAdmin()"><i class="fas fa-undo"></i> রিসেট</button>
-      </div>
-    </div>
-  </div>
-</div>
 
   </div><!-- end content-area -->
 </div><!-- end main-content -->
@@ -2706,8 +2707,14 @@ function refreshCategoryDropdowns() {
     const cur = filterSel.value;
     filterSel.innerHTML = '<option value="">সব ক্যাটাগরি</option>' +
       allCategories.map(c => `<option value="${c.value}" ${cur===c.value?'selected':''}>${c.label}</option>`).join('');
-    // Restore subcategory filter options if category still selected
     updateFilterSubcategoryOptions();
+  }
+  // Collection modal category dropdown — also refresh
+  const colCatSel = document.getElementById('collectionCategory');
+  if (colCatSel) {
+    const cur = colCatSel.value;
+    colCatSel.innerHTML = '<option value="">-- বেছে নিন --</option>' +
+      allCategories.map(c => `<option value="${c.value}" ${cur===c.value?'selected':''}>${c.label}</option>`).join('');
   }
 }
 
@@ -3971,14 +3978,27 @@ async function loadCollectionsAdmin() {
   const el = document.getElementById('collectionsGrid');
   if (!el) return;
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  // categories আগে load করো যাতে collection modal-এ category dropdown কাজ করে
   try {
-    const data = await api('/admin/collections');   // <-- changed to admin endpoint
-    _collections = data.success ? data.data : [];
+    const catData = await api('/categories');
+    if (catData.success && Array.isArray(catData.data) && catData.data.length) {
+      allCategories = catData.data;
+      saveCategoriesToLocal();
+    }
+  } catch {}
+  try {
+    const data = await api('/admin/collections');
+    if (!data.success) {
+      el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i><p style="color:var(--danger);">লোড ব্যর্থ: ${data.message || 'অজানা সমস্যা'}</p></div>`;
+      return;
+    }
+    _collections = data.data || [];
     renderCollectionsAdmin(_collections);
-  } catch {
-    el.innerHTML = '<div class="empty-state"><i class="fas fa-th-large"></i><p>লোড হয়নি</p></div>';
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-wifi" style="color:var(--danger);"></i><p>সার্ভার সংযোগ ব্যর্থ হয়েছে।<br><small style="font-size:11px;">${e.message}</small></p></div>`;
   }
 }
+
 function renderCollectionsAdmin(list) {
   const el = document.getElementById('collectionsGrid');
   if (!list.length) {
@@ -4047,9 +4067,10 @@ function editCollection(id) {
 
 function populateCollectionCategories(selected = '') {
   const sel = document.getElementById('collectionCategory');
-  const cats = window._allCategories || [];
+  const cats = (typeof allCategories !== 'undefined' && allCategories.length) ? allCategories : [];
   sel.innerHTML = '<option value="">-- বেছে নিন --</option>' +
     cats.map(c => `<option value="${c.value}" ${c.value === selected ? 'selected' : ''}>${c.label}</option>`).join('');
+  if (selected) sel.value = selected;
 }
 
 function previewCollectionImg(input) {
@@ -4100,8 +4121,15 @@ async function saveCollection() {
 
 async function toggleCollection(id, enabled) {
   try {
-    const data = await api('/admin/collections/' + id, 'PUT', { enabled });
-    if (data.success) { toast(enabled ? 'সক্রিয় করা হয়েছে' : 'বন্ধ করা হয়েছে'); loadCollectionsAdmin(); }
+    const form = new FormData();
+    form.append('enabled', enabled ? 'true' : 'false');
+    const res = await fetch(API_URL + '/admin/collections/' + id, {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + adminToken },
+      body: form
+    });
+    const data = await res.json();
+    if (data.success) { toast(enabled ? 'সক্রিয় করা হয়েছে ✓' : 'বন্ধ করা হয়েছে', 'success'); loadCollectionsAdmin(); }
     else toast(data.message || 'সমস্যা', 'error');
   } catch { toast('সার্ভার সমস্যা', 'error'); }
 }
