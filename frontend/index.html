@@ -34,7 +34,7 @@
       background-color: #f9fafb; 
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       justify-content: flex-start;
       min-height: 100vh;
       width: 100%;
@@ -43,8 +43,8 @@
       overflow-x: hidden;
     }
     .main-container {
-      padding-top: 40px;
-      max-width: 1200px;
+      padding-top: 0;
+      max-width: 100%;
       width: 100%;
       margin: 0 auto;
       background-color: #f9fafb;
@@ -224,8 +224,8 @@
     .quick-add-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      #trackOrderPage { margin-top: 56px !important; }
     }
+    .slider-dot { transition: width 0.2s; }
     @media (min-width: 768px) {
       #homePage { margin-top: 120px !important; }
       #categoryPage { margin-top: 56px !important; }
@@ -238,15 +238,14 @@
     }
     @media (max-width: 767px) {
       #homePage { margin-top: 56px !important; }
-      #categoryPage { margin-top: 0px !important; }
-      #productDetailPage { margin-top: 0px !important; }
+      #categoryPage { margin-top: 56px !important; }
+      #productDetailPage { margin-top: 56px !important; }
       #signInBreadcrumbPage { margin-top: 56px !important; }
       #loginPage { margin-top: 56px !important; }
       #registerPage { margin-top: 56px !important; }
       #dashboardPage { margin-top: 56px !important; }
       #trackOrderPage { margin-top: 56px !important; }
     }
-    .slider-dot { transition: width 0.2s; }
     #sliderContainer {
       height: 320px;
     }
@@ -951,7 +950,7 @@
 
     <div id="menuOverlay" class="fixed inset-0 bg-black/40 hidden md:hidden" style="z-index:2147483645;"></div>
 
-    <div id="homePage" class="home-page" style="margin-top:56px;">
+    <div id="homePage" class="home-page" style="margin-top:0;">
       <section id="sliderSection" class="md:px-6 md:mt-8 md:mb-8 mb-0 mt-0"><div class="md:mx-auto" style="max-width:1200px;">
         <div class="grid grid-cols-1 md:grid-cols-12 md:gap-4">
           <div class="md:col-span-8">
@@ -5651,6 +5650,385 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })();
 </script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     COMPREHENSIVE RESPONSIVE FIXES — সকল ডিভাইসে পার্ফেক্ট লেআউট
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+
+/* ── 0. Global Reset ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: hidden; max-width: 100vw; }
+
+/* ── 1. Main container padding fix ─────────────────────────── */
+.main-container { padding-top: 0 !important; overflow-x: hidden; }
+
+/* ── 2. Nav — full-width, no horizontal overflow ─────────────── */
+#mainNav {
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  overflow-x: hidden !important;
+}
+#topNavBar .mx-auto {
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+}
+
+/* ── 3. Bottom nav — desktop sticky fix ──────────────────────── */
+#bottomNavBar {
+  width: 100% !important;
+  margin-left: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#bottomNavBar::-webkit-scrollbar { display: none; }
+#bottomNavBar #bottomNavInner {
+  flex-wrap: nowrap !important;
+  min-width: max-content;
+}
+
+/* ── 4. Home page margin — prevent double spacing ────────────── */
+@media (max-width: 767px) {
+  #homePage { margin-top: 56px !important; }
+  #sliderSection {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  #sliderWrapper { border-radius: 0 !important; }
+  #sliderContainer {
+    height: auto !important;
+    aspect-ratio: 16 / 9;
+  }
+  #sliderContainer .min-w-full {
+    height: 100% !important;
+    aspect-ratio: 16 / 9;
+  }
+  #sliderContainer .min-w-full img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+}
+
+/* ── 5. Product grid — সব ব্রেকপয়েন্টে সঠিক কলাম ──────────── */
+@media (min-width: 1025px) {
+  .product-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 14px !important; }
+  #catProductGrid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+  .product-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; }
+  #catProductGrid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 768px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  #catProductGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  #catProductGridMobile { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+}
+@media (max-width: 360px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+  .card-image-wrapper { height: 120px !important; }
+}
+
+/* ── 6. Product card — মোবাইলে সঠিক height ─────────────────── */
+@media (max-width: 480px) {
+  .card-image-wrapper { height: 140px !important; }
+  .card-content { padding: 8px 8px 10px !important; }
+  .card-title { font-size: 12px !important; line-height: 1.3 !important; -webkit-line-clamp: 2; }
+  .price-new { font-size: 13px !important; }
+  .price-old { font-size: 11px !important; }
+  .quick-add-btn { font-size: 11px !important; padding: 8px 6px !important; }
+  .discount-badge { font-size: 8px !important; padding: 3px 5px !important; }
+}
+
+/* ── 7. Featured categories grid ────────────────────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .feat-cat-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (max-width: 768px) {
+  .feat-cat-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+  .feat-cat-mobile-hidden { display: none !important; }
+}
+@media (max-width: 480px) {
+  .feat-cat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .feat-cat-card { padding: 10px 8px !important; }
+  .feat-cat-card svg { width: 32px !important; height: 32px !important; }
+}
+
+/* ── 8. Category page banner — মোবাইলে stack layout ────────── */
+@media (max-width: 640px) {
+  #catPageBanner {
+    flex-direction: column !important;
+    padding: 14px 16px !important;
+    gap: 10px !important;
+  }
+  #catPageBanner > div:last-child {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  #catPageTitle { font-size: 1.1rem !important; }
+}
+
+/* ── 9. Product Detail Page ──────────────────────────────────── */
+@media (max-width: 767px) {
+  #productDetailPage .mx-auto { margin-top: 0 !important; padding-top: 12px !important; }
+  .detail-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .detail-main-grid > div:last-child { grid-column: auto !important; }
+  #detailPageImg { max-height: 240px !important; }
+  #detailRelatedGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+}
+@media (min-width: 768px) and (max-width: 1024px) {
+  .detail-main-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .detail-main-grid > div:last-child { grid-column: 1 / -1 !important; }
+  #detailRelatedGrid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+/* ── 10. Detail page action buttons — মোবাইলে full-width ────── */
+@media (max-width: 480px) {
+  #detailPageActions > div { grid-template-columns: 1fr !important; gap: 8px !important; }
+  #detailPageActions > div > button,
+  #detailPageActions > div > a { font-size: 13px !important; padding: 12px 8px !important; }
+  #detailPageQtySection { flex-wrap: wrap; gap: 10px; }
+}
+
+/* ── 11. Review grid — মোবাইলে single column ───────────────── */
+@media (max-width: 768px) {
+  .review-grid-wrap { grid-template-columns: 1fr !important; gap: 20px !important; }
+  #tabReviewContent { padding: 16px !important; }
+  #tabDescContent { padding: 16px !important; }
+}
+
+/* ── 12. Track order — customer info grid ───────────────────── */
+@media (max-width: 480px) {
+  #trackCustomerGrid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  #trackOrderPage .mx-auto { padding: 10px 12px !important; }
+}
+@media (max-width: 640px) {
+  #trackCustomerGrid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  #trackOrderPage input[type="text"] { font-size: 14px !important; }
+}
+
+/* ── 13. Dashboard — responsive wrap ────────────────────────── */
+@media (max-width: 767px) {
+  .dash-wrap { flex-direction: column !important; padding: 10px 10px !important; }
+  .dash-sidebar { width: 100% !important; min-width: unset !important; margin-bottom: 12px; }
+  .dash-content { margin-left: 0 !important; }
+  .dash-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 380px) {
+  .dash-stats-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── 14. Cart popup — মোবাইলে full screen ──────────────────── */
+@media (max-width: 767px) {
+  #cartPopup > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* ── 15. Payment modal — মোবাইলে সঠিক width ─────────────────── */
+@media (max-width: 640px) {
+  #paymentModal > div {
+    width: 95% !important;
+    max-width: 95% !important;
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+    max-height: 95vh !important;
+    overflow-y: auto !important;
+  }
+  #orderSummaryItems .order-summary-img {
+    width: 46px !important;
+    height: 46px !important;
+  }
+}
+
+/* ── 16. Mobile menu — সঠিক width সব ডিভাইসে ───────────────── */
+#mobileMenu {
+  max-width: 100vw !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+@media (min-width: 481px) {
+  #mobileMenu { width: 280px !important; }
+  #closeMenuBtn { left: 296px !important; }
+}
+@media (max-width: 480px) {
+  #mobileMenu { width: 85vw !important; }
+  #closeMenuBtn { left: auto !important; right: 12px !important; top: 14px !important; }
+}
+
+/* ── 17. Search bar — মোবাইলে proper display ────────────────── */
+@media (max-width: 767px) {
+  #mobileSearchBar { width: 100% !important; }
+  #mobileSearchInput { font-size: 14px !important; }
+}
+
+/* ── 18. Footer responsive ───────────────────────────────────── */
+@media (max-width: 640px) {
+  footer .grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+  footer .container { padding: 16px !important; }
+}
+@media (min-width: 641px) and (max-width: 1023px) {
+  footer .grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── 19. allCategoriesPage grid ─────────────────────────────── */
+@media (max-width: 640px) {
+  #allCatGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  #allCatGrid > div { padding: 12px 10px !important; }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  #allCatGrid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+/* ── 20. organicFeatureSection — মোবাইলে 2 column ──────────── */
+@media (max-width: 480px) {
+  #organicFeatureSection .grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  #organicFeatureSection .bg-green-50 { padding: 12px 8px !important; }
+  #organicFeatureSection .fas { font-size: 1.5rem !important; }
+  #organicFeatureSection h3 { font-size: 12px !important; }
+  #organicFeatureSection p { font-size: 11px !important; }
+}
+
+/* ── 21. Collection grid ─────────────────────────────────────── */
+@media (max-width: 480px) {
+  #collectionGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .collection-card { height: 120px !important; border-radius: 10px !important; }
+  .collection-text { font-size: 1rem !important; padding: 14px 8px 8px !important; }
+}
+
+/* ── 22. Category mobile header — সঠিক top spacing ──────────── */
+@media (max-width: 767px) {
+  #categoryPage { margin-top: 56px !important; }
+  #catMobileHeader > div:first-child { padding-top: 14px !important; }
+}
+
+/* ── 23. Product detail page — মোবাইলে margin-top fix ──────── */
+@media (max-width: 767px) {
+  #productDetailPage { margin-top: 56px !important; }
+  #productDetailPage .mx-auto { padding-top: 10px !important; }
+}
+
+/* ── 24. Signup / Login / Register pages ─────────────────────── */
+@media (max-width: 640px) {
+  #loginPage > div,
+  #registerPage > div {
+    width: 95% !important;
+    max-width: 95% !important;
+    padding: 20px 16px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* ── 25. Success popup — center fix on mobile ────────────────── */
+@media (max-width: 480px) {
+  #successPopupBox {
+    width: 90vw !important;
+    max-width: 90vw !important;
+    padding: 20px 16px !important;
+  }
+}
+
+/* ── 26. Tab buttons on detail page — মোবাইলে scroll ───────── */
+@media (max-width: 480px) {
+  #tabDescBtn, #tabReviewBtn {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ── 27. Price range slider — মোবাইলে সঠিক width ──────────── */
+@media (max-width: 767px) {
+  #priceSliderWrap { padding: 0 8px; }
+  #priceMinInput, #priceMaxInput { font-size: 12px !important; padding: 6px 4px !important; }
+}
+
+/* ── 28. Prevent text overflow everywhere ────────────────────── */
+.card-title, h1, h2, h3 { word-break: break-word; overflow-wrap: break-word; }
+
+/* ── 29. Images — never overflow ────────────────────────────── */
+img { max-width: 100% !important; height: auto; }
+.card-image { max-width: 100% !important; }
+
+/* ── 30. Scrollbar for horizontal nav on tablets ─────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  #bottomNavBar #bottomNavInner {
+    padding-right: 1rem !important;
+  }
+}
+
+/* ── 31. Section horizontal padding — consistent ─────────────── */
+@media (max-width: 480px) {
+  #allProductsSection,
+  #ourCollectionSection,
+  #organicFeatureSection { padding-left: 8px !important; padding-right: 8px !important; }
+}
+
+/* ── 32. catPageBanner product count — মোবাইলে wrap ─────────── */
+@media (max-width: 480px) {
+  #catProductCount { font-size: 1.2rem !important; }
+}
+
+/* ── 33. WhatsApp/Call buttons — very small screens ─────────── */
+@media (max-width: 360px) {
+  #whatsappShareBtn, #detailPageActions a[href^="tel"] {
+    font-size: 11px !important;
+    padding: 10px 6px !important;
+  }
+  #detailPageAddToCart, #detailPageOrderNow {
+    font-size: 12px !important;
+    padding: 11px 6px !important;
+  }
+}
+
+/* ── 34. Mobile bottom safe area (notch phones) ──────────────── */
+@media (max-width: 767px) {
+  body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
+/* ── 35. Tablet — nav top bar search width fix ───────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  #topNavBar .max-w-2xl { max-width: 400px !important; }
+  #topNavBar .gap-6 { gap: 16px !important; }
+}
+
+/* ── 36. relatedProductsGrid — মোবাইলে 1 column ────────────── */
+@media (max-width: 480px) {
+  #relatedProductsGrid > div { padding: 6px 8px !important; }
+}
+
+/* ── 37. dash-order-row — মোবাইলে wrap ─────────────────────── */
+@media (max-width: 480px) {
+  .dash-order-row { flex-wrap: wrap !important; gap: 6px !important; font-size: 12px !important; }
+}
+
+/* ── 38. signInBreadcrumbPage — মোবাইলে padding ────────────── */
+@media (max-width: 640px) {
+  #signInBreadcrumbPage { padding: 16px !important; }
+}
+
+</style>
 
 </body>
 </html>
