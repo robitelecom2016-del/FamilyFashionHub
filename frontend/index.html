@@ -2723,7 +2723,21 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         else if (product.category === 'baby_care') catName = '🛁 Baby Care';
         else if (product.category === 'baby_bedding') catName = '👶 Essentials';
         else if (product.category === 'trending') catName = '🔥 Trending';
-        detailCategory.innerText = catName;
+        // Fallback: যদি কোনো known category না হয়, product.category কেই দেখাও (capitalize করে)
+        if (!catName && product.category) {
+          catName = product.category.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
+        // Category span এবং তার আগের › দেখাও/লুকাও
+        const detailCatSeparator = detailCategory.previousElementSibling;
+        if (catName) {
+          detailCategory.innerText = catName;
+          detailCategory.style.display = '';
+          if (detailCatSeparator) detailCatSeparator.style.display = '';
+        } else {
+          detailCategory.innerText = '';
+          detailCategory.style.display = 'none';
+          if (detailCatSeparator) detailCatSeparator.style.display = 'none';
+        }
         detailNameBreadcrumb.innerText = product.name;
         
         detailCategory.onclick = () => {
