@@ -1242,9 +1242,9 @@
       <div class="mx-auto px-3 md:px-6 py-5" style="max-width:1200px; margin-top: 0;">
         <div style="display:flex;align-items:center;gap:4px;font-size:13px;margin-bottom:16px;flex-wrap:wrap;color:#6b7280; margin-top: 0;">
           <a href="#" id="homeBreadcrumb" style="color:#374151;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:4px;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#374151'"><i class="fas fa-home" style="font-size:12px;"></i> Home</a>
-          <span style="color:#d1d5db;margin:0 2px;">›</span>
+          <span id="detailCatSep" style="color:#d1d5db;margin:0 2px;">›</span>
           <span id="detailCategory" style="color:#374151;cursor:pointer;font-weight:500;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#374151'"></span>
-          <span style="color:#d1d5db;margin:0 2px;">›</span>
+          <span id="detailNameSep" style="color:#d1d5db;margin:0 2px;">›</span>
           <span id="detailNameBreadcrumb" style="color:#374151;font-weight:500;"></span>
         </div>
         <div class="detail-main-grid">
@@ -2705,38 +2705,48 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
           saveBadge.innerText = pct > 0 ? `Save${pct}%` : '';
         }
         
-        let catName = '';
-        if (product.category === 'baby-shoes') catName = 'Baby Shoes';
-        else if (product.category === 'baby-toys') catName = 'Baby Toys';
-        else if (product.category === 'feeding-bottles') catName = 'Feeding Bottle';
-        else if (product.category === 'baby-feeding') catName = 'বেবি খাবার';
-        else if (product.category === 'daily-care') catName = 'দৈনন্দিন পরিচর্যা';
-        else if (product.category === 'baby-dress' || product.category === 'baby_dress') catName = '🧸 Baby Dress';
-        else if (product.category === 'baby-essentials') catName = 'বেবি Essentials';
-        else if (product.category === 'baby-carriers') catName = 'ডাডিং প্রোডাক্ট';
-        else if (product.category === 'women-cosmetics') catName = "Women's Cosmetics";
-        else if (product.category === 'gold-plate') catName = 'গোল্ড প্লেটের আইটেম';
-        else if (product.category === 'indoor-plants') catName = 'ইনডোর গাছ';
-        else if (product.category === 'artificial-flowers') catName = 'Artificial Flowers';
-        else if (product.category === 'toys') catName = '🧸 Toys';
-        else if (product.category === 'feeding') catName = '🍼 Feeding Items';
-        else if (product.category === 'baby_care') catName = '🛁 Baby Care';
-        else if (product.category === 'baby_bedding') catName = '👶 Essentials';
-        else if (product.category === 'trending') catName = '🔥 Trending';
-        // Fallback: যদি কোনো known category না হয়, product.category কেই দেখাও (capitalize করে)
-        if (!catName && product.category) {
-          catName = product.category.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        // ── Breadcrumb: ক্যাটাগরির নাম বের করো ─────────────────────────────
+        var catMap = {
+          'baby-shoes': 'Baby Shoes',
+          'baby-toys': 'Baby Toys',
+          'feeding-bottles': 'Feeding Bottle',
+          'baby-feeding': 'বেবি খাবার',
+          'daily-care': 'দৈনন্দিন পরিচর্যা',
+          'baby-dress': '🧸 Baby Dress',
+          'baby_dress': '🧸 Baby Dress',
+          'baby-essentials': 'বেবি Essentials',
+          'baby-carriers': 'ডাডিং প্রোডাক্ট',
+          'women-cosmetics': "Women's Cosmetics",
+          'gold-plate': 'গোল্ড প্লেটের আইটেম',
+          'indoor-plants': 'ইনডোর গাছ',
+          'artificial-flowers': 'Artificial Flowers',
+          'toys': '🧸 Toys',
+          'feeding': '🍼 Feeding Items',
+          'baby_care': '🛁 Baby Care',
+          'baby_bedding': '👶 Essentials',
+          'trending': '🔥 Trending',
+        };
+        var rawCat = (product.category || '').trim();
+        var catName = catMap[rawCat] || '';
+        // Fallback: list-এ না থাকলে category slug থেকেই নাম তৈরি করো
+        if (!catName && rawCat && rawCat !== 'all') {
+          catName = rawCat.replace(/[-_]/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
         }
-        // Category span এবং তার আগের › দেখাও/লুকাও
-        const detailCatSeparator = detailCategory.previousElementSibling;
+
+        var detailCatSep  = document.getElementById('detailCatSep');
+        var detailNameSep = document.getElementById('detailNameSep');
+
         if (catName) {
           detailCategory.innerText = catName;
-          detailCategory.style.display = '';
-          if (detailCatSeparator) detailCatSeparator.style.display = '';
+          detailCategory.style.display = 'inline';
+          if (detailCatSep)  detailCatSep.style.display  = 'inline';
+          if (detailNameSep) detailNameSep.style.display = 'inline';
         } else {
+          // category না থাকলে: Home › প্রোডাক্টের নাম
           detailCategory.innerText = '';
           detailCategory.style.display = 'none';
-          if (detailCatSeparator) detailCatSeparator.style.display = 'none';
+          if (detailCatSep)  detailCatSep.style.display  = 'none';
+          if (detailNameSep) detailNameSep.style.display = 'inline';
         }
         detailNameBreadcrumb.innerText = product.name;
         
