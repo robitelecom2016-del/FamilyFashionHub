@@ -2492,7 +2492,7 @@
               window._ffhCurrentSub = '';
               // URL hash আপডেট
               if (typeof history !== 'undefined') {
-                var newHash = '#' + encodeURIComponent(catVal);
+                var newHash = '#' + catVal;
                 if (window.location.hash !== newHash) history.pushState({ cat: catVal, sub: '' }, '', newHash);
               }
               updatePillStyles(pillsEl, '');
@@ -2515,7 +2515,7 @@
                 window._ffhCurrentSub = sv;
                 // URL hash আপডেট
                 if (typeof history !== 'undefined') {
-                  var newHash = '#' + encodeURIComponent(catVal) + '/' + encodeURIComponent(sv);
+                  var newHash = '#' + catVal + '/' + sv;
                   if (window.location.hash !== newHash) history.pushState({ cat: catVal, sub: sv }, '', newHash);
                 }
                 updatePillStyles(pillsEl, sv);
@@ -5092,7 +5092,7 @@ function _ffhShowApiDetail(p) {
   // ══ URL আপডেট করো: product slug hash সেট করো ══
   if (p && p.name) {
     var _slug    = typeof window.FFH_makeProductSlug === 'function' ? window.FFH_makeProductSlug(p.name) : p.name.trim().toLowerCase().replace(/\s+/g,'-');
-    var _newHash = '#product/' + encodeURIComponent(_slug);
+    var _newHash = '#product/' + _slug;
     if (window.location.hash !== _newHash) {
       history.pushState({ type: 'product', productId: p.id || p._apiId, slug: _slug }, '', _newHash);
     }
@@ -6005,7 +6005,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var prod  = prods.find(function(p) { return p.id === productId; });
       if (prod) {
         var slug    = makeProductSlug(prod.name);
-        var newHash = '#product/' + encodeURIComponent(slug);
+        var newHash = '#product/' + slug;
         if (window.location.hash !== newHash) {
           history.pushState({ type: 'product', productId: productId, slug: slug }, '', newHash);
         }
@@ -6042,7 +6042,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var orig = window.filterByCategory;
     if (!orig || orig._hashWrapped) return;
     var wrapped = function(cat, sub) {
-      var newHash = cat ? ('#' + encodeURIComponent(cat) + (sub ? '/' + encodeURIComponent(sub) : '')) : '#';
+      var newHash = cat ? ('#' + cat + (sub ? '/' + sub : '')) : '#';
       if (window.location.hash !== newHash) {
         history.pushState({ type: 'category', cat: cat, sub: sub || '' }, '', newHash);
       }
