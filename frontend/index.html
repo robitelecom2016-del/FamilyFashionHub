@@ -4156,12 +4156,29 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
         images.forEach((img, idx) => {
           const slide = document.createElement('div');
           slide.className = 'min-w-full relative cursor-pointer overflow-hidden';
-          slide.onclick = () => { if (typeof filterByCategory === 'function') filterByCategory(img.linkCategory || 'all'); };
+
+          // Admin প্যানেল থেকে সেট করা link ব্যবহার করো
+          const sliderLink = (img.link || '').trim();
+          if (sliderLink) {
+            slide.onclick = () => {
+              if (sliderLink.startsWith('http://') || sliderLink.startsWith('https://')) {
+                window.open(sliderLink, '_blank');
+              } else {
+                window.location.href = sliderLink;
+              }
+            };
+          } else if (img.linkCategory) {
+            // Fallback: পুরনো linkCategory ফিল্ড থাকলে
+            slide.onclick = () => { if (typeof filterByCategory === 'function') filterByCategory(img.linkCategory); };
+          } else {
+            slide.style.cursor = 'default';
+          }
+
           slide.innerHTML = `<img src="${img.url}" alt="Slide ${idx+1}" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">`;
           container.appendChild(slide);
           const dot = document.createElement('button');
           dot.className = `slider-dot ${idx === 0 ? 'w-6 bg-orange-600' : 'w-3 bg-gray-400'} h-2 rounded-full transition`;
-          dot.onclick = () => currentSlide(idx);
+          dot.onclick = (e) => { e.stopPropagation(); currentSlide(idx); };
           dotsContainer.appendChild(dot);
         });
         attachSliderHover();
