@@ -3756,6 +3756,8 @@ function renderSliderImages(images) {
   }
   el.innerHTML = images.map((img, i) => {
     const hasLink = img.link && img.link.trim();
+    let decodedLink = '';
+    if (hasLink) { try { decodedLink = decodeURIComponent(img.link.trim()); } catch(e) { decodedLink = img.link.trim(); } }
     return `
     <div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.08);background:#fff;">
       <div style="position:relative;">
@@ -3764,11 +3766,11 @@ function renderSliderImages(images) {
           <span style="background:rgba(0,0,0,0.55);color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700;">${i+1}</span>
           <button onclick="deleteSliderImage(${i})" style="background:#ef4444;color:#fff;border:none;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;" title="মুছুন"><i class="fas fa-trash"></i></button>
         </div>
-        ${hasLink ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(124,58,237,0.85);padding:3px 6px;"><span style="font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" title="${img.link}"><i class="fas fa-link"></i> ${img.link.length > 22 ? img.link.slice(0,22)+'…' : img.link}</span></div>` : ''}
+        ${hasLink ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(124,58,237,0.85);padding:3px 6px;"><span style="font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" title="${decodedLink}"><i class="fas fa-link"></i> ${decodedLink.length > 22 ? decodedLink.slice(0,22)+'…' : decodedLink}</span></div>` : ''}
       </div>
       <div style="padding:8px;">
         <div id="sliderLinkRow_${i}" style="display:flex;gap:5px;align-items:center;">
-          <input type="text" id="sliderLinkInput_${i}" value="${img.link || ''}" placeholder="ক্যাটাগরি লিংক যেমন: /category/toys" 
+          <input type="text" id="sliderLinkInput_${i}" value="${decodedLink}" placeholder="ক্যাটাগরি লিংক যেমন: /category/toys" 
             style="flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);outline:none;color:var(--text);"
             onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
             onkeydown="if(event.key==='Enter')saveSliderLink(${i})">
@@ -3813,13 +3815,33 @@ function renderSliderImages(images) {
 function applySliderCatLink(idx, value) {
   if (!value) return;
   const input = document.getElementById(`sliderLinkInput_${idx}`);
-  if (input) input.value = value;
+  if (input) {
+    try { input.value = decodeURIComponent(value); } catch(e) { input.value = value; }
+  }
 }
 
 async function saveSliderLink(idx) {
   const input = document.getElementById(`sliderLinkInput_${idx}`);
   if (!input) return;
-  const link = input.value.trim();
+  // Decode any URL-encoded (Bengali or otherwise) links, then ensure proper encoding
+  let rawLink = input.value.trim();
+  try { rawLink = decodeURIComponent(rawLink); } catch(e) {}
+  // Re-encode only non-ASCII characters properly
+  const link = rawLink.split('/').map((part, i) => {
+    if (i === 0) return part; // preserve empty string before first /
+    // Split on ? for query params
+    const [path, query] = part.split('?');
+    const encodedPath = encodeURIComponent(decodeURIComponent(path));
+    if (query) {
+      const encodedQuery = query.split('&').map(p => {
+        const [k,v] = p.split('=');
+        return k + '=' + encodeURIComponent(decodeURIComponent(v||''));
+      }).join('&');
+      return encodedPath + '?' + encodedQuery;
+    }
+    return encodedPath;
+  }).join('/');
+  input.value = rawLink; // show decoded in input
   try {
     const res = await fetch(API_URL + '/admin/slider-images/' + idx + '/link', {
       method: 'PUT',
