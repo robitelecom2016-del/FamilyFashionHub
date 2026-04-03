@@ -416,7 +416,8 @@
     #bottomNavBar .mx-auto { overflow: visible !important; }
     #bottomNavBar > div { overflow: visible !important; }
     #bottomNavBar .group { position: relative; }
-    #bottomNavBar .group > div {
+    #bottomNavBar .group > div,
+    #bottomNavBar .nav-dropdown {
       position: absolute;
       left: 0;
       top: 100%;
@@ -429,8 +430,10 @@
       padding-top: 8px;
       padding-bottom: 8px;
     }
-    #bottomNavBar .group:hover > div { display: block; }
-    #bottomNavBar .group > div a {
+    #bottomNavBar .group:hover > div,
+    #bottomNavBar .group:hover > .nav-dropdown { display: block; }
+    #bottomNavBar .group > div a,
+    #bottomNavBar .nav-dropdown a {
       display: block;
       padding: 10px 20px;
       color: #374151;
@@ -438,9 +441,14 @@
       text-decoration: none;
       font-size: 14px;
     }
-    #bottomNavBar .group > div a:hover {
+    #bottomNavBar .group > div a:hover,
+    #bottomNavBar .nav-dropdown a:hover {
       background-color: #f3f4f6;
       color: #111827;
+    }
+    /* Chevron rotation on hover */
+    #bottomNavBar .group:hover > a .fa-chevron-down {
+      transform: rotate(180deg);
     }
     .detail-main-grid {
       display: grid;
@@ -5591,9 +5599,9 @@ function renderDesktopNav(cats) {
          +   '<a href="#' + cat.value + '" class="hover:text-orange-400 transition py-2 flex items-center gap-1 whitespace-nowrap"'
          +   ' onclick="event.preventDefault();ffhNavFilter(\'' + cat.value + '\',\'\');return false;">'
          +   cat.label
-         +   ' <i class="fas fa-chevron-down text-xs"></i>'
+         +   ' <i class="fas fa-chevron-down text-xs" style="transition:transform 0.2s;"></i>'
          +   '</a>'
-         +   '<div class="">' + subHTML + '</div>'
+         +   '<div class="nav-dropdown">' + subHTML + '</div>'
          + '</div>';
   }).join('');
 }
