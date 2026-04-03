@@ -5041,6 +5041,29 @@ function _ffhShowApiDetail(p) {
   var catPage    = document.getElementById('categoryPage');
   if (!detailPage) return;
 
+  // ══ URL আপডেট করো: product slug hash সেট করো ══
+  if (p && p.name) {
+    var _slug    = typeof window.FFH_makeProductSlug === 'function' ? window.FFH_makeProductSlug(p.name) : p.name.trim().toLowerCase().replace(/\s+/g,'-');
+    var _newHash = '#product/' + encodeURIComponent(_slug);
+    if (window.location.hash !== _newHash) {
+      history.pushState({ type: 'product', productId: p.id || p._apiId, slug: _slug }, '', _newHash);
+    }
+    document.title = p.name + ' | Family Fashion Hub';
+    // canonical meta আপডেট
+    var _can = document.querySelector('link[rel="canonical"]');
+    if (!_can) { _can = document.createElement('link'); _can.rel = 'canonical'; document.head.appendChild(_can); }
+    _can.href = window.location.origin + window.location.pathname + _newHash;
+    // og meta আপডেট (Facebook/WhatsApp share)
+    var _ogT = document.querySelector('meta[property="og:title"]');
+    if (_ogT) _ogT.content = p.name + ' | Family Fashion Hub';
+    var _ogU = document.querySelector('meta[property="og:url"]');
+    if (_ogU) _ogU.content = _can.href;
+    var _ogI = document.querySelector('meta[property="og:image"]');
+    if (_ogI && p.img) _ogI.content = p.img;
+    // বর্তমান product track করো (share/copy link এর জন্য)
+    window._ffhCurrentDetailProduct = p;
+  }
+
   // মূল তথ্য সেট করা
   var nameEl   = document.getElementById('detailPageTitle');
   var priceEl  = document.getElementById('detailPagePrice');
@@ -5893,10 +5916,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (parsed.type === 'product') {
       var prod = findProductBySlug(parsed.slug);
       if (prod) {
-        // showProductDetailPage কে direct call করো (wrap এড়াতে আসল fn ব্যবহার)
-        var fn = window.showProductDetailPage;
-        while (fn && fn._dpWrapped && fn._orig) fn = fn._orig;
-        if (typeof fn === 'function') { fn(prod.id); return; }
+        // _ffhShowApiDetail থাকলে সেটা ব্যবহার করো (URL update ছাড়া, আলাদা fn)
+        if (typeof window._ffhShowApiDetail === 'function') {
+          // URL আগেই hash-এ আছে, তাই সরাসরি detail function চালাও
+          // কিন্তু infinite loop এড়াতে history.pushState skip করতে হবে
+          window._ffhShowApiDetail(prod);
+        } else {
+          var fn = window.showProductDetailPage;
+          while (fn && fn._dpWrapped && fn._orig) fn = fn._orig;
+          if (typeof fn === 'function') { fn(prod.id); }
+        }
+        return;
       }
       // product না পেলে pending এ রাখো
       window._ffhPendingProductSlug = parsed.slug;
@@ -5985,6 +6015,7 @@ document.addEventListener('DOMContentLoaded', () => {
         history.pushState({ type: 'home' }, '', window.location.pathname + window.location.search);
       }
       document.title = 'Family Fashion Hub | Your Family\'s Fashion Store';
+      window._ffhCurrentDetailProduct = null;
       return orig.apply(this, arguments);
     };
     wrapped._hashWrapped = true;
@@ -6007,9 +6038,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (parsed.type === 'product') {
       var prod = findProductBySlug(parsed.slug);
       if (prod) {
-        var fn2 = window.showProductDetailPage;
-        while (fn2 && fn2._dpWrapped && fn2._orig) fn2 = fn2._orig;
-        if (typeof fn2 === 'function') fn2(prod.id);
+        if (typeof window._ffhShowApiDetail === 'function') {
+          window._ffhShowApiDetail(prod);
+        } else {
+          var fn2 = window.showProductDetailPage;
+          while (fn2 && fn2._dpWrapped && fn2._orig) fn2 = fn2._orig;
+          if (typeof fn2 === 'function') fn2(prod.id);
+        }
       }
 
     } else if (parsed.type === 'category') {
@@ -6044,6 +6079,10 @@ document.addEventListener('DOMContentLoaded', () => {
       var prod = findProductBySlug(slug);
       if (prod) {
         window._ffhPendingProductSlug = null;
+        if (typeof window._ffhShowApiDetail === 'function') {
+          window._ffhShowApiDetail(prod);
+          return true;
+        }
         var fn = window.showProductDetailPage;
         while (fn && fn._dpWrapped && fn._orig) fn = fn._orig;
         if (typeof fn === 'function') { fn(prod.id); return true; }
