@@ -2288,44 +2288,49 @@
       };
 
       window.applyCatFilters = function() {
-        const inStock   = document.getElementById('availInStock')?.checked;
-        const preOrder  = document.getElementById('availPreOrder')?.checked;
-        const upComing  = document.getElementById('availUpComing')?.checked;
-        const onSaleChk = document.getElementById('filterOnSale')?.checked;
-        const anyAvail  = inStock || preOrder || upComing;
+  const inStock   = document.getElementById('availInStock')?.checked;
+  const preOrder  = document.getElementById('availPreOrder')?.checked;
+  const upComing  = document.getElementById('availUpComing')?.checked;
+  const onSaleChk = document.getElementById('filterOnSale')?.checked;
+  const anyAvail  = inStock || preOrder || upComing;
+  const activeSub = window._ffhCurrentSub || '';
 
-        // বর্তমান subcategory (pill থেকে সেট হয়)
-        var activeSub = window._ffhCurrentSub || '';
+  let filtered = catCurrentProducts.filter(p => {
+    // সাবক্যাটাগরি ফিল্টার
+    if (activeSub && p.subcategory !== activeSub) return false;
 
-        let filtered = catCurrentProducts.filter(p => {
-          // subcategory filter — sub থাকলে শুধু সেই sub-এর পণ্য
-          if (activeSub && p.subcategory !== activeSub) return false;
+    // প্রাইস ফিল্টার
+    if (p.price < catPriceMin || p.price > catPriceMax) return false;
 
-          if (p.price < catPriceMin || p.price > catPriceMax) return false;
-          if (anyAvail) {
-            const isStock = !p.soldOut;
-            if (inStock && isStock) { /* ok */ }
-            else if (preOrder && p.preOrder) { /* ok */ }
-            else if (upComing && p.upComing) { /* ok */ }
-            else return false;
-          }
-          if (onSaleChk && !p.onSale) return false;
-          return true;
-        });
+    // এভেইলেবিলিটি ফিল্টার
+    if (anyAvail) {
+      const isStock = !p.soldOut;
+      if (inStock && isStock) { /* ok */ }
+      else if (preOrder && p.preOrder) { /* ok */ }
+      else if (upComing && p.upComing) { /* ok */ }
+      else return false;
+    }
 
-        const sortVal = document.getElementById('catSortSelect')?.value || 'default';
-        if (sortVal === 'price-low') filtered.sort((a,b) => a.price - b.price);
-        else if (sortVal === 'price-high') filtered.sort((a,b) => b.price - a.price);
-        else if (sortVal === 'discount') filtered.sort((a,b) => (b.oldPrice-b.price)-(a.oldPrice-a.price));
+    // সেল ফিল্টার
+    if (onSaleChk && !p.onSale) return false;
 
-        const rt = document.getElementById('catResultText');
-        if (rt) rt.innerText = `${filtered.length} টি পণ্য পাওয়া গেছে`;
-        const cnt = document.getElementById('catProductCount');
-        if (cnt) cnt.innerText = filtered.length;
+    return true;
+  });
 
-        renderCatGrid(filtered);
-      };
+  // সর্টিং
+  const sortVal = document.getElementById('catSortSelect')?.value || 'default';
+  if (sortVal === 'price-low') filtered.sort((a,b) => a.price - b.price);
+  else if (sortVal === 'price-high') filtered.sort((a,b) => b.price - a.price);
+  else if (sortVal === 'discount') filtered.sort((a,b) => (b.oldPrice - b.price) - (a.oldPrice - a.price));
 
+  // কাউন্ট ও রেন্ডার
+  const resultText = document.getElementById('catResultText');
+  if (resultText) resultText.innerText = `${filtered.length} টি পণ্য পাওয়া গেছে`;
+  const countSpan = document.getElementById('catProductCount');
+  if (countSpan) countSpan.innerText = filtered.length;
+
+  renderCatGrid(filtered);
+};
       window.sortCatProducts = function() { applyCatFilters(); };
 
       window.resetCatFilters = function() {
@@ -2368,205 +2373,71 @@
 
       // ─── showCategoryPage: cat = category value, sub = subcategory value (optional)
       function showCategoryPage(cat, sub) {
-        homePage.classList.add('hidden');
-        detailPage.classList.remove('active');
-        detailPage.classList.add('detail-page');
-        categoryPage.classList.remove('detail-page');
-        categoryPage.classList.add('active');
-        document.body.classList.remove('on-detail-page');
+  homePage.classList.add('hidden');
+  detailPage.classList.remove('active');
+  detailPage.classList.add('detail-page');
+  categoryPage.classList.remove('detail-page');
+  categoryPage.classList.add('active');
+  document.body.classList.remove('on-detail-page');
 
-        const _lp = document.getElementById('loginPage');
-        const _rp = document.getElementById('registerPage');
-        const _dp = document.getElementById('dashboardPage');
+  // অন্যান্য পেজ লুকানো
+  ['loginPage','registerPage','dashboardPage','signInBreadcrumbPage','aboutUsPage','allCategoriesPage'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active'); el.classList.add('detail-page'); }
+  });
+  ['customerReviewSection','mainFooter','allProductsSection','ourCollectionSection','organicFeatureSection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 
-        if (_lp) { _lp.classList.remove('active'); _lp.classList.add('detail-page'); }
-        if (_rp) { _rp.classList.remove('active'); _rp.classList.add('detail-page'); }
-        if (_dp) { _dp.classList.remove('active'); _dp.classList.add('detail-page'); }
+  // সাবক্যাটাগরি ভ্যারিয়েবল ক্লিয়ার/সেট
+  window._ffhCurrentCat = cat;
+  window._ffhCurrentSub = sub || '';
 
-        const _crs = document.getElementById('customerReviewSection');
-        if (_crs) _crs.style.display = 'none';
-        const _mf = document.getElementById('mainFooter');
-        if (_mf) _mf.style.display = 'none';
-        const _aps = document.getElementById('allProductsSection');
-        if (_aps) _aps.style.display = 'none';
-        const _ocs = document.getElementById('ourCollectionSection');
-        if (_ocs) _ocs.style.display = 'none';
-        const _ofs = document.getElementById('organicFeatureSection');
-        if (_ofs) _ofs.style.display = 'none';
+  // মেটা ডাটা সেট করা
+  const meta = categoryMeta[cat] || { title: cat, icon: '📦', desc: '' };
+  document.getElementById('catPageName').innerText = meta.title;
+  document.getElementById('catPageIcon').innerText = meta.icon;
+  document.getElementById('catPageTitle').innerText = meta.title;
+  document.getElementById('catPageDesc').innerText = meta.desc;
+  if (document.getElementById('catMobileTitle')) document.getElementById('catMobileTitle').innerText = meta.title;
+  if (document.getElementById('catMobilePageName')) document.getElementById('catMobilePageName').innerText = meta.title;
 
-        window.scrollTo({ top: 0 });
+  // সব প্রোডাক্ট সোর্স (API বা স্ট্যাটিক)
+  const allProds = (window._ffhApiProducts && window._ffhApiProducts.length) ? window._ffhApiProducts : products;
 
-        if (typeof setMobileNavActive === 'function') setMobileNavActive('menu');
+  // ক্যাটাগরির সব সাবক্যাটাগরি ভ্যালু বের করা
+  let subValues = [];
+  const catData = window._ffhNavCategories ? window._ffhNavCategories.find(c => c.value === cat) : null;
+  if (catData && catData.subcategories) subValues = catData.subcategories.map(s => s.value);
 
-        // ─── Meta: static map + dynamic categories from API ───────────────
-        var meta = categoryMeta[cat] || null;
-        if (!meta && window._ffhNavCategories) {
-          var found = window._ffhNavCategories.find(function(c){ return c.value === cat; });
-          if (found) meta = { title: found.label, icon: '📦', desc: '' };
-        }
-        // subcategory meta
-        var subMeta = null;
-        if (sub && window._ffhNavCategories) {
-          var fc = window._ffhNavCategories.find(function(c){ return c.value === cat; });
-          if (fc && fc.subcategories) {
-            var fs = fc.subcategories.find(function(s){ return s.value === sub; });
-            if (fs) subMeta = { title: fs.label, icon: meta ? meta.icon : '📦' };
-          }
-        }
-        var displayMeta = subMeta || meta || { title: cat, icon: '📦', desc: '' };
+  // catCurrentProducts = প্যারেন্ট ক্যাটাগরি + সব সাবক্যাটাগরির প্রোডাক্ট (ডুপ্লিকেট ছাড়া)
+  catCurrentProducts = allProds.filter(p => {
+    if (p.category === cat) return true;
+    if (subValues.length && subValues.includes(p.subcategory)) return true;
+    return false;
+  });
 
-        document.getElementById('catPageName').innerText  = displayMeta.title;
-        document.getElementById('catPageIcon').innerText  = displayMeta.icon || '📦';
-        document.getElementById('catPageTitle').innerText = displayMeta.title;
-        document.getElementById('catPageDesc').innerText  = displayMeta.desc || '';
+  // প্রাইস রেঞ্জ সেট করা
+  const prices = catCurrentProducts.map(p => p.price);
+  const pMin = prices.length ? Math.min(...prices) : 0;
+  const pMax = prices.length ? Math.max(...prices) : 0;
+  initPriceSlider(pMin, pMax);
 
-        const _mobTitle    = document.getElementById('catMobileTitle');
-        const _mobPageName = document.getElementById('catMobilePageName');
-        if (_mobTitle)    _mobTitle.innerText    = displayMeta.title;
-        if (_mobPageName) _mobPageName.innerText = displayMeta.title;
-        const mobSort = document.getElementById('catSortSelectMobile');
-        if (mobSort) mobSort.value = 'default';
+  // সব চেকবক্স রিসেট
+  ['availInStock','availPreOrder','availUpComing','filterOnSale'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = false;
+  });
+  const sortSelect = document.getElementById('catSortSelect');
+  if (sortSelect) sortSelect.value = 'default';
 
-        // ─── Use API products (with subcategory support) ──────────────────
-        var allProds = (window._ffhApiProducts && window._ffhApiProducts.length)
-                         ? window._ffhApiProducts
-                         : products;
+  // সাবক্যাটাগরি পিল রেন্ডার
+  renderSubcatPills(cat, sub || '');
 
-        // store current filter state for re-renders after API load
-        window._ffhCurrentCat = cat;
-        window._ffhCurrentSub = sub || '';
-
-        // ─── Subcategory filter pills render ─────────────────────────────
-        (function renderSubcatPills(catVal, activeSub) {
-          var catData = null;
-          if (window._ffhNavCategories) {
-            catData = window._ffhNavCategories.find(function(c){ return c.value === catVal; });
-          }
-          var subs = (catData && catData.subcategories && catData.subcategories.length)
-            ? catData.subcategories : [];
-
-          // সব পণ্য (parent category + সব subcategory)
-          var _allSubVals = subs.map(function(s){ return s.value; });
-          var allCatProds = allProds.filter(function(p){
-            return p.category === catVal || (_allSubVals.length && _allSubVals.indexOf(p.subcategory) !== -1);
-          });
-
-          var pillsBar     = document.getElementById('subcatFilterBar');
-          var pillsEl      = document.getElementById('subcatPills');
-          var pillsBarMob  = document.getElementById('subcatFilterBarMobile');
-          var pillsMobEl   = document.getElementById('subcatPillsMobile');
-
-          if (!subs.length) {
-            if (pillsBar)    pillsBar.style.display    = 'none';
-            if (pillsBarMob) pillsBarMob.style.display = 'none';
-            return;
-          }
-
-          if (pillsBar)    pillsBar.style.display    = 'block';
-          if (pillsBarMob) pillsBarMob.style.display = 'block';
-
-          function pillStyle(isActive) {
-            return isActive
-              ? 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #f97316;background:#f97316;color:white;transition:all 0.15s;flex-shrink:0;'
-              : 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:2px solid #e5e7eb;background:white;color:#374151;transition:all 0.15s;flex-shrink:0;';
-          }
-
-          function updatePillStyles(container, activeSv) {
-            if (!container) return;
-            var btns = container.querySelectorAll('button');
-            btns.forEach(function(b) {
-              var sv = b.dataset.subval;
-              b.style.cssText = (sv === activeSv || (sv === '__all__' && !activeSv))
-                ? 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #f97316;background:#f97316;color:white;transition:all 0.15s;flex-shrink:0;'
-                : 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:2px solid #e5e7eb;background:white;color:#374151;transition:all 0.15s;flex-shrink:0;';
-            });
-          }
-
-          function buildPills(container, isMobile) {
-            if (!container) return;
-            container.innerHTML = '';
-
-            // "সব পণ্য" pill (parent category)
-            var allBtn = document.createElement('button');
-            allBtn.dataset.subval = '__all__';
-            allBtn.style.cssText = pillStyle(!activeSub);
-            allBtn.innerHTML = 'সব পণ্য <span style="font-size:11px;opacity:0.85;margin-left:2px;">(' + allCatProds.length + ')</span>';
-            allBtn.onclick = function() {
-              window._ffhCurrentSub = '';
-              // URL hash আপডেট
-              if (typeof history !== 'undefined') {
-                var newHash = '#' + encodeURIComponent(catVal);
-                if (window.location.hash !== newHash) history.pushState({ cat: catVal, sub: '' }, '', newHash);
-              }
-              updatePillStyles(pillsEl, '');
-              updatePillStyles(pillsMobEl, '');
-              applyCatFilters();
-            };
-            container.appendChild(allBtn);
-
-            // প্রতিটি subcategory pill
-            subs.forEach(function(s) {
-              var subCount = allProds.filter(function(p){
-                return p.category === catVal && p.subcategory === s.value;
-              }).length;
-              var isActive = activeSub === s.value;
-              var btn = document.createElement('button');
-              btn.dataset.subval = s.value;
-              btn.style.cssText = pillStyle(isActive);
-              btn.innerHTML = s.label + ' <span style="font-size:11px;opacity:0.85;margin-left:2px;">(' + subCount + ')</span>';
-              btn.onclick = (function(sv) { return function() {
-                window._ffhCurrentSub = sv;
-                // URL hash আপডেট
-                if (typeof history !== 'undefined') {
-                  var newHash = '#' + encodeURIComponent(catVal) + '/' + encodeURIComponent(sv);
-                  if (window.location.hash !== newHash) history.pushState({ cat: catVal, sub: sv }, '', newHash);
-                }
-                updatePillStyles(pillsEl, sv);
-                updatePillStyles(pillsMobEl, sv);
-                applyCatFilters();
-              }; })(s.value);
-              container.appendChild(btn);
-            });
-          }
-
-          buildPills(pillsEl, false);
-          buildPills(pillsMobEl, true);
-        })(cat, sub || '');
-        // ─────────────────────────────────────────────────────────────────
-
-        if (cat === 'all') {
-          catCurrentProducts = allProds.slice();
-        } else {
-          // parent category + সব subcategory-র পণ্য একসাথে রাখো
-          // applyCatFilters _ffhCurrentSub দিয়ে subcategory filter করবে
-          var _catData2 = window._ffhNavCategories
-            ? window._ffhNavCategories.find(function(c){ return c.value === cat; })
-            : null;
-          var _subVals2 = (_catData2 && _catData2.subcategories)
-            ? _catData2.subcategories.map(function(s){ return s.value; })
-            : [];
-          catCurrentProducts = allProds.filter(function(p){
-            return p.category === cat || (_subVals2.length && _subVals2.indexOf(p.subcategory) !== -1);
-          });
-        }
-
-        const prices = catCurrentProducts.map(function(p){ return p.price; });
-        const pMin = prices.length ? Math.min.apply(null, prices) : 0;
-        const pMax = prices.length ? Math.max.apply(null, prices) : 0;
-
-        initPriceSlider(pMin, pMax);
-
-        ['availInStock','availPreOrder','availUpComing','filterOnSale'].forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.checked = false;
-        });
-
-        const ss = document.getElementById('catSortSelect');
-        if (ss) ss.value = 'default';
-
-        applyCatFilters();
-      }
-      function renderCatGrid(list) {
+  // ফিল্টার প্রয়োগ
+  applyCatFilters();
+}      function renderCatGrid(list) {
   const grid = document.getElementById('catProductGrid');
   const empty = document.getElementById('catEmptyState');
   const mGrid = document.getElementById('catProductGridMobile');
