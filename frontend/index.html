@@ -2445,8 +2445,11 @@
           var subs = (catData && catData.subcategories && catData.subcategories.length)
             ? catData.subcategories : [];
 
-          // সব পণ্য (parent category)
-          var allCatProds = allProds.filter(function(p){ return p.category === catVal; });
+          // সব পণ্য (parent category + সব subcategory)
+          var _allSubVals = subs.map(function(s){ return s.value; });
+          var allCatProds = allProds.filter(function(p){
+            return p.category === catVal || (_allSubVals.length && _allSubVals.indexOf(p.subcategory) !== -1);
+          });
 
           var pillsBar     = document.getElementById('subcatFilterBar');
           var pillsEl      = document.getElementById('subcatPills');
@@ -2534,9 +2537,17 @@
         if (cat === 'all') {
           catCurrentProducts = allProds.slice();
         } else {
-          // সবসময় parent category-র সব পণ্য রাখো
+          // parent category + সব subcategory-র পণ্য একসাথে রাখো
           // applyCatFilters _ffhCurrentSub দিয়ে subcategory filter করবে
-          catCurrentProducts = allProds.filter(function(p){ return p.category === cat; });
+          var _catData2 = window._ffhNavCategories
+            ? window._ffhNavCategories.find(function(c){ return c.value === cat; })
+            : null;
+          var _subVals2 = (_catData2 && _catData2.subcategories)
+            ? _catData2.subcategories.map(function(s){ return s.value; })
+            : [];
+          catCurrentProducts = allProds.filter(function(p){
+            return p.category === cat || (_subVals2.length && _subVals2.indexOf(p.subcategory) !== -1);
+          });
         }
 
         const prices = catCurrentProducts.map(function(p){ return p.price; });
@@ -4879,14 +4890,23 @@ function _ffhApplyApiProducts(apiMapped) {
     var savedCat = window._ffhCurrentCat || '';
     var savedSub = window._ffhCurrentSub || '';
     if (savedCat) {
+      // parent category + সব subcategory-র পণ্য একসাথে রাখো
+      var _aCD = window._ffhNavCategories
+        ? window._ffhNavCategories.find(function(c){ return c.value === savedCat; })
+        : null;
+      var _aSV = (_aCD && _aCD.subcategories)
+        ? _aCD.subcategories.map(function(s){ return s.value; })
+        : [];
+      var _allCatProds = savedCat === 'all'
+        ? apiMapped.slice()
+        : apiMapped.filter(function(p){
+            return p.category === savedCat || (_aSV.length && _aSV.indexOf(p.subcategory) !== -1);
+          });
       if (savedSub) {
-        catCurrentProducts = apiMapped.filter(function(p){
-          return p.category === savedCat && p.subcategory === savedSub;
-        });
-        if (!catCurrentProducts.length)
-          catCurrentProducts = apiMapped.filter(function(p){ return p.category === savedCat; });
+        catCurrentProducts = _allCatProds.filter(function(p){ return p.subcategory === savedSub; });
+        if (!catCurrentProducts.length) catCurrentProducts = _allCatProds;
       } else {
-        catCurrentProducts = savedCat === 'all' ? apiMapped.slice() : apiMapped.filter(function(p){ return p.category === savedCat; });
+        catCurrentProducts = _allCatProds;
       }
       var prices = catCurrentProducts.map(function(p){ return p.price; });
       var pMin = prices.length ? Math.min.apply(null, prices) : 0;
@@ -4905,7 +4925,9 @@ function _ffhApplyApiProducts(apiMapped) {
         function _rebuildPills(container) {
           if (!container || !subs.length) return;
           container.innerHTML = '';
-          var allCatCount = apiMapped.filter(function(p){ return p.category === savedCat; }).length;
+          var allCatCount = apiMapped.filter(function(p){
+            return p.category === savedCat || (subs.length && subs.map(function(s){return s.value;}).indexOf(p.subcategory) !== -1);
+          }).length;
           var allBtn = document.createElement('button');
           allBtn.style.cssText = _pillSt(!savedSub);
           allBtn.innerHTML = 'সব পণ্য <span style="font-size:11px;opacity:0.85;margin-left:2px;">(' + allCatCount + ')</span>';
@@ -5357,78 +5379,44 @@ async function loadSiteSettings() {
 }
 
 var FFH_DEFAULT_CATS = [
-  {
-    value: 'baby_dress',
-    label: '🧸 Baby Dress',
-    subcategories: [
-      { value: 'newborn_set', label: 'Newborn Set (0-6 Months)' },
-      { value: 'cotton_dress', label: 'Cotton Dress (Summer Comfort)' },
-      { value: 'winter_dress', label: 'Winter Dress' },
-      { value: 'frocks_tshirts', label: 'Frocks, T-Shirts & Pants' }
-    ]
-  },
-  {
-    value: 'toys',
-    label: '🧸 Toys',
-    subcategories: [
-      { value: 'soft_toys', label: 'Soft Toys (Dolls)' },
-      { value: 'sound_toys', label: 'সাউন্ড টয় (Musical Toys)' },
-      { value: 'educational_toys', label: 'Educational Toys (ABC/Numbers)' },
-      { value: 'baby_rattle', label: 'Baby Rattle' }
-    ]
-  },
-  {
-    value: 'feeding',
-    label: '🍼 Feeding Items',
-    subcategories: [
-      { value: 'feeding_bottle', label: 'Feeding Bottle' },
-      { value: 'feeding_bowl', label: 'Baby Feeding Bowl + Spoon' },
-      { value: 'sipper_cup', label: 'Sipper Cup' },
-      { value: 'feeding_chair', label: 'Baby Feeding Chair' }
-    ]
-  },
-  {
-    value: 'baby_care',
-    label: '🛁 Baby Care',
-    subcategories: [
-      { value: 'soap_shampoo', label: 'Baby Soap & Shampoo' },
-      { value: 'lotion_oil', label: 'Baby Lotion / Oil' },
-      { value: 'wet_tissue', label: 'Wet Tissue' },
-      { value: 'diaper', label: 'Diaper' }
-    ]
-  },
-  {
-    value: 'baby_bedding',
-    label: '👶 Essentials',
-    subcategories: [
-      { value: 'mosquito_net', label: 'Baby Mosquito Net' },
-      { value: 'baby_bed', label: 'Baby Bed / Nest' },
-      { value: 'blanket', label: 'Baby Blanket' },
-      { value: 'towel', label: 'Baby Towel' }
-    ]
-  },
-  {
-    value: 'trending',
-    label: '🔥 Trending',
-    subcategories: [
-      { value: 'baby_carrier', label: 'Baby Carrier' },
-      { value: 'baby_walker', label: 'Baby Walker' },
-      { value: 'nail_cutter', label: 'Baby Nail Cutter Set' },
-      { value: 'thermometer', label: 'Baby Thermometer' }
-    ]
-  },
-  // ========== NEW CATEGORY: নেব্বারটি ==========
-  {
-    value: 'নেব্বারটি',
-    label: '🧸 নেব্বারটি',
-    subcategories: [
-      { value: 'সুতি পাতলা জামা', label: 'সুতি পাতলা জামা' },
-      { value: 'ফুল হাতার আরামদায়ক সেট', label: 'ফুল হাতার আরামদায়ক সেট' },
-      { value: 'টুপি হাত মোজা ও পা মোজা', label: 'টুপি, হাত মোজা ও পা মোজা' },
-      { value: 'নকশি কাঁথা পাতলা কাঁথা', label: 'নকশি কাঁথা / পাতলা কাঁথা' }
-    ]
-  }
+  { value:'baby_dress',  label:'🧸 Baby Dress', subcategories:[
+    {value:'newborn_set',label:'Newborn Set (0-6 Months)'},
+    {value:'cotton_dress',label:'Cotton Dress (Summer Comfort)'},
+    {value:'winter_dress',label:'Winter Dress'},
+    {value:'frocks_tshirts',label:'Frocks, T-Shirts & Pants'}
+  ]},
+  { value:'toys', label:'🧸 Toys', subcategories:[
+    {value:'soft_toys',label:'Soft Toys (Dolls)'},
+    {value:'sound_toys',label:'সাউন্ড টয় (Musical Toys)'},
+    {value:'educational_toys',label:'Educational Toys (ABC/Numbers)'},
+    {value:'baby_rattle',label:'Baby Rattle'}
+  ]},
+  { value:'feeding', label:'🍼 Feeding Items', subcategories:[
+    {value:'feeding_bottle',label:'Feeding Bottle'},
+    {value:'feeding_bowl',label:'Baby Feeding Bowl + Spoon'},
+    {value:'sipper_cup',label:'Sipper Cup'},
+    {value:'feeding_chair',label:'Baby Feeding Chair'}
+  ]},
+  { value:'baby_care', label:'🛁 Baby Care', subcategories:[
+    {value:'soap_shampoo',label:'Baby Soap & Shampoo'},
+    {value:'lotion_oil',label:'Baby Lotion / Oil'},
+    {value:'wet_tissue',label:'Wet Tissue'},
+    {value:'diaper',label:'Diaper'}
+  ]},
+  { value:'baby_bedding', label:'👶 Essentials', subcategories:[
+    {value:'mosquito_net',label:'Baby Mosquito Net'},
+    {value:'baby_bed',label:'Baby Bed / Nest'},
+    {value:'blanket',label:'Baby Blanket'},
+    {value:'towel',label:'Baby Towel'}
+  ]},
+  { value:'trending', label:'🔥 Trending', subcategories:[
+    {value:'baby_carrier',label:'Baby Carrier'},
+    {value:'baby_walker',label:'Baby Walker'},
+    {value:'nail_cutter',label:'Baby Nail Cutter Set'},
+    {value:'thermometer',label:'Baby Thermometer'}
+  ]}
 ];
+
 async function loadNavCategories() {
   var cats = FFH_DEFAULT_CATS;
   try {
