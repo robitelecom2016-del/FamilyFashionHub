@@ -5100,7 +5100,8 @@ function _ffhShowApiDetail(p) {
     // canonical meta আপডেট
     var _can = document.querySelector('link[rel="canonical"]');
     if (!_can) { _can = document.createElement('link'); _can.rel = 'canonical'; document.head.appendChild(_can); }
-    _can.href = window.location.origin + window.location.pathname + _newHash;
+    var _decodedHash; try { _decodedHash = decodeURIComponent(_newHash); } catch(e) { _decodedHash = _newHash; }
+    _can.href = window.location.origin + window.location.pathname + _decodedHash;
     // og meta আপডেট (Facebook/WhatsApp share)
     var _ogT = document.querySelector('meta[property="og:title"]');
     if (_ogT) _ogT.content = p.name + ' | Family Fashion Hub';
@@ -6018,7 +6019,8 @@ document.addEventListener('DOMContentLoaded', () => {
           canonical.rel = 'canonical';
           document.head.appendChild(canonical);
         }
-        canonical.href = window.location.origin + window.location.pathname + newHash;
+        var _dh; try { _dh = decodeURIComponent(newHash); } catch(e) { _dh = newHash; }
+        canonical.href = window.location.origin + window.location.pathname + _dh;
 
         // og:title আপডেট (WhatsApp/Facebook share)
         var ogTitle = document.querySelector('meta[property="og:title"]');
@@ -6206,7 +6208,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
 // পণ্যের শেয়ারযোগ্য লিংক তৈরি করো
 function FFH_getCurrentProductURL() {
-  return window.location.origin + window.location.pathname + window.location.hash;
+  var hash = window.location.hash;
+  try { hash = decodeURIComponent(hash); } catch(e) {}
+  return window.location.origin + window.location.pathname + hash;
 }
 
 // লিংক কপি করার বাটন
