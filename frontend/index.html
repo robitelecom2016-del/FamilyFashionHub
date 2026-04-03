@@ -1326,6 +1326,15 @@
                   <i class="fas fa-phone" style="font-size:14px;"></i> Call For Order
                 </a>
               </div>
+              <!-- ══ Product Share Link ══ -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                <button id="copyProductLinkBtn" onclick="FFH_copyProductLink(this)" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                  <i class="fas fa-link" style="font-size:13px;color:#6b7280;"></i> <span id="copyLinkBtnText">লিংক কপি করুন</span>
+                </button>
+                <button onclick="FFH_shareFacebook()" style="background:#1877f2;color:white;border:none;padding:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;" onmouseover="this.style.background='#166fe5'" onmouseout="this.style.background='#1877f2'">
+                  <i class="fab fa-facebook" style="font-size:14px;"></i> Facebook শেয়ার
+                </button>
+              </div>
             </div>
             <div id="soldOutMessage" class="hidden" style="margin-top:12px;">
               <div style="background:#f3f4f6;border:1px solid #d1d5db;padding:20px;text-align:center;">
@@ -5799,43 +5808,167 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 </script>
 
-<!-- ═══ DEEP LINKING SYSTEM ═══════════════════════════════════════════════ -->
+<!-- ═══ DEEP LINKING SYSTEM (v2 — Category + Product URL Support) ══════════ -->
 <script>
 (function() {
 
-  // ── 1. Hash → Page Navigator ──────────────────────────────────────────────
-  // hash format:
-  //   #category/subcategory   →  filterByCategory(category, subcategory)
-  //   #category               →  filterByCategory(category)
-  //   # or empty              →  goToHome()
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── UTILITY: পণ্যের নাম থেকে URL-friendly slug বানাও ──────────────────────
+  // উদাহরণ: "বেবি সফট কটন জামা" → "বেবি-সফট-কটন-জামা"
+  // উদাহরণ: "Baby Soft Cotton Dress" → "baby-soft-cotton-dress"
+  // ═══════════════════════════════════════════════════════════════════════════
+  function makeProductSlug(name) {
+    if (!name) return '';
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')       // spaces → hyphens
+      .replace(/[^\u0980-\u09FFa-z0-9\-]/g, '') // শুধু বাংলা, ইংরেজি, সংখ্যা ও hyphen রাখো
+      .replace(/-{2,}/g, '-')     // একাধিক hyphen → একটা
+      .replace(/^-|-$/g, '');     // শুরু/শেষের hyphen সরাও
+  }
 
+  // slug থেকে product খোঁজো (products array থেকে)
+  function findProductBySlug(slug) {
+    var prods = window._ffhApiProducts || window.products || [];
+    if (!slug || !prods.length) return null;
+    var slugLower = slug.toLowerCase();
+    // exact match
+    var found = prods.find(function(p) {
+      return makeProductSlug(p.name) === slugLower;
+    });
+    // partial match fallback (slug এর কিছু অংশ মিললেও চলবে)
+    if (!found) {
+      found = prods.find(function(p) {
+        var ps = makeProductSlug(p.name);
+        return ps.startsWith(slugLower) || slugLower.startsWith(ps);
+      });
+    }
+    return found || null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── URL Scheme ─────────────────────────────────────────────────────────────
+  //
+  //  pathname-based (Nginx rewrite দরকার):
+  //    /বেবি-সফট-কটন-জামা           → product page
+  //    /baby-soft-cotton-dress       → product page
+  //
+  //  hash-based (rewrite ছাড়াই কাজ করে — আমরা এটা ব্যবহার করব):
+  //    #product/বেবি-সফট-কটন-জামা   → product page
+  //    #baby-dress/subcategory       → category page
+  //    #baby-dress                   → category page
+  //    # or empty                    → home
+  //
+  //  উভয় method support করা হবে।
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── hash parse করো ──────────────────────────────────────────────────────
+  function parseHash(hash) {
+    var h = (hash || '').replace(/^#\/?/, '').trim();
+    if (!h) return { type: 'home' };
+
+    // product URL: #product/slug
+    if (h.startsWith('product/')) {
+      var slug = decodeURIComponent(h.slice('product/'.length));
+      return { type: 'product', slug: slug };
+    }
+
+    // category URL: #category/subcategory  or  #category
+    var parts = h.split('/');
+    var cat = decodeURIComponent(parts[0] || '');
+    var sub = decodeURIComponent(parts[1] || '');
+    return { type: 'category', cat: cat, sub: sub };
+  }
+
+  // ── hash navigate ────────────────────────────────────────────────────────
   function navigateToHash(hash) {
-    var h = (hash || '').replace(/^#/, '').trim();
-    if (!h) {
+    var parsed = parseHash(hash);
+
+    if (parsed.type === 'home') {
       if (typeof window.goToHome === 'function') window.goToHome();
       return;
     }
-    var parts = h.split('/');
-    var cat   = decodeURIComponent(parts[0] || '');
-    var sub   = decodeURIComponent(parts[1] || '');
-    if (cat && typeof window.filterByCategory === 'function') {
-      window.filterByCategory(cat, sub);
-    } else if (cat) {
-      // filterByCategory এখনো ready না হলে products load হওয়ার পরে চালাও
-      window._ffhPendingHashNav = { cat: cat, sub: sub };
+
+    if (parsed.type === 'product') {
+      var prod = findProductBySlug(parsed.slug);
+      if (prod) {
+        // showProductDetailPage কে direct call করো (wrap এড়াতে আসল fn ব্যবহার)
+        var fn = window.showProductDetailPage;
+        while (fn && fn._dpWrapped && fn._orig) fn = fn._orig;
+        if (typeof fn === 'function') { fn(prod.id); return; }
+      }
+      // product না পেলে pending এ রাখো
+      window._ffhPendingProductSlug = parsed.slug;
+      return;
+    }
+
+    if (parsed.type === 'category') {
+      if (parsed.cat && typeof window.filterByCategory === 'function') {
+        var fn2 = window.filterByCategory;
+        while (fn2 && fn2._hashWrapped && fn2._orig) fn2 = fn2._orig;
+        fn2(parsed.cat, parsed.sub || '');
+      } else if (parsed.cat) {
+        window._ffhPendingHashNav = { cat: parsed.cat, sub: parsed.sub || '' };
+      }
     }
   }
 
-  // ── 2. filterByCategory wrap করো যেন URL hash আপডেট হয় ──────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── showProductDetailPage wrap: URL আপডেট করো ─────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  function wrapShowProductDetailPage() {
+    var orig = window.showProductDetailPage;
+    if (!orig || orig._dpWrapped) return;
+
+    var wrapped = function(productId) {
+      // product খোঁজো slug বানাতে
+      var prods = window._ffhApiProducts || window.products || [];
+      var prod  = prods.find(function(p) { return p.id === productId; });
+      if (prod) {
+        var slug    = makeProductSlug(prod.name);
+        var newHash = '#product/' + encodeURIComponent(slug);
+        if (window.location.hash !== newHash) {
+          history.pushState({ type: 'product', productId: productId, slug: slug }, '', newHash);
+        }
+        // <title> আপডেট করো
+        document.title = prod.name + ' | Family Fashion Hub';
+        // canonical meta আপডেট (SEO)
+        var canonical = document.querySelector('link[rel="canonical"]');
+        if (!canonical) {
+          canonical = document.createElement('link');
+          canonical.rel = 'canonical';
+          document.head.appendChild(canonical);
+        }
+        canonical.href = window.location.origin + window.location.pathname + newHash;
+
+        // og:title আপডেট (WhatsApp/Facebook share)
+        var ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) ogTitle.content = prod.name + ' | Family Fashion Hub';
+        var ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) ogUrl.content = canonical.href;
+        var ogImg = document.querySelector('meta[property="og:image"]');
+        if (ogImg && prod.img) ogImg.content = prod.img;
+      }
+      return orig.apply(this, arguments);
+    };
+    wrapped._dpWrapped = true;
+    wrapped._orig = orig;
+    window.showProductDetailPage = wrapped;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── filterByCategory wrap: URL hash আপডেট করো ─────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
   function wrapFilterByCategory() {
     var orig = window.filterByCategory;
     if (!orig || orig._hashWrapped) return;
     var wrapped = function(cat, sub) {
-      // URL hash আপডেট করো (history তে push করো)
       var newHash = cat ? ('#' + encodeURIComponent(cat) + (sub ? '/' + encodeURIComponent(sub) : '')) : '#';
       if (window.location.hash !== newHash) {
-        history.pushState({ cat: cat, sub: sub || '' }, '', newHash);
+        history.pushState({ type: 'category', cat: cat, sub: sub || '' }, '', newHash);
       }
+      document.title = 'Family Fashion Hub | ' + cat;
       return orig.apply(this, arguments);
     };
     wrapped._hashWrapped = true;
@@ -5843,14 +5976,15 @@ document.addEventListener('DOMContentLoaded', () => {
     window.filterByCategory = wrapped;
   }
 
-  // goToHome wrap করো যেন hash clear হয়
+  // ── goToHome wrap: hash clear ────────────────────────────────────────────
   function wrapGoToHome() {
     var orig = window.goToHome;
     if (!orig || orig._hashWrapped) return;
     var wrapped = function() {
       if (window.location.hash && window.location.hash !== '#') {
-        history.pushState({}, '', window.location.pathname + window.location.search);
+        history.pushState({ type: 'home' }, '', window.location.pathname + window.location.search);
       }
+      document.title = 'Family Fashion Hub | Your Family\'s Fashion Store';
       return orig.apply(this, arguments);
     };
     wrapped._hashWrapped = true;
@@ -5858,86 +5992,187 @@ document.addEventListener('DOMContentLoaded', () => {
     window.goToHome = wrapped;
   }
 
-  // ── 3. popstate — ব্রাউজার back/forward button ────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── popstate: browser back/forward ─────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
   window.addEventListener('popstate', function(e) {
     var hash = window.location.hash;
-    if (!hash || hash === '#') {
-      var orig = window.goToHome;
-      // unwrap করে আসল goToHome চালাও (infinite loop এড়াতে)
-      if (orig && orig._hashWrapped) {
-        var inner = orig;
-        while (inner._hashWrapped && inner._orig) inner = inner._orig;
-        if (typeof inner === 'function') inner();
-      } else if (typeof orig === 'function') {
-        orig();
-      }
-    } else {
-      var h     = hash.replace(/^#/, '');
-      var parts = h.split('/');
-      var cat   = decodeURIComponent(parts[0] || '');
-      var sub   = decodeURIComponent(parts[1] || '');
-      var fn    = window.filterByCategory;
-      // unwrap করে আসল filterByCategory চালাও (infinite loop এড়াতে)
+    var parsed = parseHash(hash);
+
+    if (parsed.type === 'home') {
+      var fn = window.goToHome;
       while (fn && fn._hashWrapped && fn._orig) fn = fn._orig;
-      if (typeof fn === 'function' && cat) fn(cat, sub || '');
+      if (typeof fn === 'function') fn();
+
+    } else if (parsed.type === 'product') {
+      var prod = findProductBySlug(parsed.slug);
+      if (prod) {
+        var fn2 = window.showProductDetailPage;
+        while (fn2 && fn2._dpWrapped && fn2._orig) fn2 = fn2._orig;
+        if (typeof fn2 === 'function') fn2(prod.id);
+      }
+
+    } else if (parsed.type === 'category') {
+      var fn3 = window.filterByCategory;
+      while (fn3 && fn3._hashWrapped && fn3._orig) fn3 = fn3._orig;
+      if (typeof fn3 === 'function' && parsed.cat) fn3(parsed.cat, parsed.sub || '');
     }
   });
 
-  // ── 4. DOM ready হলে wrap করো এবং hash পড়ো ─────────────────────────────
-  function init() {
-    wrapFilterByCategory();
-    wrapGoToHome();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── Pathname-based URL support (Nginx/Apache rewrite থাকলে কাজ করবে) ───────
+  //   যেমন: https://familyfashionhub.shop/বেবি-সফট-কটন-জামা
+  // ═══════════════════════════════════════════════════════════════════════════
+  function checkPathname() {
+    var path = window.location.pathname;
+    // শুধু root path হলে skip
+    if (!path || path === '/' || path === '/index.html') return false;
+    // path থেকে leading slash সরাও
+    var slug = decodeURIComponent(path.replace(/^\//, '').replace(/\.html?$/, ''));
+    if (!slug) return false;
+    window._ffhPendingProductSlug = slug;
+    return true;
+  }
 
-    // pending hash navigation (products load হওয়ার আগে এসেছিল)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── pending navigation resolve (products load হওয়ার পরে) ──────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  function resolvePending() {
+    // product slug pending?
+    if (window._ffhPendingProductSlug) {
+      var slug = window._ffhPendingProductSlug;
+      var prod = findProductBySlug(slug);
+      if (prod) {
+        window._ffhPendingProductSlug = null;
+        var fn = window.showProductDetailPage;
+        while (fn && fn._dpWrapped && fn._orig) fn = fn._orig;
+        if (typeof fn === 'function') { fn(prod.id); return true; }
+      }
+    }
+    // category pending?
     if (window._ffhPendingHashNav) {
       var p = window._ffhPendingHashNav;
       window._ffhPendingHashNav = null;
-      if (typeof window.filterByCategory === 'function') {
-        window.filterByCategory(p.cat, p.sub || '');
-        return;
-      }
+      var fn2 = window.filterByCategory;
+      while (fn2 && fn2._hashWrapped && fn2._orig) fn2 = fn2._orig;
+      if (typeof fn2 === 'function') { fn2(p.cat, p.sub || ''); return true; }
     }
+    return false;
+  }
 
-    // page load-এ hash থাকলে সেই page-এ যাও
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── Init ────────────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  function init() {
+    wrapShowProductDetailPage();
+    wrapFilterByCategory();
+    wrapGoToHome();
+
+    if (resolvePending()) return;
+
+    // hash থেকে navigate
     if (window.location.hash && window.location.hash !== '#') {
       navigateToHash(window.location.hash);
     }
   }
 
-  // ── 5. Products load হওয়ার পরেও pending hash check ───────────────────────
+  // ── loadProductsFromAPI wrap: products load হলে pending resolve করো ────────
   var _origLoadProducts = window.loadProductsFromAPI;
   if (typeof _origLoadProducts === 'function') {
     window.loadProductsFromAPI = async function() {
       var result = await _origLoadProducts.apply(this, arguments);
-      // products load শেষ হলে pending navigation চেক করো
       setTimeout(function() {
+        wrapShowProductDetailPage();
         wrapFilterByCategory();
         wrapGoToHome();
-        if (window._ffhPendingHashNav) {
-          var p = window._ffhPendingHashNav;
-          window._ffhPendingHashNav = null;
-          if (typeof window.filterByCategory === 'function') {
-            window.filterByCategory(p.cat, p.sub || '');
+        if (!resolvePending()) {
+          if (window.location.hash && window.location.hash !== '#') {
+            navigateToHash(window.location.hash);
           }
-        } else if (window.location.hash && window.location.hash !== '#') {
-          navigateToHash(window.location.hash);
         }
-      }, 100);
+      }, 150);
       return result;
     };
   }
 
-  // ── 6. DOMContentLoaded ───────────────────────────────────────────────────
+  // ── pathname check (Nginx rewrite support) ───────────────────────────────
+  checkPathname();
+
+  // ── DOMContentLoaded ─────────────────────────────────────────────────────
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      // filterByCategory ready হওয়ার জন্য একটু অপেক্ষা করো
-      setTimeout(init, 200);
-    });
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 250); });
   } else {
-    setTimeout(init, 200);
+    setTimeout(init, 250);
   }
 
+  // ── Public API: অন্য script থেকে slug বানাতে পারবে ─────────────────────
+  window.FFH_makeProductSlug   = makeProductSlug;
+  window.FFH_findProductBySlug = findProductBySlug;
+
+  // ── Product card-এ shareable link copy button যোগ করো ──────────────────
+  // (product detail page খুললে URL automatically আপডেট হয়, তাই share করা সহজ)
+
 })();
+</script>
+
+<!-- ═══ PRODUCT LINK SHARE HELPERS ══════════════════════════════════════ -->
+<script>
+// পণ্যের শেয়ারযোগ্য লিংক তৈরি করো
+function FFH_getCurrentProductURL() {
+  return window.location.origin + window.location.pathname + window.location.hash;
+}
+
+// লিংক কপি করার বাটন
+function FFH_copyProductLink(btn) {
+  var url = FFH_getCurrentProductURL();
+  if (!url || window.location.hash === '' || window.location.hash === '#') {
+    alert('প্রথমে একটি পণ্য সিলেক্ট করুন।');
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function() {
+      FFH_showCopied(btn);
+    }).catch(function() {
+      FFH_fallbackCopy(url, btn);
+    });
+  } else {
+    FFH_fallbackCopy(url, btn);
+  }
+}
+
+function FFH_fallbackCopy(text, btn) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    document.execCommand('copy');
+    FFH_showCopied(btn);
+  } catch(e) {
+    prompt('এই লিংকটি কপি করুন:', text);
+  }
+  document.body.removeChild(ta);
+}
+
+function FFH_showCopied(btn) {
+  var spanEl = document.getElementById('copyLinkBtnText');
+  var iconEl = btn ? btn.querySelector('i') : null;
+  if (spanEl) spanEl.textContent = '✅ কপি হয়েছে!';
+  if (btn) { btn.style.background = '#dcfce7'; btn.style.borderColor = '#86efac'; btn.style.color = '#166534'; }
+  if (iconEl) { iconEl.className = 'fas fa-check'; iconEl.style.color = '#16a34a'; }
+  setTimeout(function() {
+    if (spanEl) spanEl.textContent = 'লিংক কপি করুন';
+    if (btn) { btn.style.background = '#f3f4f6'; btn.style.borderColor = '#d1d5db'; btn.style.color = '#374151'; }
+    if (iconEl) { iconEl.className = 'fas fa-link'; iconEl.style.color = '#6b7280'; }
+  }, 2500);
+}
+
+// Facebook শেয়ার
+function FFH_shareFacebook() {
+  var url = FFH_getCurrentProductURL();
+  window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank', 'width=600,height=400');
+}
 </script>
 
 </body>
