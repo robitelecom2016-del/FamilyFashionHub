@@ -4219,7 +4219,15 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
           } else {
             slide.style.cursor = 'default';
           }
-          slide.innerHTML = `<img src="${img.url}" alt="Slide ${idx+1}" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">`;
+          // title overlay (যদি থাকে)
+          var titleHTML = '';
+          if (img.title && img.title.trim()) {
+            titleHTML = `<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 20px 44px;background:linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 100%);pointer-events:none;">
+              <span style="color:#fff;font-size:20px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.5);letter-spacing:0.2px;">${img.title}</span>
+            </div>`;
+          }
+          var altText = img.title || ('Slide ' + (idx + 1));
+          slide.innerHTML = `<img src="${img.url}" alt="${altText}" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">${titleHTML}`;
           container.appendChild(slide);
           const dot = document.createElement('button');
           dot.className = `slider-dot ${idx === 0 ? 'w-6 bg-orange-600' : 'w-3 bg-gray-400'} h-2 rounded-full transition`;
@@ -4563,7 +4571,10 @@ window.FFH_API = (function() {
       if (data.success && Array.isArray(data.data) && data.data.length) {
         if (typeof window.renderSlider === 'function') window.renderSlider(data.data);
       }
-    } catch(e) {}
+      // API-তে ছবি না থাকলে static HTML slider টিকে থাকে (কিছু করার দরকার নেই)
+    } catch(e) {
+      // Network error — static HTML slider টিকে থাকে
+    }
   };
 
   window.loadSideBanner = async function() {

@@ -100,6 +100,7 @@ mongoose.connect(process.env.MONGODB_URI)
     seedSideBanner();
     seedHeroSideImage();      // new
     seedTestimonials();       // new
+    seedSliderImages();       // new
   })
   .catch(err => console.error('❌ MongoDB Error:', err));
 
@@ -327,6 +328,47 @@ async function seedTestimonials() {
       console.log('✅ Default testimonials seeded');
     }
   } catch(err) { console.error('❌ seedTestimonials error:', err.message); }
+}
+
+// ===== SEED DEFAULT SLIDER IMAGES =====
+async function seedSliderImages() {
+  try {
+    const existing = await Settings.findOne({ key: 'sliderImages' });
+    if (!existing || !Array.isArray(existing.value) || existing.value.length === 0) {
+      const defaultSlider = [
+        {
+          url: 'https://images.unsplash.com/photo-1519457073994-14ae0a084e7f?w=900&h=400&fit=crop&auto=format&q=80',
+          public_id: '',
+          title: 'Baby Shoes Collection',
+          link: '/category/baby-shoes',
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=900&h=400&fit=crop&auto=format&q=80',
+          public_id: '',
+          title: 'Baby Toys & Fun',
+          link: '/category/baby-toys',
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1586528293999-0f0bc7eda02e?w=900&h=400&fit=crop&auto=format&q=80',
+          public_id: '',
+          title: 'Baby Dress Collection',
+          link: '/category/baby-dress',
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=900&h=400&fit=crop&auto=format&q=80',
+          public_id: '',
+          title: 'Feeding & Care',
+          link: '/category/feeding',
+        },
+      ];
+      await Settings.findOneAndUpdate(
+        { key: 'sliderImages' },
+        { key: 'sliderImages', value: defaultSlider },
+        { upsert: true }
+      );
+      console.log('✅ Default slider images seeded');
+    }
+  } catch(err) { console.error('❌ seedSliderImages error:', err.message); }
 }
 
 // ===== AUTH HELPERS =====
@@ -1532,7 +1574,12 @@ app.post('/api/admin/slider-images', adminMiddleware, upload.array('images', 10)
     }
 
     const results = await uploadMultiple(req.files, 'FamilyFashionHub/slider');
-    const newImages = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
+    const newImages = results.map((r, i) => ({
+      url: r.secure_url,
+      public_id: r.public_id,
+      title: (req.body[`title_${i}`] || req.body.title || '').trim(),
+      link:  (req.body[`link_${i}`]  || '').trim(),
+    }));
     const combined = [...existing, ...newImages];
 
     await Settings.findOneAndUpdate(
@@ -1581,6 +1628,25 @@ app.put('/api/admin/slider-images/:index/link', adminMiddleware, async (req, res
       { upsert: true }
     );
     res.json({ success: true, data: images, message: 'Slider ছবির লিংক আপডেট হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// PUT — Admin: একটি Slider image-এর title আপডেট
+app.put('/api/admin/slider-images/:index/title', adminMiddleware, async (req, res) => {
+  try {
+    const idx = parseInt(req.params.index);
+    const { title } = req.body;
+    if (isNaN(idx)) return res.json({ success: false, message: 'Invalid index' });
+    const setting = await Settings.findOne({ key: 'sliderImages' });
+    let images = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    if (idx < 0 || idx >= images.length) return res.json({ success: false, message: 'Invalid index' });
+    images[idx] = { ...images[idx], title: (title || '').trim() };
+    await Settings.findOneAndUpdate(
+      { key: 'sliderImages' },
+      { key: 'sliderImages', value: images },
+      { upsert: true }
+    );
+    res.json({ success: true, data: images, message: 'Slider ছবির শিরোনাম আপডেট হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
