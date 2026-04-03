@@ -134,6 +134,13 @@ const productSchema = new mongoose.Schema({
   careInstructions: { type: String, default: '' },      // পরিচর্যা নির্দেশনা
   tags:           [{ type: String }],                   // সার্চ ট্যাগ
 
+  // ===== SEO Fields (Auto-generated or manually set) =====
+  seoTitle:       { type: String, default: '' },        // Meta Title — গুগলে দেখাবে
+  seoDescription: { type: String, default: '' },        // Meta Description
+  seoKeywords:    [{ type: String }],                   // SEO Keywords
+  seoCanonical:   { type: String, default: '' },        // Canonical URL
+  seoOgImage:     { type: String, default: '' },        // Open Graph Image URL
+
   createdAt:   { type: Date, default: Date.now },
 });
 
@@ -426,6 +433,7 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
       name, description, price, oldPrice, saving, category, subcategory, onSale, soldOut, featured,
       ageGroup, material, stock, sku, weight, deliveryInfo, returnPolicy, careInstructions,
       sizes, colors, highlights, tags,
+      seoTitle, seoDescription, seoKeywords, seoCanonical, seoOgImage,
     } = req.body;
     let images = [];
     if (req.files && req.files.length > 0) {
@@ -439,6 +447,20 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
       if (Array.isArray(v)) return v.map(x => x.trim()).filter(Boolean);
       return v.split(',').map(x => x.trim()).filter(Boolean);
     };
+
+    // Auto-generate SEO if not provided
+    const SITE_NAME = 'Family Fashion Hub';
+    const SITE_URL  = (process.env.FRONTEND_URL || 'https://familyfashionhub.com').replace(/\/$/, '');
+    const finalSeoTitle = seoTitle || `${name} | ${SITE_NAME}`;
+    const finalSeoDesc  = seoDescription
+      || (description ? description.slice(0, 155) : `${name} — ${SITE_NAME} বাংলাদেশ থেকে দ্রুত ডেলিভারি পান।`);
+    const finalSeoKw    = parseArr(seoKeywords).length
+      ? parseArr(seoKeywords)
+      : [name, category, SITE_NAME, 'bangladesh', 'বাংলাদেশ', 'online shopping bd'].filter(Boolean);
+    const slug          = (name || '').toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'-');
+    const finalCanonical = seoCanonical || '';
+    const finalOgImage   = seoOgImage   || '';
+
     const product = await Product.create({
       name, description,
       price:       +price,
@@ -462,6 +484,12 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
       colors:     parseArr(colors),
       highlights: parseArr(highlights),
       tags:       parseArr(tags),
+      // SEO fields — auto-generated যদি admin না দেয়
+      seoTitle:       finalSeoTitle,
+      seoDescription: finalSeoDesc,
+      seoKeywords:    finalSeoKw,
+      seoCanonical:   finalCanonical,
+      seoOgImage:     finalOgImage,
     });
     res.json({ success: true, data: product });
   } catch (e) { res.json({ success: false, message: e.message }); }
@@ -473,12 +501,23 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       name, description, price, oldPrice, saving, category, subcategory, onSale, soldOut, featured,
       ageGroup, material, stock, sku, weight, deliveryInfo, returnPolicy, careInstructions,
       sizes, colors, highlights, tags,
+      seoTitle, seoDescription, seoKeywords, seoCanonical, seoOgImage,
     } = req.body;
     const parseArr = v => {
       if (!v) return [];
       if (Array.isArray(v)) return v.map(x => x.trim()).filter(Boolean);
       return v.split(',').map(x => x.trim()).filter(Boolean);
     };
+
+    // Auto-generate SEO if not provided
+    const SITE_NAME      = 'Family Fashion Hub';
+    const finalSeoTitle  = seoTitle || `${name} | ${SITE_NAME}`;
+    const finalSeoDesc   = seoDescription
+      || (description ? description.slice(0, 155) : `${name} — ${SITE_NAME} বাংলাদেশ থেকে দ্রুত ডেলিভারি।`);
+    const finalSeoKw     = parseArr(seoKeywords).length
+      ? parseArr(seoKeywords)
+      : [name, category, SITE_NAME, 'bangladesh', 'বাংলাদেশ'].filter(Boolean);
+
     const update = {
       name, description,
       price:       +price,
@@ -501,6 +540,12 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       colors:     parseArr(colors),
       highlights: parseArr(highlights),
       tags:       parseArr(tags),
+      // SEO — auto-generate করা হলে save করো
+      seoTitle:       finalSeoTitle,
+      seoDescription: finalSeoDesc,
+      seoKeywords:    finalSeoKw,
+      seoCanonical:   seoCanonical   || '',
+      seoOgImage:     seoOgImage     || '',
     };
     if (req.files && req.files.length > 0) {
       const old = await Product.findById(req.params.id);
@@ -514,6 +559,8 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       const results = await uploadMultiple(req.files);
       update.images = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
       update.img    = update.images[0].url;
+      // নতুন ছবি আপলোড হলে OG image auto-set করো (যদি admin না দেয়)
+      if (!seoOgImage) update.seoOgImage = update.img;
     }
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     res.json({ success: true, data: product });
@@ -1919,6 +1966,110 @@ app.post('/api/admin/product-layout', adminMiddleware, async (req, res) => {
     );
     res.json({ success: true, message: 'পণ্য পেজ লেআউট সেভ হয়েছে', data: layout });
   } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// =====================================================================
+// ===== SEO ENDPOINTS — Auto-generated per product =====
+// =====================================================================
+
+// GET /api/products/:id/seo — পণ্যের সম্পূর্ণ SEO data (meta, OG, JSON-LD)
+app.get('/api/products/:id/seo', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id)
+      .select('name description price img images seoTitle seoDescription seoKeywords seoCanonical seoOgImage category subcategory soldOut onSale material sizes');
+    if (!product) return res.json({ success: false, message: 'পণ্য পাওয়া যায়নি' });
+
+    const SITE_NAME = 'Family Fashion Hub';
+    const SITE_URL  = (process.env.FRONTEND_URL || 'https://familyfashionhub.com').replace(/\/$/, '');
+    const productUrl = `${SITE_URL}/product/${product._id}`;
+    const ogImg = product.seoOgImage
+      || (product.images && product.images[0] ? product.images[0].url : product.img || '');
+
+    const seo = {
+      title:            product.seoTitle       || `${product.name} | ${SITE_NAME}`,
+      description:      product.seoDescription || (product.description ? product.description.slice(0, 155) : `${product.name} — ${SITE_NAME}`),
+      keywords:         (product.seoKeywords && product.seoKeywords.length) ? product.seoKeywords : [product.name, SITE_NAME, 'bangladesh'],
+      canonical:        product.seoCanonical   || productUrl,
+      ogImage:          ogImg,
+      ogUrl:            productUrl,
+      ogType:           'product',
+      ogSiteName:       SITE_NAME,
+      twitterCard:      'summary_large_image',
+      // JSON-LD Structured Data
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type":    "Product",
+        "name":     product.seoTitle || product.name,
+        "description": product.seoDescription || product.description || '',
+        "image":    ogImg,
+        "url":      productUrl,
+        "brand": { "@type": "Brand", "name": SITE_NAME },
+        "offers": {
+          "@type":          "Offer",
+          "priceCurrency":  "BDT",
+          "price":          String(product.price || 0),
+          "availability":   product.soldOut
+            ? "https://schema.org/OutOfStock"
+            : "https://schema.org/InStock",
+          "url":            productUrl,
+          "seller": { "@type": "Organization", "name": SITE_NAME, "url": SITE_URL }
+        },
+        ...(product.sizes && product.sizes.length ? { "size": product.sizes.join(', ') } : {}),
+        ...(product.material ? { "material": product.material } : {}),
+      }
+    };
+    res.json({ success: true, data: seo });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// GET /api/sitemap.xml — Dynamic XML Sitemap for Google
+app.get('/api/sitemap.xml', async (req, res) => {
+  try {
+    const SITE_URL   = (process.env.FRONTEND_URL || 'https://familyfashionhub.com').replace(/\/$/, '');
+    const products   = await Product.find({}, '_id name updatedAt createdAt').lean();
+    const catSetting = await Settings.findOne({ key: 'categories' });
+    const categories = (catSetting && Array.isArray(catSetting.value)) ? catSetting.value : [];
+    const today      = new Date().toISOString().split('T')[0];
+
+    const staticPages = [
+      { url: SITE_URL + '/',         freq: 'daily',   pri: '1.0', date: today },
+      { url: SITE_URL + '/products', freq: 'daily',   pri: '0.9', date: today },
+      { url: SITE_URL + '/about',    freq: 'monthly', pri: '0.5', date: today },
+      { url: SITE_URL + '/contact',  freq: 'monthly', pri: '0.5', date: today },
+    ];
+
+    const catPages = [];
+    categories.forEach(cat => {
+      catPages.push({ url: `${SITE_URL}/?category=${cat.value}`, freq: 'weekly', pri: '0.8', date: today });
+      (cat.subcategories || []).forEach(sub =>
+        catPages.push({ url: `${SITE_URL}/?category=${cat.value}&subcategory=${sub.value}`, freq: 'weekly', pri: '0.7', date: today })
+      );
+    });
+
+    const productPages = products.map(p => ({
+      url:  `${SITE_URL}/product/${p._id}`,
+      date: (p.updatedAt || p.createdAt || new Date()).toISOString().split('T')[0],
+      freq: 'weekly',
+      pri:  '0.9',
+    }));
+
+    const all = [...staticPages, ...catPages, ...productPages];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${
+      all.map(p => `  <url>\n    <loc>${p.url}</loc>\n    <lastmod>${p.date}</lastmod>\n    <changefreq>${p.freq}</changefreq>\n    <priority>${p.pri}</priority>\n  </url>`).join('\n')
+    }\n</urlset>`;
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(xml);
+  } catch (e) { res.status(500).send('<?xml version="1.0"?><error>' + e.message + '</error>'); }
+});
+
+// GET /api/robots.txt — Search engine crawl directives
+app.get('/api/robots.txt', (req, res) => {
+  const SITE_URL = (process.env.FRONTEND_URL || 'https://familyfashionhub.com').replace(/\/$/, '');
+  const txt = `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/admin\nDisallow: /cart\nDisallow: /checkout\n\nSitemap: ${SITE_URL}/api/sitemap.xml\n`;
+  res.set('Content-Type', 'text/plain');
+  res.send(txt);
 });
 
 // ===== ROOT =====

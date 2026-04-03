@@ -1149,6 +1149,7 @@ tr:hover td { background: var(--bg); }
         <button class="prod-tab-btn active" onclick="switchProdTab('basic',this)" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid var(--primary);color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:-2px;font-family:var(--font);">মূল তথ্য</button>
         <button class="prod-tab-btn" onclick="switchProdTab('detail',this)" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-size:13px;cursor:pointer;margin-bottom:-2px;font-family:var(--font);">বিস্তারিত</button>
         <button class="prod-tab-btn" onclick="switchProdTab('delivery',this)" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-size:13px;cursor:pointer;margin-bottom:-2px;font-family:var(--font);">ডেলিভারি ও নীতি</button>
+        <button class="prod-tab-btn" onclick="switchProdTab('seo',this)" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-size:13px;cursor:pointer;margin-bottom:-2px;font-family:var(--font);display:flex;align-items:center;gap:5px;"><i class="fas fa-search" style="font-size:11px;"></i> SEO</button>
       </div>
 
       <!-- ট্যাব ১: মূল তথ্য -->
@@ -1294,8 +1295,109 @@ tr:hover td { background: var(--bg); }
         </div>
       </div>
 
+      <!-- ট্যাব ৪: SEO -->
+      <div id="prodTab-seo" class="prod-tab-content" style="display:none;">
+
+        <!-- Auto SEO Banner -->
+        <div style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-magic" style="color:#c4b5fd;font-size:18px;"></i>
+            </div>
+            <div>
+              <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:2px;">⚡ Auto-SEO Generator</p>
+              <p style="color:#a5b4fc;font-size:11px;">পণ্যের নাম, বিবরণ ও ট্যাগ দিয়ে স্বয়ংক্রিয়ভাবে SEO তৈরি করুন</p>
+            </div>
+          </div>
+          <button onclick="autoGenerateSEO()" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:7px;white-space:nowrap;">
+            <i class="fas fa-magic"></i> Auto SEO তৈরি করুন
+          </button>
+        </div>
+
+        <div class="form-grid">
+
+          <!-- SEO Title -->
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+              <span><i class="fas fa-heading" style="color:var(--primary);margin-right:6px;"></i>SEO Title (Meta Title) *</span>
+              <span id="seoTitleCount" style="font-size:11px;color:var(--text-muted);">0/60 অক্ষর</span>
+            </label>
+            <input type="text" class="form-control" id="productSeoTitle" placeholder="যেমন: Baby Cotton Dress | Family Fashion Hub বাংলাদেশ" maxlength="70" oninput="updateSeoCharCount()">
+            <div id="seoTitleBar" style="height:4px;border-radius:2px;margin-top:5px;background:#e5e7eb;overflow:hidden;"><div id="seoTitleBarFill" style="height:100%;width:0%;background:var(--success);transition:width 0.3s;border-radius:2px;"></div></div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px;"><i class="fas fa-info-circle"></i> গুগলে এই title দেখাবে। আদর্শ: ৫০-৬০ অক্ষর।</p>
+          </div>
+
+          <!-- SEO Description -->
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+              <span><i class="fas fa-align-left" style="color:var(--info);margin-right:6px;"></i>SEO Description (Meta Description)</span>
+              <span id="seoDescCount" style="font-size:11px;color:var(--text-muted);">0/160 অক্ষর</span>
+            </label>
+            <textarea class="form-control" id="productSeoDescription" rows="3" maxlength="170" placeholder="যেমন: পরিবারের জন্য সেরা বেবি কটন ড্রেস — মুলায়েম, আরামদায়ক ও টেকসই। বাংলাদেশে দ্রুত ডেলিভারি। এখনই অর্ডার করুন।" oninput="updateSeoCharCount()"></textarea>
+            <div id="seoDescBar" style="height:4px;border-radius:2px;margin-top:5px;background:#e5e7eb;overflow:hidden;"><div id="seoDescBarFill" style="height:100%;width:0%;background:var(--info);transition:width 0.3s;border-radius:2px;"></div></div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px;"><i class="fas fa-info-circle"></i> গুগলে search result-এ এই বিবরণ দেখাবে। আদর্শ: ১৪০-১৬০ অক্ষর।</p>
+          </div>
+
+          <!-- SEO Keywords -->
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label"><i class="fas fa-key" style="color:var(--warning);margin-right:6px;"></i>SEO Keywords <span style="font-size:11px;color:var(--text-muted);">— কমা দিয়ে আলাদা করুন</span></label>
+            <input type="text" class="form-control" id="productSeoKeywords" placeholder="যেমন: baby dress bangladesh, বেবি পোশাক, শিশু পোশাক, ফ্যামিলি ফ্যাশন হাব">
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px;"><i class="fas fa-info-circle"></i> বাংলা ও ইংরেজি উভয় keyword দিন। যেমন: baby dress + বেবি ড্রেস।</p>
+          </div>
+
+          <!-- Canonical URL -->
+          <div class="form-group">
+            <label class="form-label"><i class="fas fa-link" style="color:var(--success);margin-right:6px;"></i>Canonical URL <span style="font-size:11px;color:var(--text-muted);">(ঐচ্ছিক)</span></label>
+            <input type="text" class="form-control" id="productSeoCanonical" placeholder="https://yourdomain.com/product/...">
+          </div>
+
+          <!-- Open Graph Image -->
+          <div class="form-group">
+            <label class="form-label"><i class="fab fa-facebook" style="color:#1d4ed8;margin-right:6px;"></i>OG Image URL <span style="font-size:11px;color:var(--text-muted);">(Facebook/Social Share)</span></label>
+            <input type="text" class="form-control" id="productSeoOgImage" placeholder="ফাঁকা রাখলে প্রথম পণ্যের ছবি ব্যবহার হবে">
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px;">ফেসবুক/হোয়াটসঅ্যাপে শেয়ার করলে এই ছবি দেখাবে।</p>
+          </div>
+
+          <!-- Structured Data Preview -->
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label"><i class="fas fa-code" style="color:var(--primary);margin-right:6px;"></i>Structured Data (JSON-LD) Preview</label>
+            <div style="background:#1e1b4b;border-radius:10px;padding:14px;font-family:monospace;font-size:11px;color:#a5b4fc;line-height:1.6;max-height:200px;overflow-y:auto;" id="seoJsonLdPreview">
+              <span style="color:#6b7280;">// পণ্যের তথ্য দিলে এখানে Schema.org structured data দেখাবে</span>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:5px;"><i class="fas fa-info-circle"></i> এই JSON-LD ডেটা গুগলকে পণ্যটি সম্পর্কে সঠিক তথ্য দেয় — Rich Snippet তৈরি করে।</p>
+          </div>
+
+          <!-- Google Preview -->
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label"><i class="fab fa-google" style="color:#ea4335;margin-right:6px;"></i>Google Search Preview</label>
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;" id="googlePreviewBox">
+              <div style="font-size:11px;color:#006621;margin-bottom:3px;" id="gpUrl">familyfashionhub.com › product › ...</div>
+              <div style="font-size:17px;color:#1a0dab;font-weight:500;margin-bottom:4px;font-family:Arial,sans-serif;" id="gpTitle">পণ্যের নাম লিখলে এখানে preview দেখাবে</div>
+              <div style="font-size:13px;color:#4d5156;font-family:Arial,sans-serif;line-height:1.5;" id="gpDesc">SEO description লিখলে এখানে দেখাবে...</div>
+            </div>
+          </div>
+
+          <!-- SEO Tips -->
+          <div class="form-group" style="grid-column:1/-1;">
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;">
+              <p style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:10px;"><i class="fas fa-lightbulb"></i> SEO টিপস — Family Fashion Hub</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div style="font-size:12px;color:#78350f;line-height:1.6;">
+                  <p style="font-weight:600;margin-bottom:4px;">✅ ভালো SEO Title:</p>
+                  <p style="background:#fef3c7;padding:5px 8px;border-radius:6px;font-size:11px;">Baby Cotton Dress 0-6M | Family Fashion Hub Bangladesh</p>
+                </div>
+                <div style="font-size:12px;color:#78350f;line-height:1.6;">
+                  <p style="font-weight:600;margin-bottom:4px;">✅ বাংলা + ইংরেজি Keywords:</p>
+                  <p style="background:#fef3c7;padding:5px 8px;border-radius:6px;font-size:11px;">baby dress bd, শিশু পোশাক, বেবি ড্রেস বাংলাদেশ</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
-    <div class="modal-footer">
       <button class="btn btn-light" onclick="closeModal('productModal')">বাতিল</button>
       <button class="btn btn-primary" id="saveProductBtn" onclick="saveProduct()"><i class="fas fa-save"></i> সেভ করুন</button>
     </div>
@@ -2099,6 +2201,14 @@ function openProductModal(product = null) {
   // ডেলিভারি ফিল্ড
   document.getElementById('productDeliveryInfo').value = '';
   document.getElementById('productReturnPolicy').value = '';
+  // SEO ফিল্ড
+  document.getElementById('productSeoTitle').value = '';
+  document.getElementById('productSeoDescription').value = '';
+  document.getElementById('productSeoKeywords').value = '';
+  document.getElementById('productSeoCanonical').value = '';
+  document.getElementById('productSeoOgImage').value = '';
+  updateSeoCharCount();
+  updateSeoPreview();
 
   document.getElementById('productModalTitle').textContent = 'নতুন পণ্য যোগ করুন';
   // প্রথম ট্যাবে ফিরে যাও
@@ -2156,6 +2266,14 @@ async function editProduct(id) {
   // ডেলিভারি ফিল্ড
   document.getElementById('productDeliveryInfo').value = p.deliveryInfo || '';
   document.getElementById('productReturnPolicy').value = p.returnPolicy || '';
+  // SEO ফিল্ড
+  document.getElementById('productSeoTitle').value = p.seoTitle || '';
+  document.getElementById('productSeoDescription').value = p.seoDescription || '';
+  document.getElementById('productSeoKeywords').value = (p.seoKeywords || []).join(', ');
+  document.getElementById('productSeoCanonical').value = p.seoCanonical || '';
+  document.getElementById('productSeoOgImage').value = p.seoOgImage || '';
+  updateSeoCharCount();
+  updateSeoPreview();
 
   document.getElementById('productModalTitle').textContent = 'পণ্য সম্পাদনা করুন';
   switchProdTab('basic', document.querySelector('.prod-tab-btn'));
@@ -2198,6 +2316,12 @@ async function saveProduct() {
   // ডেলিভারি
   form.append('deliveryInfo', document.getElementById('productDeliveryInfo').value);
   form.append('returnPolicy', document.getElementById('productReturnPolicy').value);
+  // SEO fields
+  form.append('seoTitle', document.getElementById('productSeoTitle').value || '');
+  form.append('seoDescription', document.getElementById('productSeoDescription').value || '');
+  form.append('seoKeywords', document.getElementById('productSeoKeywords').value || '');
+  form.append('seoCanonical', document.getElementById('productSeoCanonical').value || '');
+  form.append('seoOgImage', document.getElementById('productSeoOgImage').value || '');
 
   // Use pending files from drag-drop system
   for (const f of pendingImageFiles) form.append('images', f);
@@ -4576,6 +4700,328 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ===================================================================
+// ===== SEO AUTO-GENERATOR SYSTEM =====
+// ===================================================================
+
+// SEO character count updater
+function updateSeoCharCount() {
+  const title = document.getElementById('productSeoTitle');
+  const desc  = document.getElementById('productSeoDescription');
+  if (!title || !desc) return;
+
+  const tLen = title.value.length;
+  const dLen = desc.value.length;
+
+  const tCountEl = document.getElementById('seoTitleCount');
+  const dCountEl = document.getElementById('seoDescCount');
+  const tFill    = document.getElementById('seoTitleBarFill');
+  const dFill    = document.getElementById('seoDescBarFill');
+
+  if (tCountEl) {
+    tCountEl.textContent = tLen + '/60 অক্ষর';
+    tCountEl.style.color = tLen > 60 ? '#ef4444' : tLen >= 50 ? '#10b981' : '#6b7280';
+  }
+  if (dCountEl) {
+    dCountEl.textContent = dLen + '/160 অক্ষর';
+    dCountEl.style.color = dLen > 160 ? '#ef4444' : dLen >= 120 ? '#10b981' : '#6b7280';
+  }
+  if (tFill) {
+    const pct = Math.min(100, Math.round((tLen / 60) * 100));
+    tFill.style.width = pct + '%';
+    tFill.style.background = tLen > 60 ? '#ef4444' : tLen >= 50 ? '#10b981' : '#f59e0b';
+  }
+  if (dFill) {
+    const pct = Math.min(100, Math.round((dLen / 160) * 100));
+    dFill.style.width = pct + '%';
+    dFill.style.background = dLen > 160 ? '#ef4444' : dLen >= 120 ? '#10b981' : '#3b82f6';
+  }
+  updateSeoPreview();
+}
+
+// Google preview updater
+function updateSeoPreview() {
+  const name    = (document.getElementById('productName')?.value || '').trim();
+  const seoT    = (document.getElementById('productSeoTitle')?.value || '').trim();
+  const seoD    = (document.getElementById('productSeoDescription')?.value || '').trim();
+  const cat     = (document.getElementById('productCategory')?.value || '');
+  const FURL    = FRONTEND_URL ? FRONTEND_URL.replace(/^https?:\/\//, '').replace(/\/$/, '') : 'familyfashionhub.com';
+
+  const gpTitle = document.getElementById('gpTitle');
+  const gpDesc  = document.getElementById('gpDesc');
+  const gpUrl   = document.getElementById('gpUrl');
+
+  if (gpTitle) gpTitle.textContent = seoT || name || 'পণ্যের নাম লিখলে এখানে preview দেখাবে';
+  if (gpDesc)  gpDesc.textContent  = seoD ? (seoD.length > 155 ? seoD.slice(0,155) + '...' : seoD) : 'SEO description লিখলে এখানে দেখাবে...';
+  if (gpUrl)   gpUrl.textContent   = FURL + ' › product › ' + (name.toLowerCase().replace(/\s+/g,'-').slice(0,30) || '...');
+
+  // JSON-LD preview
+  updateJsonLdPreview(name, seoT, seoD, cat);
+}
+
+// JSON-LD structured data preview
+function updateJsonLdPreview(name, seoTitle, seoDesc, category) {
+  const previewEl = document.getElementById('seoJsonLdPreview');
+  if (!previewEl) return;
+  if (!name) {
+    previewEl.innerHTML = '<span style="color:#6b7280;">// পণ্যের তথ্য দিলে এখানে Schema.org structured data দেখাবে</span>';
+    return;
+  }
+  const price = document.getElementById('productPrice')?.value || '0';
+  const desc  = seoDesc || document.getElementById('productDescription')?.value?.trim() || '';
+  const img   = document.getElementById('productSeoOgImage')?.value?.trim() || '';
+  const FURL  = FRONTEND_URL ? FRONTEND_URL.replace(/\/$/, '') : 'https://familyfashionhub.com';
+  const slug  = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  const siteName = 'Family Fashion Hub';
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": seoTitle || name,
+    "description": desc.slice(0, 200),
+    "image": img || `${FURL}/images/${slug}.jpg`,
+    "brand": { "@type": "Brand", "name": siteName },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "BDT",
+      "price": price,
+      "availability": "https://schema.org/InStock",
+      "url": `${FURL}/product/${slug}`,
+      "seller": { "@type": "Organization", "name": siteName }
+    },
+    "inProductGroupWithID": category || "general"
+  };
+
+  const colorized = JSON.stringify(jsonLd, null, 2)
+    .replace(/"([^"]+)":/g, '<span style="color:#93c5fd;">"$1"</span>:')
+    .replace(/: "([^"]+)"/g, ': <span style="color:#86efac;">"$1"</span>')
+    .replace(/: (\d+)/g, ': <span style="color:#fcd34d;">$1</span>');
+  previewEl.innerHTML = colorized;
+}
+
+// ===== AUTO-SEO GENERATOR =====
+function autoGenerateSEO() {
+  const name        = (document.getElementById('productName')?.value || '').trim();
+  const desc        = (document.getElementById('productDescription')?.value || '').trim();
+  const highlights  = (document.getElementById('productHighlights')?.value || '').trim();
+  const category    = (document.getElementById('productCategory')?.value || '').trim();
+  const subcategory = (document.getElementById('productSubcategory')?.value || '').trim();
+  const price       = (document.getElementById('productPrice')?.value || '').trim();
+  const material    = (document.getElementById('productMaterial')?.value || '').trim();
+  const ageGroup    = (document.getElementById('productAgeGroup')?.value || '').trim();
+  const sizes       = (document.getElementById('productSizes')?.value || '').trim();
+  const tagsRaw     = (document.getElementById('productTags')?.value || '').trim();
+  const FURL        = FRONTEND_URL ? FRONTEND_URL.replace(/\/$/, '') : 'https://familyfashionhub.com';
+  const siteName    = 'Family Fashion Hub';
+
+  if (!name) {
+    toast('আগে পণ্যের নাম দিন — তারপর Auto SEO চালান', 'error');
+    return;
+  }
+
+  // Category label lookup
+  const catObj = allCategories.find(c => c.value === category);
+  const catLabel_ = catObj ? catObj.label.replace(/^[^\w\s]+/, '').trim() : category;
+  const subObj = catObj ? (catObj.subcategories || []).find(s => s.value === subcategory) : null;
+  const subLabel_ = subObj ? subObj.label : subcategory;
+
+  // ---- SEO Title (বাংলা + ইংরেজি, ৫০-৬০ অক্ষর লক্ষ্য) ----
+  const bdSuffix = 'Bangladesh';
+  let seoTitle = name;
+  if (ageGroup) seoTitle += ` ${ageGroup}`;
+  if (material && material.length < 20) seoTitle += ` - ${material}`;
+  seoTitle += ` | ${siteName}`;
+  if (seoTitle.length < 48) seoTitle = `${name} Online BD | ${siteName}`;
+  if (seoTitle.length > 65) seoTitle = `${name.slice(0, 42)} | ${siteName}`;
+
+  // ---- SEO Description (১৪০-১৬০ অক্ষর লক্ষ্য) ----
+  const hlList = highlights ? highlights.split(',').map(h => h.trim()).slice(0, 3).join(', ') : '';
+  let seoDesc = '';
+  if (desc && desc.length >= 30) {
+    seoDesc = desc.slice(0, 100);
+    if (hlList) seoDesc += '. ' + hlList;
+    seoDesc += `. দ্রুত ডেলিভারি পুরো বাংলাদেশে। ${siteName} থেকে অর্ডার করুন।`;
+  } else {
+    seoDesc = `${name}`;
+    if (catLabel_) seoDesc += ` — ${catLabel_}`;
+    if (subLabel_) seoDesc += ` (${subLabel_})`;
+    if (hlList)    seoDesc += `. ${hlList}`;
+    if (price)     seoDesc += `. মাত্র ৳${price} থেকে শুরু।`;
+    seoDesc += ` বাংলাদেশে দ্রুত ডেলিভারি। ${siteName} থেকে এখনই অর্ডার করুন।`;
+  }
+  if (seoDesc.length > 165) seoDesc = seoDesc.slice(0, 162) + '...';
+
+  // ---- SEO Keywords (বাংলা + ইংরেজি mix) ----
+  const kwSet = new Set();
+  // পণ্যের নাম ভেঙ্গে ভেঙ্গে
+  name.split(/\s+/).forEach(w => { if (w.length > 2) kwSet.add(w.toLowerCase()); });
+  // Bengali variants
+  kwSet.add(name);
+  kwSet.add(name + ' bangladesh');
+  kwSet.add(name + ' bd');
+  kwSet.add(name + ' online');
+  kwSet.add(name + ' price bangladesh');
+  kwSet.add(name + ' buy online bd');
+  // Category keywords
+  if (catLabel_) {
+    kwSet.add(catLabel_);
+    kwSet.add(catLabel_ + ' bangladesh');
+    kwSet.add(catLabel_ + ' bd');
+  }
+  if (subLabel_ && subLabel_ !== subcategory) {
+    kwSet.add(subLabel_);
+    kwSet.add(subLabel_ + ' price');
+  }
+  // Common baby/fashion keywords
+  if (category.includes('baby') || category.includes('dress') || name.toLowerCase().includes('baby')) {
+    kwSet.add('baby dress bangladesh');
+    kwSet.add('বেবি ড্রেস বাংলাদেশ');
+    kwSet.add('শিশু পোশাক');
+    kwSet.add('baby clothes bd');
+  }
+  if (ageGroup) kwSet.add(ageGroup);
+  if (material) kwSet.add(material.split(/[\s,]+/)[0] + ' dress');
+  // Manual tags থেকেও নাও
+  if (tagsRaw) tagsRaw.split(',').map(t => t.trim()).forEach(t => t && kwSet.add(t));
+  // Sizes
+  if (sizes) sizes.split(',').map(s => s.trim()).forEach(s => s && kwSet.add(name + ' size ' + s));
+  // Site brand keywords
+  kwSet.add('family fashion hub');
+  kwSet.add('familyfashionhub');
+  kwSet.add(siteName + ' ' + catLabel_);
+
+  const keywords = [...kwSet].slice(0, 20).join(', ');
+
+  // ---- Canonical URL ----
+  const slug = name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+  const canonicalUrl = FURL + '/product/' + slug;
+
+  // ---- Apply to fields ----
+  document.getElementById('productSeoTitle').value       = seoTitle;
+  document.getElementById('productSeoDescription').value = seoDesc;
+  document.getElementById('productSeoKeywords').value    = keywords;
+  document.getElementById('productSeoCanonical').value   = canonicalUrl;
+
+  updateSeoCharCount();
+  updateSeoPreview();
+
+  // SEO ট্যাবে নিয়ে যাও
+  const seoTabBtn = [...document.querySelectorAll('.prod-tab-btn')].find(b => b.textContent.includes('SEO'));
+  if (seoTabBtn) switchProdTab('seo', seoTabBtn);
+
+  toast('✅ SEO স্বয়ংক্রিয়ভাবে তৈরি হয়েছে! প্রয়োজনে সম্পাদনা করুন।', 'success');
+}
+
+// productName field change হলে preview update করো
+document.addEventListener('DOMContentLoaded', () => {
+  const pNameEl = document.getElementById('productName');
+  if (pNameEl) {
+    pNameEl.addEventListener('input', () => {
+      // SEO title খালি থাকলে auto-preview আপডেট করো
+      const seoTitle = document.getElementById('productSeoTitle')?.value || '';
+      if (!seoTitle) {
+        const n = pNameEl.value.trim();
+        if (n) {
+          const gpTitle = document.getElementById('gpTitle');
+          if (gpTitle) gpTitle.textContent = n + ' | Family Fashion Hub';
+        }
+      }
+      updateSeoPreview();
+    });
+  }
+});
+
+// ===================================================================
+// ===== FRONTEND SEO INJECTION (ফ্রন্টএন্ড পেজের জন্য) =====
+// SEO সিস্টেমের ব্যাখ্যা:
+// - প্রতিটি পণ্যে seoTitle, seoDescription, seoKeywords সংরক্ষিত থাকে
+// - ফ্রন্টএন্ড পণ্য পেজে এই ডেটা দিয়ে dynamic meta tag inject করতে হবে
+// - নিচের function ফ্রন্টএন্ডের product.html / app.js-এ ব্যবহার করুন
+// ===================================================================
+
+/*
+  === ফ্রন্টএন্ডে ব্যবহারের জন্য নিচের কোড product page-এ যোগ করুন ===
+
+  function injectProductSEO(product) {
+    const siteName = 'Family Fashion Hub';
+    const title = product.seoTitle || product.name + ' | ' + siteName;
+    const desc  = product.seoDescription || product.description?.slice(0,160) || '';
+    const img   = product.seoOgImage || product.img || '';
+    const url   = window.location.href;
+    const kw    = Array.isArray(product.seoKeywords)
+                    ? product.seoKeywords.join(', ')
+                    : (product.seoKeywords || '');
+
+    document.title = title;
+    setMeta('description', desc);
+    setMeta('keywords', kw);
+    setMeta('og:title', title, true);
+    setMeta('og:description', desc, true);
+    setMeta('og:image', img, true);
+    setMeta('og:url', url, true);
+    setMeta('og:type', 'product', true);
+    setMeta('og:site_name', siteName, true);
+    setMeta('twitter:card', 'summary_large_image', true);
+    setMeta('twitter:title', title, true);
+    setMeta('twitter:description', desc, true);
+    setMeta('twitter:image', img, true);
+
+    // Canonical
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = product.seoCanonical || url;
+
+    // JSON-LD Structured Data
+    injectJsonLd(product, title, desc, img, url, siteName);
+  }
+
+  function setMeta(name, content, isProperty = false) {
+    if (!content) return;
+    const attr = isProperty ? 'property' : 'name';
+    let el = document.querySelector(`meta[${attr}="${name}"]`);
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(attr, name);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
+  }
+
+  function injectJsonLd(product, title, desc, img, url, siteName) {
+    const existing = document.getElementById('product-jsonld');
+    if (existing) existing.remove();
+    const script = document.createElement('script');
+    script.id = 'product-jsonld';
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": title,
+      "description": desc,
+      "image": img,
+      "url": url,
+      "brand": { "@type": "Brand", "name": siteName },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "BDT",
+        "price": String(product.price || 0),
+        "availability": product.soldOut
+          ? "https://schema.org/OutOfStock"
+          : "https://schema.org/InStock",
+        "url": url,
+        "seller": { "@type": "Organization", "name": siteName, "url": "https://familyfashionhub.com" }
+      },
+      ...(product.sizes?.length ? { "size": product.sizes.join(', ') } : {}),
+      ...(product.material ? { "material": product.material } : {}),
+    });
+    document.head.appendChild(script);
+  }
+*/
 
 </script>
 </body>
