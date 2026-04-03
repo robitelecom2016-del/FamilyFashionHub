@@ -229,7 +229,7 @@
     @media (min-width: 768px) {
       #homePage { margin-top: 120px !important; }
       #categoryPage { margin-top: 120px !important; }
-      #productDetailPage { margin-top: 0px !important; }
+      #productDetailPage { margin-top: 120px !important; }
       #signInBreadcrumbPage { margin-top: 120px !important; }
       #loginPage { margin-top: 120px !important; }
       #registerPage { margin-top: 120px !important; }
@@ -1219,7 +1219,7 @@
         #catMobileHeader { display: block !important; }
         #catMobileHeader > div { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; }
         #catDesktopWrapper { display: none !important; }
-        #catMobileProductArea { display: block; }
+        #catMobileProductArea { display: block !important; }
         #categoryPage { background: #f3f4f6 !important; }
         #catMobileHeader select { font-family: 'Hind Siliguri', 'Poppins', sans-serif; }
       }
@@ -1230,7 +1230,7 @@
       }
     </style>
 
-    <div id="catMobileProductArea" style="padding:10px 10px 16px 10px;display:none;">
+    <div id="catMobileProductArea" style="padding:10px 10px 16px 10px;">
       <div id="catProductGridMobile" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
       <div id="catEmptyStateMobile" style="display:none;text-align:center;padding:60px 20px;background:white;border-radius:12px;margin-top:10px;">
         <div style="font-size:4rem;margin-bottom:16px;">😔</div>
@@ -2135,8 +2135,6 @@
         if (ofs) ofs.style.display = '';
         const dp2 = document.getElementById('dashboardPage');
         if (dp2) { dp2.classList.remove('active'); dp2.classList.add('detail-page'); }
-        const _cmpaHome = document.getElementById('catMobileProductArea');
-        if (_cmpaHome) _cmpaHome.style.display = 'none';
         window.scrollTo({ top: 0 });
       }
       
@@ -2358,9 +2356,6 @@
         if (_ocs) _ocs.style.display = 'none';
         const _ofs = document.getElementById('organicFeatureSection');
         if (_ofs) _ofs.style.display = 'none';
-        // Mobile-এ catMobileProductArea দেখাও
-        const _cmpa2 = document.getElementById('catMobileProductArea');
-        if (_cmpa2 && window.innerWidth < 768) _cmpa2.style.display = 'block';
 
         window.scrollTo({ top: 0 });
 
@@ -2837,8 +2832,6 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         if (_ocs) _ocs.style.display = 'none';
         const _ofs = document.getElementById('organicFeatureSection');
         if (_ofs) _ofs.style.display = 'none';
-        const _cmpa = document.getElementById('catMobileProductArea');
-        if (_cmpa) _cmpa.style.display = 'none';
         window.scrollTo({ top: 0 });
         if (typeof setMobileNavActive === 'function') setMobileNavActive('home');
         detailPageImg.src = product.img;
