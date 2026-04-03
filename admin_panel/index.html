@@ -322,6 +322,47 @@ tr:hover td { background: var(--bg); }
 
 /* Rating display */
 .rating-display span { font-size: 14px; }
+
+/* ===== DAILY REPORT PAGE ===== */
+.daily-report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.daily-stat-card { background: var(--card); border-radius: 14px; padding: 18px 16px; border: 1px solid var(--border); text-align: center; }
+.daily-stat-card .dsc-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 10px; }
+.daily-stat-card .dsc-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.1; }
+.daily-stat-card .dsc-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+.profit-positive { color: var(--success) !important; }
+.profit-negative { color: var(--danger) !important; }
+
+/* Product detail modal for stock */
+.prod-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 500px) { .prod-detail-grid { grid-template-columns: 1fr; } }
+
+/* Order notification badge */
+.notif-dot { width: 10px; height: 10px; background: var(--danger); border-radius: 50%; animation: pulse 1.2s infinite; display: inline-block; margin-left: 4px; }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.7; } }
+
+/* ===== STOCK TABLE ===== */
+.stock-progress-bar { height: 6px; border-radius: 3px; background: #e5e7eb; margin-top: 4px; overflow: hidden; }
+.stock-progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+
+/* ===== MOBILE RESPONSIVE IMPROVEMENTS ===== */
+@media (max-width: 768px) {
+  .daily-report-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar { padding: 12px 16px; }
+  .topbar-time { display: none; }
+  .stat-card { padding: 14px 12px; gap: 10px; }
+  .stat-icon { width: 42px; height: 42px; font-size: 18px; }
+  .stat-info p { font-size: 20px; }
+  .dashboard-two-col { grid-template-columns: 1fr !important; }
+  #deliveryLocationCards { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 480px) {
+  .daily-report-grid { grid-template-columns: 1fr 1fr; }
+  .content-area { padding: 12px; }
+  .card-header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+  .card-body { padding: 14px; }
+  .topbar-title { font-size: 15px; }
+  th, td { padding: 9px 10px; font-size: 12px; }
+}
 </style>
 </head>
 <body>
@@ -366,7 +407,9 @@ tr:hover td { background: var(--bg); }
     <div class="nav-label">প্রধান</div>
     <button class="nav-item active" onclick="showPage('dashboard')"><i class="fas fa-chart-pie"></i> ড্যাশবোর্ড</button>
     <div class="nav-label">পরিচালনা</div>
+    <button class="nav-item" onclick="showPage('daily-report')"><i class="fas fa-calendar-day"></i> দৈনিক রিপোর্ট <span class="badge" id="dailyReportBadge" style="display:none;background:#10b981;">নতুন</span></button>
     <button class="nav-item" onclick="showPage('products')"><i class="fas fa-tshirt"></i> পণ্য সমূহ</button>
+    <button class="nav-item" onclick="showPage('stock')"><i class="fas fa-boxes"></i> স্টক ম্যানেজমেন্ট</button>
     <button class="nav-item" onclick="showPage('orders')"><i class="fas fa-shopping-bag"></i> অর্ডার সমূহ <span class="badge" id="pendingBadge" style="display:none">0</span></button>
     <button class="nav-item" onclick="showPage('orders');setTimeout(()=>{document.getElementById('phoneTrackInput').focus();},200)"><i class="fas fa-phone-alt"></i> গ্রাহক ট্র্যাকার</button>
     <button class="nav-item" onclick="showPage('reviews')"><i class="fas fa-star"></i> রিভিউ সমূহ</button>
@@ -441,7 +484,7 @@ tr:hover td { background: var(--bg); }
       </div>
 
       <!-- Recent Orders & Reviews -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;" id="dashboardGrid">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;" id="dashboardGrid" class="dashboard-two-col">
         <div class="card">
           <div class="card-header">
             <h3><i class="fas fa-shopping-bag" style="color:var(--primary)"></i> সাম্প্রতিক অর্ডার</h3>
@@ -459,7 +502,7 @@ tr:hover td { background: var(--bg); }
       </div>
 
       <!-- Top Products & Pending Approvals -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;" class="dashboard-two-col">
         <div class="card">
           <div class="card-header">
             <h3><i class="fas fa-fire" style="color:var(--danger)"></i> রিভিউ অনুমোদন বাকি</h3>
@@ -525,8 +568,87 @@ tr:hover td { background: var(--bg); }
             <option value="delivered">ডেলিভার্ড</option>
             <option value="cancelled">বাতিল</option>
           </select>
+          <select class="form-control form-control-sm" id="orderLocationFilter" onchange="filterOrders()" style="width:auto;">
+            <option value="all">সব লোকেশন</option>
+            <option value="inside">চট্টগ্রামের ভিতরে</option>
+            <option value="outside">চট্টগ্রামের বাইরে</option>
+          </select>
         </div>
         <div id="ordersTable"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- DAILY REPORT -->
+    <div class="page-section" id="page-daily-report">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <div class="card" style="flex:1;min-width:220px;">
+          <div class="card-body" style="padding:12px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <label style="font-size:13px;font-weight:600;white-space:nowrap;"><i class="fas fa-calendar" style="color:var(--primary);margin-right:6px;"></i>তারিখ:</label>
+              <input type="date" class="form-control form-control-sm" id="dailyReportDate" style="max-width:170px;" onchange="loadDailyReport()">
+              <button class="btn btn-primary btn-sm" onclick="setTodayDate()"><i class="fas fa-calendar-day"></i> আজ</button>
+              <button class="btn btn-outline btn-sm" onclick="loadDailyReport()"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="daily-report-grid">
+        <div class="daily-stat-card"><div class="dsc-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-boxes"></i></div><div class="dsc-val" id="drTotalStockIn">—</div><div class="dsc-label">স্টকে ঢুকেছে</div></div>
+        <div class="daily-stat-card"><div class="dsc-icon" style="background:#d1fae5;color:#10b981;"><i class="fas fa-shopping-cart"></i></div><div class="dsc-val" id="drTotalSold">—</div><div class="dsc-label">বিক্রি হয়েছে</div></div>
+        <div class="daily-stat-card"><div class="dsc-icon" style="background:#dbeafe;color:#3b82f6;"><i class="fas fa-warehouse"></i></div><div class="dsc-val" id="drTotalRemaining">—</div><div class="dsc-label">স্টকে অবশিষ্ট</div></div>
+        <div class="daily-stat-card"><div class="dsc-icon" style="background:#fef3c7;color:#f59e0b;"><i class="fas fa-coins"></i></div><div class="dsc-val" id="drTotalCost">—</div><div class="dsc-label">মোট খরচ (৳)</div></div>
+        <div class="daily-stat-card"><div class="dsc-icon" style="background:#d1fae5;color:#10b981;"><i class="fas fa-money-bill-wave"></i></div><div class="dsc-val" id="drTotalRevenue">—</div><div class="dsc-label">মোট বিক্রয় (৳)</div></div>
+        <div class="daily-stat-card" id="drProfitCard"><div class="dsc-icon" id="drProfitIcon" style="background:#d1fae5;color:#10b981;"><i class="fas fa-chart-line"></i></div><div class="dsc-val" id="drTotalProfit">—</div><div class="dsc-label" id="drProfitLabel">মোট লাভ/ক্ষতি (৳)</div></div>
+      </div>
+
+      <!-- Delivery Location Breakdown -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="deliveryLocationCards">
+        <div class="card">
+          <div class="card-header"><h3><i class="fas fa-city" style="color:var(--success)"></i> চট্টগ্রামের ভিতরে</h3></div>
+          <div class="card-body" style="padding:14px 16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:13px;color:var(--text-muted);">অর্ডার:</span><strong id="drCtgInOrders">—</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:13px;color:var(--text-muted);">বিক্রয়:</span><strong style="color:var(--success);" id="drCtgInRevenue">—</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3><i class="fas fa-road" style="color:var(--info)"></i> চট্টগ্রামের বাইরে</h3></div>
+          <div class="card-body" style="padding:14px 16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:13px;color:var(--text-muted);">অর্ডার:</span><strong id="drCtgOutOrders">—</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:13px;color:var(--text-muted);">বিক্রয়:</span><strong style="color:var(--info);" id="drCtgOutRevenue">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-table" style="color:var(--primary)"></i> পণ্য ভিত্তিক বিশ্লেষণ</h3>
+          <span style="font-size:11px;color:var(--text-muted);">পণ্যে ক্লিক করলে বিস্তারিত দেখবেন</span>
+        </div>
+        <div id="dailyProductTable"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- STOCK MANAGEMENT -->
+    <div class="page-section" id="page-stock">
+      <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card"><div class="stat-icon purple"><i class="fas fa-cubes"></i></div><div class="stat-info"><p id="stockTotalProducts">—</p><span>মোট পণ্য (ধরন)</span></div></div>
+        <div class="stat-card"><div class="stat-icon green"><i class="fas fa-boxes"></i></div><div class="stat-info"><p id="stockTotalUnits">—</p><span>মোট স্টক (পিস)</span></div></div>
+        <div class="stat-card"><div class="stat-icon amber"><i class="fas fa-shopping-cart"></i></div><div class="stat-info"><p id="stockTotalSold">—</p><span>মোট বিক্রি (অর্ডার থেকে)</span></div></div>
+        <div class="stat-card"><div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-info"><p id="stockLowCount">—</p><span>কম স্টক (≤৫)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-input"><i class="fas fa-search"></i><input type="text" placeholder="পণ্য খুঁজুন..." id="stockSearch" oninput="filterStock()"></div>
+          <select class="form-control form-control-sm" id="stockFilter" onchange="filterStock()" style="width:auto;">
+            <option value="all">সব পণ্য</option>
+            <option value="low">কম স্টক (≤৫)</option>
+            <option value="out">স্টক শেষ</option>
+            <option value="good">পর্যাপ্ত স্টক</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="loadStock()"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
+        </div>
+        <div id="stockTable"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
 
@@ -1164,6 +1286,10 @@ tr:hover td { background: var(--bg); }
             <input type="number" class="form-control" id="productPrice" placeholder="0">
           </div>
           <div class="form-group">
+            <label class="form-label">ক্রয় মূল্য (৳) <span style="font-size:10px;color:var(--text-muted);">(লাভ হিসাবের জন্য)</span></label>
+            <input type="number" class="form-control" id="productBuyPrice" placeholder="0">
+          </div>
+          <div class="form-group">
             <label class="form-label">আগের মূল্য (৳)</label>
             <input type="number" class="form-control" id="productOldPrice" placeholder="0">
           </div>
@@ -1556,6 +1682,22 @@ tr:hover td { background: var(--bg); }
   </div>
 </div>
 
+<!-- ===== PRODUCT DETAIL MODAL (Stock & Profit Analysis) ===== -->
+<div class="modal-overlay" id="productDetailModal">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:16px 16px 0 0;">
+      <h3 style="color:#fff;display:flex;align-items:center;gap:10px;"><i class="fas fa-chart-pie" style="color:#c4b5fd;"></i> <span id="pdmProductName">পণ্যের বিশ্লেষণ</span></h3>
+      <button class="modal-close" onclick="closeModal('productDetailModal')" style="color:#c4b5fd;"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="productDetailModalBody" style="padding:20px;">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('productDetailModal')">বন্ধ করুন</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== ORDER DETAIL MODAL ===== -->
 <div class="modal-overlay" id="orderModal">
   <div class="modal">
@@ -1878,7 +2020,9 @@ function openModal(id) { document.getElementById(id).classList.add('show'); }
 // ===== NAVIGATION =====
 const pageMeta = {
   dashboard: { title: 'ড্যাশবোর্ড', breadcrumb: 'Home / Dashboard' },
+  'daily-report': { title: 'দৈনিক রিপোর্ট', breadcrumb: 'Home / Daily Report' },
   products: { title: 'পণ্য সমূহ', breadcrumb: 'Home / Products' },
+  stock: { title: 'স্টক ম্যানেজমেন্ট', breadcrumb: 'Home / Stock' },
   orders: { title: 'অর্ডার সমূহ', breadcrumb: 'Home / Orders' },
   reviews: { title: 'রিভিউ সমূহ', breadcrumb: 'Home / Reviews' },
   users: { title: 'ব্যবহারকারী', breadcrumb: 'Home / Users' },
@@ -1914,6 +2058,8 @@ function showPage(page) {
   if (page === 'testimonials') loadTestimonialsAdmin();
   if (page === 'collections') loadCollectionsAdmin();
   if (page === 'heroside') loadHeroSideImageAdmin();
+  if (page === 'daily-report') { setTodayDate(); loadDailyReport(); }
+  if (page === 'stock') loadStock();
 }
 
 function toggleSidebar() {
@@ -2090,14 +2236,15 @@ function renderProducts(list) {
   const el = document.getElementById('productsTable');
   if (!list.length) { el.innerHTML = '<div class="empty-state"><i class="fas fa-tshirt"></i><p>কোনো পণ্য নেই</p></div>'; return; }
   el.innerHTML = `<div class="table-wrapper"><table>
-    <thead><tr><th>ছবি</th><th>নাম</th><th>ক্যাটাগরি</th><th>সাব-ক্যাটাগরি</th><th>মূল্য</th><th>স্টক</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+    <thead><tr><th>ছবি</th><th>নাম</th><th>ক্যাটাগরি</th><th>সাব-ক্যাটাগরি</th><th>ক্রয় মূল্য</th><th>বিক্রয় মূল্য</th><th>স্টক</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
     <tbody>${list.map(p => `
       <tr>
         <td><img src="${p.img || 'https://placehold.co/46x46?text=?'}" class="product-img" onerror="this.src='https://placehold.co/46x46?text=?'"></td>
         <td><p style="font-weight:600;font-size:13px;">${p.name}</p><p style="font-size:11px;color:var(--text-muted);">${p.sku || p._id.slice(-6)}</p></td>
         <td><span class="badge badge-purple" style="cursor:pointer;" onclick="quickFilterByCat('${p.category}')" title="এই ক্যাটাগরি ফিল্টার করুন">${catLabel(p.category)}</span></td>
         <td>${p.subcategory ? `<span class="badge badge-gray" style="font-size:11px;cursor:pointer;" onclick="quickFilterBySub('${p.category}','${p.subcategory}')" title="এই সাব-ক্যাটাগরি ফিল্টার করুন">${subCatLabel(p.category, p.subcategory)}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
-        <td><p style="font-weight:700;color:var(--primary);">৳${p.price}</p>${p.oldPrice ? `<p style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">৳${p.oldPrice}</p>` : ''}</td>
+        <td style="color:var(--text-muted);font-size:12px;">${p.buyPrice ? '৳'+p.buyPrice : '—'}</td>
+        <td><p style="font-weight:700;color:var(--primary);">৳${p.price}</p>${p.oldPrice ? `<p style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">৳${p.oldPrice}</p>` : ''}${p.buyPrice ? `<p style="font-size:10px;color:var(--success);font-weight:600;">লাভ: ৳${p.price - p.buyPrice}</p>` : ''}</td>
         <td><span style="font-size:13px;font-weight:600;color:${(p.stock||0)===0?'var(--danger)':'var(--success)'}">${p.stock||0}</span></td>
         <td style="display:flex;flex-direction:column;gap:4px;">
           ${p.onSale ? '<span class="badge badge-success">সেলে</span>' : ''}
@@ -2106,8 +2253,9 @@ function renderProducts(list) {
           ${!p.onSale && !p.soldOut && !p.featured ? '<span class="badge badge-gray">সাধারণ</span>' : ''}
         </td>
         <td>
-          <button class="btn btn-xs btn-info" onclick="editProduct('${p._id}')"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-xs btn-danger" style="margin-left:4px;" onclick="deleteProduct('${p._id}','${p.name}')"><i class="fas fa-trash"></i></button>
+          <button class="btn btn-xs btn-primary" onclick="showProductDetailModal('${p._id}','${p.name.replace(/'/g,'\\\'')}')" title="বিশ্লেষণ"><i class="fas fa-chart-bar"></i></button>
+          <button class="btn btn-xs btn-info" onclick="editProduct('${p._id}')" style="margin-left:3px;"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-xs btn-danger" style="margin-left:3px;" onclick="deleteProduct('${p._id}','${p.name}')"><i class="fas fa-trash"></i></button>
         </td>
       </tr>`).join('')}
     </tbody></table></div>`;
@@ -2178,6 +2326,7 @@ function openProductModal(product = null) {
   document.getElementById('productSaving').value = '';
   document.getElementById('productStock').value = '';
   document.getElementById('productSku').value = '';
+  if (document.getElementById('productBuyPrice')) document.getElementById('productBuyPrice').value = '';
   document.getElementById('productCategory').value = '';
   document.getElementById('productSubcategory').innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
   document.getElementById('productDescription').value = '';
@@ -2222,6 +2371,7 @@ async function editProduct(id) {
   document.getElementById('productId').value = p._id;
   document.getElementById('productName').value = p.name;
   document.getElementById('productPrice').value = p.price;
+  if (document.getElementById('productBuyPrice')) document.getElementById('productBuyPrice').value = p.buyPrice || '';
   document.getElementById('productOldPrice').value = p.oldPrice || '';
   document.getElementById('productSaving').value = p.saving || '';
   document.getElementById('productStock').value = p.stock || '';
@@ -2294,6 +2444,7 @@ async function saveProduct() {
   const form = new FormData();
   form.append('name', name);
   form.append('price', price);
+  form.append('buyPrice', document.getElementById('productBuyPrice')?.value || 0);
   form.append('oldPrice', document.getElementById('productOldPrice').value || 0);
   form.append('saving', document.getElementById('productSaving').value || 0);
   form.append('stock', document.getElementById('productStock').value || 0);
@@ -2411,9 +2562,10 @@ function renderOrders(list) {
   const el = document.getElementById('ordersTable');
   if (!list.length) { el.innerHTML = '<div class="empty-state"><i class="fas fa-shopping-bag"></i><p>কোনো অর্ডার নেই</p></div>'; return; }
   el.innerHTML = `<div class="table-wrapper"><table>
-    <thead><tr><th>অর্ডার আইডি</th><th>গ্রাহক</th><th>ফোন</th><th>আইটেম</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead>
+    <thead><tr><th>অর্ডার আইডি</th><th>গ্রাহক</th><th>ফোন</th><th>লোকেশন</th><th>আইটেম</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead>
     <tbody>${list.map(o => {
       const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
+      const loc = getOrderLocation(o);
       return `
       <tr>
         <td>
@@ -2421,6 +2573,7 @@ function renderOrders(list) {
         </td>
         <td><p style="font-weight:600;font-size:13px;">${o.customerName}</p></td>
         <td>${o.phone}</td>
+        <td><span class="badge ${loc === 'inside' ? 'badge-success' : 'badge-info'}" style="font-size:10px;">${loc === 'inside' ? '🏙️ CTG ভিতরে' : '🛣️ CTG বাইরে'}</span></td>
         <td>${(o.items||[]).length} টি</td>
         <td style="font-weight:700;color:var(--primary);">৳${o.total}</td>
         <td>
@@ -2440,11 +2593,14 @@ function renderOrders(list) {
 
 function filterOrders() {
   const q = document.getElementById('orderSearch').value.toLowerCase().replace(/^#/,'');
+  const loc = document.getElementById('orderLocationFilter')?.value || 'all';
   const filtered = allOrders.filter(o => {
     const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
-    return o.customerName.toLowerCase().includes(q) ||
-           o.phone.includes(q) ||
-           sid.toLowerCase().includes(q);
+    const matchQ = !q || o.customerName.toLowerCase().includes(q) ||
+           o.phone.includes(q) || sid.toLowerCase().includes(q);
+    const orderLoc = getOrderLocation(o);
+    const matchLoc = loc === 'all' || orderLoc === loc;
+    return matchQ && matchLoc;
   });
   renderOrders(filtered);
 }
@@ -2510,7 +2666,10 @@ async function viewOrder(id) {
         </p>
       </div>
       <div style="grid-column:1/-1;"><p style="font-size:12px;color:var(--text-muted);">ঠিকানা</p><p>${o.address}</p></div>
-      ${o.note ? `<div style="grid-column:1/-1;"><p style="font-size:12px;color:var(--text-muted);">নোট</p><p>${o.note}</p></div>` : ''}
+      <div><p style="font-size:12px;color:var(--text-muted);">ডেলিভারি লোকেশন</p>
+        <span class="badge ${getOrderLocation(o) === 'inside' ? 'badge-success' : 'badge-info'}" style="font-size:12px;">${getOrderLocation(o) === 'inside' ? '🏙️ চট্টগ্রামের ভিতরে' : '🛣️ চট্টগ্রামের বাইরে'}</span>
+      </div>
+      ${o.note ? `<div><p style="font-size:12px;color:var(--text-muted);">নোট</p><p>${o.note}</p></div>` : ''}
     </div>
     <div class="table-wrapper" style="margin-bottom:14px;"><table>
       <thead><tr><th>পণ্য</th><th>মূল্য</th><th>পরিমাণ</th><th>মোট</th></tr></thead>
@@ -2752,6 +2911,17 @@ function saveFrontendUrl() {
 function statusLabel(s) {
   return { pending: 'পেন্ডিং', processing: 'প্রসেসিং', shipped: 'শিপড', delivered: 'ডেলিভার্ড', cancelled: 'বাতিল' }[s] || s;
 }
+
+// Detect delivery location (inside/outside Chittagong)
+function getOrderLocation(o) {
+  // Check explicit field first
+  if (o.deliveryLocation) return o.deliveryLocation;
+  // Heuristic: check address field for Chittagong keywords
+  const addr = (o.address || o.city || o.district || '').toLowerCase();
+  const ctgTerms = ['চট্টগ্রাম','চিটাগং','chittagong','ctg','chattogram'];
+  const isCtg = ctgTerms.some(t => addr.includes(t));
+  return isCtg ? 'inside' : 'outside';
+}
 function catLabel(c) {
   const found = allCategories.find(cat => cat.value === c);
   return found ? found.label : c;
@@ -2764,6 +2934,417 @@ function subCatLabel(catVal, subVal) {
   const sub = (cat.subcategories || []).find(s => s.value === subVal);
   return sub ? sub.label : subVal;
 }
+
+// ===== DAILY REPORT =====
+function setTodayDate() {
+  const today = new Date().toISOString().split('T')[0];
+  const el = document.getElementById('dailyReportDate');
+  if (el) el.value = today;
+}
+
+async function loadDailyReport() {
+  const dateEl = document.getElementById('dailyReportDate');
+  const date = dateEl ? dateEl.value : new Date().toISOString().split('T')[0];
+  if (!date) { toast('তারিখ বেছে নিন', 'error'); return; }
+
+  // Show loading in product table
+  const ptEl = document.getElementById('dailyProductTable');
+  if (ptEl) ptEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    // Load products and orders simultaneously
+    const [prodData, orderData] = await Promise.all([
+      api('/products?limit=500'),
+      api('/admin/orders?limit=2000')
+    ]);
+
+    const products = prodData.success ? prodData.data : [];
+    const allOrdersData = orderData.success ? orderData.data : [];
+
+    // Filter orders for selected date
+    const selectedDate = new Date(date);
+    const dayOrders = allOrdersData.filter(o => {
+      const od = new Date(o.createdAt);
+      return od.getFullYear() === selectedDate.getFullYear() &&
+             od.getMonth() === selectedDate.getMonth() &&
+             od.getDate() === selectedDate.getDate();
+    });
+
+    // Compute per-product sold quantity from orders (non-cancelled)
+    const soldMap = {}; // productName => qty
+    const validOrders = dayOrders.filter(o => o.status !== 'cancelled');
+    validOrders.forEach(o => {
+      (o.items || []).forEach(item => {
+        const key = item.name || item.productId || 'unknown';
+        soldMap[key] = (soldMap[key] || 0) + (item.quantity || 1);
+      });
+    });
+
+    // Build product rows with profit/loss
+    let totalStockIn = 0, totalSold = 0, totalRemaining = 0;
+    let totalCost = 0, totalRevenue = 0;
+
+    const rows = products.map(p => {
+      const stock = parseInt(p.stock) || 0;
+      const buyPrice = parseFloat(p.buyPrice) || 0;
+      const sellPrice = parseFloat(p.price) || 0;
+
+      // Try matching sold qty by product name (best effort)
+      let soldQty = 0;
+      Object.keys(soldMap).forEach(key => {
+        if (key.toLowerCase().includes(p.name.toLowerCase()) ||
+            p.name.toLowerCase().includes(key.toLowerCase())) {
+          soldQty += soldMap[key];
+        }
+      });
+
+      const cost = buyPrice * soldQty;
+      const revenue = sellPrice * soldQty;
+      const profit = revenue - cost;
+
+      totalStockIn += stock;
+      totalSold += soldQty;
+      totalRemaining += (stock - soldQty);
+      totalCost += cost;
+      totalRevenue += revenue;
+
+      return { p, stock, buyPrice, sellPrice, soldQty, cost, revenue, profit };
+    });
+
+    totalRemaining = Math.max(totalRemaining, 0);
+    const totalProfit = totalRevenue - totalCost;
+
+    // Update summary cards
+    document.getElementById('drTotalStockIn').textContent = totalStockIn;
+    document.getElementById('drTotalSold').textContent = totalSold;
+    document.getElementById('drTotalRemaining').textContent = totalRemaining;
+    document.getElementById('drTotalCost').textContent = '৳' + totalCost.toLocaleString();
+    document.getElementById('drTotalRevenue').textContent = '৳' + totalRevenue.toLocaleString();
+
+    const profitEl = document.getElementById('drTotalProfit');
+    const profitIcon = document.getElementById('drProfitIcon');
+    const profitLabel = document.getElementById('drProfitLabel');
+    if (totalProfit >= 0) {
+      profitEl.textContent = '৳' + totalProfit.toLocaleString();
+      profitEl.className = 'dsc-val profit-positive';
+      profitIcon.style.background = '#d1fae5'; profitIcon.style.color = '#10b981';
+      profitLabel.textContent = 'মোট লাভ (৳)';
+    } else {
+      profitEl.textContent = '-৳' + Math.abs(totalProfit).toLocaleString();
+      profitEl.className = 'dsc-val profit-negative';
+      profitIcon.style.background = '#fee2e2'; profitIcon.style.color = '#ef4444';
+      profitLabel.textContent = 'মোট ক্ষতি (৳)';
+    }
+
+    // Delivery location breakdown
+    let ctgInOrders = 0, ctgInRev = 0, ctgOutOrders = 0, ctgOutRev = 0;
+    dayOrders.filter(o => o.status !== 'cancelled').forEach(o => {
+      const loc = getOrderLocation(o);
+      if (loc === 'inside') { ctgInOrders++; ctgInRev += o.total || 0; }
+      else { ctgOutOrders++; ctgOutRev += o.total || 0; }
+    });
+    document.getElementById('drCtgInOrders').textContent = ctgInOrders + ' টি';
+    document.getElementById('drCtgInRevenue').textContent = '৳' + ctgInRev.toLocaleString();
+    document.getElementById('drCtgOutOrders').textContent = ctgOutOrders + ' টি';
+    document.getElementById('drCtgOutRevenue').textContent = '৳' + ctgOutRev.toLocaleString();
+
+    // Render product table
+    if (!ptEl) return;
+    if (!rows.length) { ptEl.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>কোনো পণ্য নেই</p></div>'; return; }
+
+    ptEl.innerHTML = `<div class="table-wrapper"><table>
+      <thead><tr>
+        <th>পণ্য</th><th>স্টকে আছে</th><th>বিক্রি হয়েছে</th><th>অবশিষ্ট</th>
+        <th>ক্রয় মূল্য</th><th>বিক্রয় মূল্য</th><th>খরচ</th><th>আয়</th><th>লাভ/ক্ষতি</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => {
+          const remaining = Math.max(r.stock - r.soldQty, 0);
+          const profitColor = r.profit >= 0 ? 'var(--success)' : 'var(--danger)';
+          const profitPrefix = r.profit >= 0 ? '৳' : '-৳';
+          return `<tr style="cursor:pointer;" onclick="showProductDetailModal('${r.p._id}','${r.p.name.replace(/'/g,'\\\'')}')" title="বিস্তারিত দেখুন">
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <img src="${r.p.img || 'https://placehold.co/36x36?text=?'}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" onerror="this.src='https://placehold.co/36x36?text=?'">
+                <div>
+                  <p style="font-weight:600;font-size:13px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.p.name}</p>
+                  <p style="font-size:10px;color:var(--text-muted);">${catLabel(r.p.category)}</p>
+                </div>
+              </div>
+            </td>
+            <td style="font-weight:700;color:var(--primary);">${r.stock}</td>
+            <td style="font-weight:700;color:var(--success);">${r.soldQty}</td>
+            <td style="font-weight:700;color:${remaining <= 5 ? 'var(--danger)' : 'var(--text)'};">${remaining}${remaining <= 5 ? ' ⚠️' : ''}</td>
+            <td style="color:var(--text-muted);">${r.buyPrice ? '৳'+r.buyPrice : '—'}</td>
+            <td style="font-weight:600;color:var(--primary);">৳${r.sellPrice}</td>
+            <td>${r.cost ? '৳'+r.cost.toLocaleString() : '—'}</td>
+            <td style="color:var(--success);">${r.revenue ? '৳'+r.revenue.toLocaleString() : '—'}</td>
+            <td style="font-weight:700;color:${profitColor};">${r.profit !== 0 ? profitPrefix + Math.abs(r.profit).toLocaleString() : '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>`;
+
+  } catch(e) {
+    if (ptEl) ptEl.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>লোড হয়নি</p></div>';
+  }
+}
+
+// ===== STOCK MANAGEMENT =====
+let allStockData = [];
+
+async function loadStock() {
+  document.getElementById('stockTable').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const [prodData, orderData] = await Promise.all([
+      api('/products?limit=500'),
+      api('/admin/orders?limit=2000')
+    ]);
+    const products = prodData.success ? prodData.data : [];
+    const orders = orderData.success ? orderData.data : [];
+
+    // Compute sold per product from delivered/non-cancelled orders
+    const soldMap = {};
+    orders.filter(o => o.status !== 'cancelled').forEach(o => {
+      (o.items || []).forEach(item => {
+        const key = item.name || '';
+        soldMap[key] = (soldMap[key] || 0) + (item.quantity || 1);
+      });
+    });
+
+    // Build stock data
+    allStockData = products.map(p => {
+      let soldQty = 0;
+      Object.keys(soldMap).forEach(key => {
+        if (key.toLowerCase().includes(p.name.toLowerCase()) ||
+            p.name.toLowerCase().includes(key.toLowerCase())) {
+          soldQty += soldMap[key];
+        }
+      });
+      const stock = parseInt(p.stock) || 0;
+      const remaining = Math.max(stock - soldQty, 0);
+      return { ...p, _stock: stock, _sold: soldQty, _remaining: remaining };
+    });
+
+    // Update summary
+    const totalP = allStockData.length;
+    const totalUnits = allStockData.reduce((s, p) => s + p._stock, 0);
+    const totalSold = allStockData.reduce((s, p) => s + p._sold, 0);
+    const lowCount = allStockData.filter(p => p._remaining <= 5).length;
+    document.getElementById('stockTotalProducts').textContent = totalP;
+    document.getElementById('stockTotalUnits').textContent = totalUnits;
+    document.getElementById('stockTotalSold').textContent = totalSold;
+    document.getElementById('stockLowCount').textContent = lowCount;
+
+    renderStock(allStockData);
+  } catch {
+    document.getElementById('stockTable').innerHTML = '<div class="empty-state"><p>লোড হয়নি</p></div>';
+  }
+}
+
+function filterStock() {
+  const q = (document.getElementById('stockSearch')?.value || '').toLowerCase();
+  const f = document.getElementById('stockFilter')?.value || 'all';
+  const filtered = allStockData.filter(p => {
+    const matchQ = !q || p.name.toLowerCase().includes(q);
+    let matchF = true;
+    if (f === 'low') matchF = p._remaining <= 5 && p._remaining > 0;
+    if (f === 'out') matchF = p._remaining === 0;
+    if (f === 'good') matchF = p._remaining > 5;
+    return matchQ && matchF;
+  });
+  renderStock(filtered);
+}
+
+function renderStock(list) {
+  const el = document.getElementById('stockTable');
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><i class="fas fa-boxes"></i><p>কোনো পণ্য নেই</p></div>'; return; }
+  el.innerHTML = `<div class="table-wrapper"><table>
+    <thead><tr>
+      <th>পণ্য</th><th>মোট স্টক</th><th>বিক্রি হয়েছে</th><th>অবশিষ্ট</th>
+      <th>ক্রয় মূল্য</th><th>বিক্রয় মূল্য</th><th>স্টক অবস্থা</th><th>বিস্তারিত</th>
+    </tr></thead>
+    <tbody>
+      ${list.map(p => {
+        const pct = p._stock > 0 ? Math.round((p._remaining / p._stock) * 100) : 0;
+        const statusColor = p._remaining === 0 ? '#ef4444' : p._remaining <= 5 ? '#f59e0b' : '#10b981';
+        const statusText = p._remaining === 0 ? 'স্টক শেষ' : p._remaining <= 5 ? 'কম স্টক' : 'পর্যাপ্ত';
+        return `<tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <img src="${p.img || 'https://placehold.co/40x40?text=?'}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onerror="this.src='https://placehold.co/40x40?text=?'">
+              <div>
+                <p style="font-weight:600;font-size:13px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</p>
+                <p style="font-size:10px;color:var(--text-muted);">${catLabel(p.category)}</p>
+              </div>
+            </div>
+          </td>
+          <td style="font-weight:700;">${p._stock}</td>
+          <td style="color:var(--success);font-weight:600;">${p._sold}</td>
+          <td style="font-weight:800;color:${statusColor};">${p._remaining}</td>
+          <td style="color:var(--text-muted);">${p.buyPrice ? '৳'+p.buyPrice : '—'}</td>
+          <td style="font-weight:600;color:var(--primary);">৳${p.price}</td>
+          <td>
+            <div>
+              <span class="badge" style="background:${statusColor}20;color:${statusColor};margin-bottom:4px;">${statusText}</span>
+              <div class="stock-progress-bar"><div class="stock-progress-fill" style="width:${pct}%;background:${statusColor};"></div></div>
+              <span style="font-size:10px;color:var(--text-muted);">${pct}% বাকি</span>
+            </div>
+          </td>
+          <td>
+            <button class="btn btn-xs btn-primary" onclick="showProductDetailModal('${p._id}','${p.name.replace(/'/g,'\\\'')}')" title="বিস্তারিত বিশ্লেষণ">
+              <i class="fas fa-chart-bar"></i>
+            </button>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ===== PRODUCT DETAIL MODAL (Profit/Loss Analysis) =====
+async function showProductDetailModal(productId, productName) {
+  document.getElementById('pdmProductName').textContent = productName;
+  document.getElementById('productDetailModalBody').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  openModal('productDetailModal');
+
+  try {
+    const [prodData, orderData] = await Promise.all([
+      api('/products/' + productId),
+      api('/admin/orders?limit=2000')
+    ]);
+
+    const p = prodData.success ? (prodData.data || prodData.product) : null;
+    if (!p) { document.getElementById('productDetailModalBody').innerHTML = '<p>পণ্য পাওয়া যায়নি</p>'; return; }
+
+    const orders = orderData.success ? orderData.data : [];
+    const validOrders = orders.filter(o => o.status !== 'cancelled');
+
+    // Count sold from orders
+    let totalSold = 0;
+    validOrders.forEach(o => {
+      (o.items || []).forEach(item => {
+        if ((item.name || '').toLowerCase().includes(p.name.toLowerCase()) ||
+            p.name.toLowerCase().includes((item.name || '').toLowerCase())) {
+          totalSold += item.quantity || 1;
+        }
+      });
+    });
+
+    const stock = parseInt(p.stock) || 0;
+    const buyPrice = parseFloat(p.buyPrice) || 0;
+    const sellPrice = parseFloat(p.price) || 0;
+    const remaining = Math.max(stock - totalSold, 0);
+    const totalBuyCost = buyPrice * stock;
+    const totalRevenue = sellPrice * totalSold;
+    const totalCost = buyPrice * totalSold;
+    const profit = totalRevenue - totalCost;
+    const profitColor = profit >= 0 ? '#10b981' : '#ef4444';
+    const profitLabel = profit >= 0 ? 'মোট লাভ' : 'মোট ক্ষতি';
+
+    document.getElementById('productDetailModalBody').innerHTML = `
+      <!-- Product Header -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;background:var(--bg);border-radius:12px;">
+        <img src="${p.img || 'https://placehold.co/70x70?text=?'}" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:2px solid var(--border);" onerror="this.src='https://placehold.co/70x70?text=?'">
+        <div>
+          <h3 style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;">${p.name}</h3>
+          <span class="badge badge-purple">${catLabel(p.category)}</span>
+          ${p.sku ? `<span class="badge badge-gray" style="margin-left:6px;">SKU: ${p.sku}</span>` : ''}
+        </div>
+      </div>
+
+      <!-- Stock Breakdown -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:var(--primary-light);border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:26px;font-weight:900;color:var(--primary);">${stock}</div>
+          <div style="font-size:11px;color:var(--primary-dark);font-weight:600;margin-top:4px;">মোট কেনা হয়েছে</div>
+        </div>
+        <div style="background:#d1fae5;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:26px;font-weight:900;color:#065f46;">${totalSold}</div>
+          <div style="font-size:11px;color:#047857;font-weight:600;margin-top:4px;">বিক্রি হয়েছে</div>
+        </div>
+        <div style="background:${remaining <= 5 ? '#fee2e2' : '#dbeafe'};border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:26px;font-weight:900;color:${remaining <= 5 ? '#991b1b' : '#1e40af'};">${remaining}</div>
+          <div style="font-size:11px;color:${remaining <= 5 ? '#b91c1c' : '#1e40af'};font-weight:600;margin-top:4px;">স্টকে আছে${remaining <= 5 ? ' ⚠️' : ''}</div>
+        </div>
+      </div>
+
+      <!-- Price & Profit -->
+      <div style="background:var(--bg);border-radius:12px;padding:16px;margin-bottom:16px;">
+        <p style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;"><i class="fas fa-calculator" style="color:var(--primary);margin-right:6px;"></i> আর্থিক বিশ্লেষণ</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="padding:10px 12px;background:var(--card);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--text-muted);">ক্রয় মূল্য (প্রতিটি)</div>
+            <div style="font-size:16px;font-weight:700;color:var(--text);">${buyPrice ? '৳'+buyPrice : 'দেওয়া নেই'}</div>
+          </div>
+          <div style="padding:10px 12px;background:var(--card);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--text-muted);">বিক্রয় মূল্য (প্রতিটি)</div>
+            <div style="font-size:16px;font-weight:700;color:var(--primary);">৳${sellPrice}</div>
+          </div>
+          <div style="padding:10px 12px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a;">
+            <div style="font-size:11px;color:#92400e;">মোট ক্রয় খরচ</div>
+            <div style="font-size:16px;font-weight:700;color:#78350f;">${totalBuyCost ? '৳'+totalBuyCost.toLocaleString() : '—'}</div>
+          </div>
+          <div style="padding:10px 12px;background:#d1fae5;border-radius:8px;border:1px solid #6ee7b7;">
+            <div style="font-size:11px;color:#065f46;">মোট বিক্রয় আয়</div>
+            <div style="font-size:16px;font-weight:700;color:#047857;">${totalRevenue ? '৳'+totalRevenue.toLocaleString() : '—'}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profit/Loss Big Box -->
+      <div style="background:${profit >= 0 ? '#d1fae5' : '#fee2e2'};border:2px solid ${profit >= 0 ? '#6ee7b7' : '#fca5a5'};border-radius:14px;padding:20px;text-align:center;">
+        <div style="font-size:13px;font-weight:600;color:${profitColor};margin-bottom:6px;"><i class="fas fa-${profit >= 0 ? 'trending-up' : 'trending-down'}"></i> ${profitLabel}</div>
+        <div style="font-size:36px;font-weight:900;color:${profitColor};">${profit !== 0 ? (profit >= 0 ? '৳' : '-৳') + Math.abs(profit).toLocaleString() : buyPrice ? '৳০' : 'ক্রয় মূল্য দিন'}</div>
+        ${buyPrice ? `<div style="font-size:11px;color:${profitColor};margin-top:6px;opacity:0.8;">প্রতিটিতে ${profit >= 0 ? 'লাভ' : 'ক্ষতি'}: ${profit !== 0 && totalSold ? (profit >= 0 ? '৳' : '-৳') + Math.abs(Math.round(profit/totalSold)).toLocaleString() : '—'}</div>` : `<div style="font-size:11px;color:#6b7280;margin-top:6px;">পণ্যের ক্রয় মূল্য যোগ করলে সঠিক লাভ/ক্ষতি দেখাবে</div>`}
+      </div>`;
+
+  } catch(e) {
+    document.getElementById('productDetailModalBody').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>বিস্তারিত লোড হয়নি</p></div>';
+  }
+}
+
+// ===== ORDER NOTIFICATION SOUND =====
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const beepFreq = [880, 1100, 880];
+    beepFreq.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.18);
+      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + i * 0.18 + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.18 + 0.15);
+      osc.start(ctx.currentTime + i * 0.18);
+      osc.stop(ctx.currentTime + i * 0.18 + 0.18);
+    });
+  } catch(e) {}
+}
+
+function showOrderNotification(count) {
+  const existing = document.getElementById('orderNotifBanner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'orderNotifBanner';
+  banner.style.cssText = `position:fixed;top:80px;right:20px;z-index:9999;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 8px 32px rgba(124,58,237,0.45);display:flex;align-items:center;gap:14px;max-width:320px;animation:slideIn 0.4s ease;cursor:pointer;`;
+  banner.innerHTML = `
+    <div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">🛍️</div>
+    <div style="flex:1;">
+      <p style="font-weight:800;font-size:14px;margin-bottom:2px;">${count}টি নতুন অর্ডার!</p>
+      <p style="font-size:11px;opacity:0.85;">ক্লিক করুন — অর্ডার দেখুন</p>
+    </div>
+    <button onclick="document.getElementById('orderNotifBanner').remove();" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>`;
+  banner.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') return;
+    showPage('orders'); banner.remove();
+  });
+  document.body.appendChild(banner);
+  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 8000);
+}
+
 
 // ===== CATEGORY MANAGER (Full API-connected) =====
 const DEFAULT_CATEGORIES = [
@@ -3152,6 +3733,10 @@ function startOrderPolling() {
         if (document.getElementById('page-dashboard').classList.contains('active')) {
           loadDashboard();
         }
+        // Daily report আপডেট
+        if (document.getElementById('page-daily-report').classList.contains('active')) {
+          loadDailyReport();
+        }
       }
     } catch {}
   }, 8000); // ৮ সেকেন্ড পর পর চেক
@@ -3165,20 +3750,10 @@ function stopOrderPolling() {
 }
 
 function showNewOrderNotification(order) {
-  // Sound
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
-  } catch {}
+  // 🔔 Improved triple-beep sound
+  playNotificationSound();
 
-  // Toast notification
+  // Toast
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = 'toast success';
@@ -3186,9 +3761,8 @@ function showNewOrderNotification(order) {
   t.innerHTML = `<i class="fas fa-bell"></i> <div><strong>নতুন অর্ডার!</strong><br><span style="font-size:12px;">${order.customerName} · ৳${order.total}</span></div>`;
   t.onclick = () => {
     t.remove();
-    // অর্ডার পেজে নিয়ে যাও
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelector('[onclick*="orders"]')?.classList.add('active');
+    document.querySelector('[onclick*="showPage(\'orders\')"]')?.classList.add('active');
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById('page-orders').classList.add('active');
     document.getElementById('pageTitle').textContent = 'অর্ডার সমূহ';
@@ -3196,6 +3770,17 @@ function showNewOrderNotification(order) {
   };
   c.appendChild(t);
   setTimeout(() => t.remove(), 8000);
+
+  // 🎯 Big banner notification
+  showOrderNotification(1);
+
+  // Update pending badge
+  const b = document.getElementById('pendingBadge');
+  if (b) {
+    const cur = parseInt(b.textContent) || 0;
+    b.textContent = cur + 1;
+    b.style.display = 'inline-flex';
+  }
 }
 
 // ===== EDIT CATEGORY MODAL =====
