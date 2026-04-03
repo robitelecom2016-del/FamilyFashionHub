@@ -376,9 +376,10 @@ tr:hover td { background: var(--bg); }
     <button class="nav-item" onclick="showPage('productlayout')"><i class="fas fa-columns"></i> পণ্য পেজ লেআউট</button>
     <button class="nav-item" onclick="showPage('testimonials')"><i class="fas fa-quote-left"></i> টেস্টিমোনিয়াল</button>
     <button class="nav-item" onclick="showPage('collections')"><i class="fas fa-th-large"></i> কালেকশন</button>
+    <button class="nav-item" onclick="showPage('slider')"><i class="fas fa-images"></i> স্লাইডার ম্যানেজমেন্ট</button>
     <button class="nav-item" onclick="showPage('heroside')"><i class="fas fa-image"></i> হিরো সাইড ইমেজ</button>
     <button class="nav-item" onclick="showPage('sidebanner')"><i class="fas fa-image"></i> সাইড ব্যানার</button>
-    <button class="nav-item" onclick="showPage('settings');loadSliderImages()"><i class="fas fa-cog"></i> সেটিংস</button>
+    <button class="nav-item" onclick="showPage('settings')"><i class="fas fa-cog"></i> সেটিংস</button>
   </nav>
   <div class="sidebar-footer">
     <div class="sidebar-user">
@@ -426,7 +427,7 @@ tr:hover td { background: var(--bg); }
         <button class="btn btn-primary btn-sm" onclick="openProductModal()"><i class="fas fa-plus"></i> নতুন পণ্য</button>
         <button class="btn btn-success btn-sm" onclick="showPage('orders')"><i class="fas fa-shopping-bag"></i> অর্ডার দেখুন</button>
         <button class="btn btn-warning btn-sm" onclick="showPage('reviews')"><i class="fas fa-star"></i> রিভিউ দেখুন</button>
-        <button class="btn btn-info btn-sm" onclick="showPage('settings')"><i class="fas fa-image"></i> Slider ছবি</button>
+        <button class="btn btn-info btn-sm" onclick="showPage('slider')"><i class="fas fa-image"></i> Slider ছবি</button>
         <button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
       </div>
 
@@ -859,47 +860,6 @@ tr:hover td { background: var(--bg); }
     <!-- SETTINGS -->
     <div class="page-section" id="page-settings">
 
-      <!-- SLIDER IMAGE MANAGEMENT -->
-      <div class="settings-section">
-        <div class="card-header">
-          <h3><i class="fas fa-images" style="color:var(--primary)"></i> স্লাইডার ও সাইডবার ছবি ম্যানেজমেন্ট</h3>
-          <span style="font-size:11px;color:var(--text-muted);">ফ্রন্টএন্ডের স্লাইডার ও পাশের ইমেজ এখান থেকে পরিচালনা করুন</span>
-        </div>
-        <div class="card-body">
-          <!-- Upload Zone -->
-          <div id="sliderDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;margin-bottom:16px;"
-            onclick="document.getElementById('sliderImagesInput').click()"
-            ondragover="event.preventDefault();this.style.background='#ede9fe';"
-            ondragleave="this.style.background='#f5f3ff';"
-            ondrop="handleSliderDrop(event)">
-            <i class="fas fa-cloud-upload-alt" style="font-size:36px;color:var(--primary);display:block;margin-bottom:8px;"></i>
-            <p style="font-size:14px;color:var(--primary);font-weight:700;">স্লাইডার ছবি এখানে ড্রাগ করুন বা ক্লিক করুন</p>
-            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">একসাথে একাধিক ছবি আপলোড করা যাবে। পুরনো ছবি বাদ যাবে না।</p>
-            <input type="file" id="sliderImagesInput" multiple accept="image/*" style="display:none">
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-            <button class="btn btn-primary btn-sm" onclick="document.getElementById('sliderImagesInput').click()"><i class="fas fa-plus"></i> ছবি যোগ করুন</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmReplaceSlider()"><i class="fas fa-trash"></i> সব ছবি মুছে নতুন দিন</button>
-          </div>
-          <!-- Slider Progress -->
-          <div id="sliderUploadProgress" style="display:none;margin-bottom:12px;">
-            <div style="background:#e5e7eb;border-radius:999px;height:8px;overflow:hidden;">
-              <div id="sliderProgressBar" style="background:var(--primary);height:100%;width:0%;transition:width 0.3s;"></div>
-            </div>
-            <p id="sliderProgressText" style="font-size:12px;color:var(--text-muted);margin-top:4px;">আপলোড হচ্ছে...</p>
-          </div>
-          <!-- Current Slider Images -->
-          <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-              <p style="font-size:13px;font-weight:700;color:var(--text);"><i class="fas fa-th-large" style="color:var(--primary);margin-right:5px;"></i> বর্তমান স্লাইডার ছবি</p>
-              <span style="font-size:11px;color:var(--text-muted);background:var(--primary-light);color:var(--primary-dark);padding:4px 10px;border-radius:20px;"><i class="fas fa-info-circle"></i> প্রতিটি ছবিতে আলাদা ক্যাটাগরি লিংক সেট করুন</span>
-            </div>
-            <div id="sliderImagesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
-              <div class="loading"><div class="spinner"></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div class="settings-section">
         <div class="card-header"><h3><i class="fas fa-bullhorn" style="color:var(--primary)"></i> সাইট সেটিংস</h3></div>
@@ -1094,7 +1054,69 @@ tr:hover td { background: var(--bg); }
       </div>
     </div>
 
+    <!-- ===== SLIDER MANAGEMENT PAGE ===== -->
+    <div class="page-section" id="page-slider">
+      <!-- Header -->
+      <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;"><i class="fas fa-images" style="color:var(--primary);margin-right:8px;"></i>স্লাইডার ম্যানেজমেন্ট</h2>
+          <p style="font-size:13px;color:var(--text-muted);">ফ্রন্টএন্ডের হোমপেজ স্লাইডার ছবি আপলোড করুন এবং প্রতিটি ছবিতে ক্যাটাগরি লিংক সেট করুন।</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('sliderImagesInput').click()"><i class="fas fa-plus"></i> ছবি যোগ করুন</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmReplaceSlider()"><i class="fas fa-trash"></i> সব মুছে নতুন দিন</button>
+        </div>
+      </div>
+
+      <!-- Info Banner -->
+      <div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #c4b5fd;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;">
+        <i class="fas fa-lightbulb" style="color:var(--primary);font-size:20px;margin-top:2px;flex-shrink:0;"></i>
+        <div>
+          <p style="font-size:13px;font-weight:700;color:var(--primary-dark);margin-bottom:4px;">কীভাবে কাজ করে?</p>
+          <p style="font-size:12px;color:#5b21b6;line-height:1.7;">
+            ১. উপরে বাটন বা নিচের drop zone থেকে ছবি আপলোড করুন।<br>
+            ২. প্রতিটি ছবির নিচে ড্রপডাউন থেকে ক্যাটাগরি বেছে নিন।<br>
+            ৩. ফ্রন্টএন্ডে ছবিতে ক্লিক করলে সেই ক্যাটাগরি পেজে সরাসরি যাবে।
+          </p>
+        </div>
+      </div>
+
+      <!-- Upload Drop Zone -->
+      <div id="sliderDropZone" style="border:2px dashed var(--primary);border-radius:12px;padding:30px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;margin-bottom:20px;"
+        onclick="document.getElementById('sliderImagesInput').click()"
+        ondragover="event.preventDefault();this.style.background='#ede9fe';this.style.borderColor='var(--primary-dark)';"
+        ondragleave="this.style.background='#f5f3ff';this.style.borderColor='var(--primary)';"
+        ondrop="handleSliderDrop(event)">
+        <i class="fas fa-cloud-upload-alt" style="font-size:44px;color:var(--primary);display:block;margin-bottom:10px;"></i>
+        <p style="font-size:15px;color:var(--primary);font-weight:700;">স্লাইডার ছবি এখানে ড্রাগ করুন বা ক্লিক করুন</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">PNG, JPG, WEBP — একসাথে একাধিক ছবি আপলোড করা যাবে</p>
+        <input type="file" id="sliderImagesInput" multiple accept="image/*" style="display:none">
+      </div>
+
+      <!-- Upload Progress -->
+      <div id="sliderUploadProgress" style="display:none;margin-bottom:16px;">
+        <div style="background:#e5e7eb;border-radius:999px;height:10px;overflow:hidden;">
+          <div id="sliderProgressBar" style="background:var(--primary);height:100%;width:0%;transition:width 0.3s;"></div>
+        </div>
+        <p id="sliderProgressText" style="font-size:12px;color:var(--text-muted);margin-top:6px;">আপলোড হচ্ছে...</p>
+      </div>
+
+      <!-- Current Slider Images -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-th-large" style="color:var(--primary)"></i> বর্তমান স্লাইডার ছবিসমূহ</h3>
+          <span id="sliderCountBadge" style="font-size:11px;background:var(--primary-light);color:var(--primary-dark);padding:4px 12px;border-radius:20px;font-weight:600;"></span>
+        </div>
+        <div class="card-body">
+          <div id="sliderImagesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== SIDE BANNER PAGE ===== -->
+
     <div class="page-section" id="page-sidebanner">
       <div class="card" style="max-width:600px;">
         <div class="card-header">
@@ -1792,6 +1814,7 @@ const pageMeta = {
   settings: { title: 'সেটিংস', breadcrumb: 'Home / Settings' },
   testimonials: { title: 'টেস্টিমোনিয়াল', breadcrumb: 'Home / Testimonials' },
   collections: { title: 'কালেকশন', breadcrumb: 'Home / Collections' },
+  slider: { title: 'স্লাইডার ম্যানেজমেন্ট', breadcrumb: 'Home / Slider' },
   heroside: { title: 'হিরো সাইড ইমেজ', breadcrumb: 'Home / Hero Side Image' },
   sidebanner: { title: 'সাইড ব্যানার', breadcrumb: 'Home / Side Banner' },
 };
@@ -1816,7 +1839,8 @@ function showPage(page) {
   if (page === 'users') loadUsers();
   if (page === 'categories') loadCategoriesPage();
   if (page === 'productlayout') loadProductLayout();
-  if (page === 'settings') { loadSettings(); setTimeout(loadSliderImages, 100); }
+  if (page === 'slider') loadSliderPage();
+  if (page === 'settings') { loadSettings(); }
   if (page === 'testimonials') loadTestimonialsAdmin();
   if (page === 'collections') loadCollectionsAdmin();
   if (page === 'heroside') loadHeroSideImageAdmin();
@@ -3724,12 +3748,27 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 
 // ===== SLIDER IMAGE MANAGEMENT =====
 
+// Dedicated slider page loader (called from showPage)
+async function loadSliderPage() {
+  // categories আগে লোড করো
+  if (!allCategories || !allCategories.length) {
+    try {
+      const catData = await api('/categories');
+      if (catData.success && Array.isArray(catData.data)) {
+        allCategories = catData.data;
+        saveCategoriesToLocal && saveCategoriesToLocal();
+      }
+    } catch {}
+  }
+  await loadSliderImages();
+}
+
 async function loadSliderImages() {
   const el = document.getElementById('sliderImagesList');
   if (!el) return;
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   // categories নিশ্চিত করো
-  if (typeof allCategories === 'undefined' || !allCategories.length) {
+  if (!allCategories || !allCategories.length) {
     try {
       const catData = await api('/categories');
       if (catData.success && Array.isArray(catData.data)) {
@@ -3750,112 +3789,130 @@ async function loadSliderImages() {
 function renderSliderImages(images) {
   const el = document.getElementById('sliderImagesList');
   if (!el) return;
+
+  // count badge update
+  const badge = document.getElementById('sliderCountBadge');
+  if (badge) badge.textContent = images.length ? images.length + 'টি ছবি' : '';
+
   if (!images.length) {
-    el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);border:1.5px dashed var(--border);border-radius:10px;"><i class="fas fa-images" style="font-size:32px;margin-bottom:8px;display:block;opacity:0.3;"></i><p style="font-size:13px;">এখনো কোনো slider ছবি নেই। উপরে আপলোড করুন।</p></div>';
+    el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);border:2px dashed var(--border);border-radius:12px;"><i class="fas fa-images" style="font-size:40px;margin-bottom:12px;display:block;opacity:0.25;"></i><p style="font-size:14px;font-weight:600;">এখনো কোনো slider ছবি নেই।</p><p style="font-size:12px;margin-top:4px;">উপরের বাটন বা drop zone থেকে ছবি আপলোড করুন।</p></div>';
     return;
   }
-  el.innerHTML = images.map((img, i) => {
-    const hasLink = img.link && img.link.trim();
-    let decodedLink = '';
-    if (hasLink) { try { decodedLink = decodeURIComponent(img.link.trim()); } catch(e) { decodedLink = img.link.trim(); } }
-    return `
-    <div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.08);background:#fff;">
-      <div style="position:relative;">
-        <img src="${img.url}" style="width:100%;height:110px;object-fit:cover;display:block;">
-        <div style="position:absolute;top:6px;right:6px;display:flex;gap:4px;">
-          <span style="background:rgba(0,0,0,0.55);color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700;">${i+1}</span>
-          <button onclick="deleteSliderImage(${i})" style="background:#ef4444;color:#fff;border:none;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;" title="মুছুন"><i class="fas fa-trash"></i></button>
-        </div>
-        ${hasLink ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(124,58,237,0.85);padding:3px 6px;"><span style="font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" title="${decodedLink}"><i class="fas fa-link"></i> ${decodedLink.length > 22 ? decodedLink.slice(0,22)+'…' : decodedLink}</span></div>` : ''}
-      </div>
-      <div style="padding:8px;">
-        <div id="sliderLinkRow_${i}" style="display:flex;gap:5px;align-items:center;">
-          <input type="text" id="sliderLinkInput_${i}" value="${decodedLink}" placeholder="ক্যাটাগরি লিংক যেমন: /category/toys" 
-            style="flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);outline:none;color:var(--text);"
-            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
-            onkeydown="if(event.key==='Enter')saveSliderLink(${i})">
-          <button onclick="saveSliderLink(${i})" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="লিংক সেভ করুন"><i class="fas fa-save"></i></button>
-        </div>
-        <div id="sliderCatDropdown_${i}" style="margin-top:5px;">
-          <select onchange="applySliderCatLink(${i},this.value)" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);color:var(--text-muted);cursor:pointer;outline:none;">
-            <option value="">— ক্যাটাগরি বেছে নিন —</option>
-          </select>
-        </div>
-      </div>
-    </div>`;
+
+  const cats = allCategories || [];
+
+  // link থেকে বাংলা লেবেল বের করো
+  function getLinkLabel(link) {
+    if (!link) return null;
+    try { link = decodeURIComponent(link); } catch(e) {}
+    const catMatch = link.match(/category=([^&]+)/i) || link.match(/\/category\/([^?/]+)/i);
+    const subMatch = link.match(/sub=([^&]+)/i) || link.match(/subcategory=([^&]+)/i);
+    if (!catMatch) return link;
+    const catVal = catMatch[1];
+    const subVal = subMatch ? subMatch[1] : null;
+    const cat = cats.find(c => c.value === catVal);
+    const catLabel = cat ? cat.label : catVal;
+    if (subVal && cat) {
+      const sub = (cat.subcategories || []).find(s => s.value === subVal);
+      return sub ? catLabel + ' › ' + sub.label : catLabel + ' › ' + subVal;
+    }
+    return catLabel;
+  }
+
+  el.innerHTML = images.map(function(img, i) {
+    var decodedLink = '';
+    if (img.link) { try { decodedLink = decodeURIComponent(img.link.trim()); } catch(e) { decodedLink = img.link.trim(); } }
+    var linkLabel = getLinkLabel(decodedLink);
+    var borderColor = decodedLink ? 'var(--primary)' : 'var(--border)';
+    return '<div style="border-radius:12px;overflow:hidden;border:2px solid ' + borderColor + ';box-shadow:0 2px 10px rgba(0,0,0,0.08);background:#fff;">'
+      + '<div style="position:relative;">'
+      + '<img src="' + img.url + '" style="width:100%;height:130px;object-fit:cover;display:block;">'
+      + '<div style="position:absolute;top:7px;left:7px;"><span style="background:rgba(0,0,0,0.65);color:#fff;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:700;">#' + (i+1) + '</span></div>'
+      + '<div style="position:absolute;top:7px;right:7px;">'
+      + '<button onclick="deleteSliderImage(' + i + ')" style="background:#ef4444;color:#fff;border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;" title="মুছুন"><i class="fas fa-trash"></i></button>'
+      + '</div>'
+      + (linkLabel
+          ? '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(109,40,217,0.92));padding:6px 8px;"><span style="font-size:11px;color:#fff;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-link"></i> ' + linkLabel + '</span></div>'
+          : '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.5));padding:6px 8px;"><span style="font-size:10px;color:#fde68a;font-weight:600;"><i class="fas fa-exclamation-circle"></i> লিংক সেট করা নেই</span></div>'
+        )
+      + '</div>'
+      + '<div style="padding:10px;">'
+      + '<p style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;"><i class="fas fa-tag" style="margin-right:4px;color:var(--primary);"></i>ক্যাটাগরি লিংক</p>'
+      + '<div id="sliderCatDropdown_' + i + '" style="margin-bottom:6px;">'
+      + '<select onchange="applySliderCatLink(' + i + ',this.value)" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--font);color:var(--text);cursor:pointer;outline:none;background:#fff;">'
+      + '<option value="">— ক্যাটাগরি বেছে নিন —</option>'
+      + '</select>'
+      + '</div>'
+      + '<div style="display:flex;gap:5px;align-items:center;">'
+      + '<input type="text" id="sliderLinkInput_' + i + '" value="' + decodedLink.replace(/"/g,'&quot;') + '" placeholder="?category=baby_dress" style="flex:1;padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;font-family:var(--font);outline:none;color:var(--text);" onfocus="this.style.borderColor=\'var(--primary)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\')saveSliderLink(' + i + ')">'
+      + '<button onclick="saveSliderLink(' + i + ')" style="background:var(--primary);color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:5px;"><i class="fas fa-save"></i> সেভ</button>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
   }).join('');
 
   // category dropdown populate
-  const cats = typeof allCategories !== 'undefined' ? allCategories : [];
-  images.forEach((img, i) => {
-    const sel = document.querySelector(`#sliderCatDropdown_${i} select`);
+  images.forEach(function(img, i) {
+    var sel = document.querySelector('#sliderCatDropdown_' + i + ' select');
     if (!sel) return;
-    cats.forEach(cat => {
-      const fg = document.createElement('optgroup');
-      fg.label = cat.label || cat.value;
-      const mainOpt = document.createElement('option');
-      mainOpt.value = `/category/${cat.value}`;
-      mainOpt.textContent = `↳ সব ${cat.label || cat.value}`;
+    cats.forEach(function(cat) {
+      var fg = document.createElement('optgroup');
+      fg.label = '📂 ' + (cat.label || cat.value);
+      var mainOpt = document.createElement('option');
+      mainOpt.value = '?category=' + cat.value;
+      mainOpt.textContent = 'সব ' + (cat.label || cat.value);
       fg.appendChild(mainOpt);
-      if (Array.isArray(cat.subcategories)) {
-        cat.subcategories.forEach(sub => {
-          const o = document.createElement('option');
-          o.value = `/category/${cat.value}?sub=${sub.value}`;
-          o.textContent = sub.label || sub.value;
-          fg.appendChild(o);
-        });
-      }
+      (cat.subcategories || []).forEach(function(sub) {
+        var o = document.createElement('option');
+        o.value = '?category=' + cat.value + '&sub=' + sub.value;
+        o.textContent = sub.label || sub.value;
+        fg.appendChild(o);
+      });
       sel.appendChild(fg);
     });
-    // set current if exists
-    if (img.link) sel.value = img.link;
+    // current value match
+    if (img.link) {
+      var dl = '';
+      try { dl = decodeURIComponent(img.link.trim()); } catch(e) { dl = img.link.trim(); }
+      var catM = dl.match(/category=([^&]+)/i);
+      var subM = dl.match(/sub=([^&]+)/i);
+      if (catM) {
+        var tryVal = '?category=' + catM[1] + (subM ? '&sub=' + subM[1] : '');
+        sel.value = tryVal;
+      }
+    }
   });
 }
 
 function applySliderCatLink(idx, value) {
   if (!value) return;
-  const input = document.getElementById(`sliderLinkInput_${idx}`);
-  if (input) {
-    try { input.value = decodeURIComponent(value); } catch(e) { input.value = value; }
-  }
+  var input = document.getElementById('sliderLinkInput_' + idx);
+  if (input) input.value = value;
+  // auto save
+  saveSliderLink(idx);
 }
 
 async function saveSliderLink(idx) {
-  const input = document.getElementById(`sliderLinkInput_${idx}`);
+  var input = document.getElementById('sliderLinkInput_' + idx);
   if (!input) return;
-  // Decode any URL-encoded (Bengali or otherwise) links, then ensure proper encoding
-  let rawLink = input.value.trim();
+  var rawLink = input.value.trim();
+  // decode if already encoded
   try { rawLink = decodeURIComponent(rawLink); } catch(e) {}
-  // Re-encode only non-ASCII characters properly
-  const link = rawLink.split('/').map((part, i) => {
-    if (i === 0) return part; // preserve empty string before first /
-    // Split on ? for query params
-    const [path, query] = part.split('?');
-    const encodedPath = encodeURIComponent(decodeURIComponent(path));
-    if (query) {
-      const encodedQuery = query.split('&').map(p => {
-        const [k,v] = p.split('=');
-        return k + '=' + encodeURIComponent(decodeURIComponent(v||''));
-      }).join('&');
-      return encodedPath + '?' + encodedQuery;
-    }
-    return encodedPath;
-  }).join('/');
-  input.value = rawLink; // show decoded in input
+  var link = rawLink;
   try {
-    const res = await fetch(API_URL + '/admin/slider-images/' + idx + '/link', {
+    var res = await fetch(API_URL + '/admin/slider-images/' + idx + '/link', {
       method: 'PUT',
       headers: { Authorization: 'Bearer ' + adminToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ link })
     });
-    const data = await res.json();
+    var data = await res.json();
     if (data.success) {
-      toast('স্লাইডার লিংক সেভ হয়েছে ✓', 'success');
+      toast('লিংক সেভ হয়েছে ✓', 'success');
       renderSliderImages(data.data);
     } else {
       toast(data.message || 'সমস্যা হয়েছে', 'error');
     }
-  } catch { toast('সার্ভার সমস্যা', 'error'); }
+  } catch(e) { toast('সার্ভার সমস্যা', 'error'); }
 }
 
 async function uploadSliderImages(replace = false) {
