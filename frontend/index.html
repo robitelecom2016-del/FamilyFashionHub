@@ -4454,8 +4454,8 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
 
       var origFilter = window.filterByCategory;
       if (origFilter) {
-        window.filterByCategory = function(cat) {
-          origFilter(cat);
+        window.filterByCategory = function(cat, sub) {
+          origFilter(cat, sub);
           if (cat === 'all') {
             setMobileNavActive('home');
           } else {
