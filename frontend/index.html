@@ -1259,6 +1259,9 @@
         #catDesktopWrapper { display: block !important; }
         #catMobileProductArea { display: none !important; }
       }
+      /* detail page active থাকলে catMobileProductArea সম্পূর্ণ লুকানো */
+      body.on-detail-page #catMobileProductArea { display: none !important; }
+      body.on-detail-page #catMobileHeader { display: none !important; }
     </style>
 
     <div id="catMobileProductArea" style="padding:10px 10px 16px 10px;">
@@ -2150,6 +2153,7 @@
       window.goToHome = function goToHome() {
         homePage.classList.remove('hidden');
         detailPage.classList.remove('active'); detailPage.classList.add('detail-page');
+        document.body.classList.remove('on-detail-page');
         const _cp = document.getElementById('categoryPage');
         if (_cp) { _cp.classList.remove('active'); _cp.classList.add('detail-page'); }
         const ids = ['loginPage','registerPage','accountInfoPage','myOrdersPage','myReviewsPage','aboutUsPage','signInBreadcrumbPage','trackOrderPage'];
@@ -2368,6 +2372,7 @@
         detailPage.classList.add('detail-page');
         categoryPage.classList.remove('detail-page');
         categoryPage.classList.add('active');
+        document.body.classList.remove('on-detail-page');
 
         const _lp = document.getElementById('loginPage');
         const _rp = document.getElementById('registerPage');
@@ -2867,6 +2872,7 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         if (_cmpa) _cmpa.style.display = 'none';
         const _cmh = document.getElementById('catMobileHeader');
         if (_cmh) _cmh.style.display = 'none';
+        document.body.classList.add('on-detail-page');
         window.scrollTo({ top: 0 });
         if (typeof setMobileNavActive === 'function') setMobileNavActive('home');
         detailPageImg.src = product.img;
@@ -3415,8 +3421,7 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         grid.innerHTML = '';
         if (related.length === 0) return;
 
-        const INITIAL = 4;
-        function makeCard(p) {
+        related.forEach(p => {
           const card = document.createElement('div');
           card.style.cssText = 'background:white;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow 0.2s;';
           card.onmouseover = () => card.style.boxShadow = '0 4px 14px rgba(0,0,0,0.1)';
@@ -3438,47 +3443,8 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
             </div>
           `;
           card.addEventListener('click', () => showProductDetailPage(p.id));
-          return card;
-        }
-
-        // প্রথম ৪টি দেখাও
-        related.slice(0, INITIAL).forEach(p => grid.appendChild(makeCard(p)));
-
-        if (related.length > INITIAL) {
-          // hidden wrapper
-          const hiddenWrap = document.createElement('div');
-          hiddenWrap.id = 'relatedBottomHidden';
-          hiddenWrap.style.cssText = 'display:none;grid-column:1/-1;display:none;';
-          // grid এর ভেতরে hidden items দেখাতে হবে তাই wrapper এর বাইরে রাখতে পারব না — toggle বাটনের পরে DOM-এ রাখি
-          // hidden cards সরাসরি grid-এ রাখব, display:none দিয়ে
-          const hiddenCards = related.slice(INITIAL).map(p => {
-            const c = makeCard(p);
-            c.classList.add('related-bottom-hidden-card');
-            c.style.display = 'none';
-            return c;
-          });
-          hiddenCards.forEach(c => grid.appendChild(c));
-
-          // toggle button — full width, grid-column span করবে
-          const toggleWrap = document.createElement('div');
-          toggleWrap.style.cssText = 'grid-column:1/-1;margin-top:4px;';
-          let expanded = false;
-          const btn = document.createElement('button');
-          btn.style.cssText = 'width:100%;padding:11px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;color:#f97316;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s;';
-          btn.onmouseover = () => btn.style.background = '#ffedd5';
-          btn.onmouseout  = () => btn.style.background = '#fff7ed';
-          const remaining = related.length - INITIAL;
-          btn.innerHTML = 'আরো ' + remaining + 'টি পণ্য দেখুন <span style="font-size:15px;">▾</span>';
-          btn.addEventListener('click', function() {
-            expanded = !expanded;
-            hiddenCards.forEach(c => c.style.display = expanded ? '' : 'none');
-            btn.innerHTML = expanded
-              ? 'কম দেখুন <span style="font-size:15px;">▴</span>'
-              : 'আরো ' + remaining + 'টি পণ্য দেখুন <span style="font-size:15px;">▾</span>';
-          });
-          toggleWrap.appendChild(btn);
-          grid.appendChild(toggleWrap);
-        }
+          grid.appendChild(card);
+        });
       }
 
       window.switchDetailTab = function(tab) {
@@ -5221,9 +5187,7 @@ function _ffhShowApiDetail(p) {
       bottomGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af;">কোনো সম্পর্কিত পণ্য নেই</div>';
     } else {
       bottomGrid.innerHTML = '';
-      var BG_INITIAL = 4;
-
-      function buildBottomCard(rp) {
+      related.forEach(function(rp) {
         var card = document.createElement('div');
         card.style.cssText = 'background:white;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow 0.2s;';
         card.onmouseover = function() { this.style.boxShadow = '0 4px 14px rgba(0,0,0,0.1)'; };
@@ -5237,47 +5201,15 @@ function _ffhShowApiDetail(p) {
           '<div style="display:flex;align-items:baseline;gap:6px;"><span style="font-size:15px;font-weight:700;color:#f97316;">৳'+rp.price+'</span>' +
           (rp.oldPrice ? '<span style="font-size:12px;color:#9ca3af;text-decoration:line-through;">৳'+rp.oldPrice+'</span>' : '')+'</div></div>';
         card.addEventListener('click', function() { _ffhShowApiDetail(rp); });
-        return card;
-      }
-
-      // প্রথম ৪টি দেখাও
-      related.slice(0, BG_INITIAL).forEach(function(rp) {
-        bottomGrid.appendChild(buildBottomCard(rp));
+        bottomGrid.appendChild(card);
       });
-
-      if (related.length > BG_INITIAL) {
-        var bgHiddenCards = related.slice(BG_INITIAL).map(function(rp) {
-          var c = buildBottomCard(rp);
-          c.style.display = 'none';
-          return c;
-        });
-        bgHiddenCards.forEach(function(c) { bottomGrid.appendChild(c); });
-
-        var bgToggleWrap = document.createElement('div');
-        bgToggleWrap.style.cssText = 'grid-column:1/-1;margin-top:4px;';
-        var bgExpanded = false;
-        var bgBtn = document.createElement('button');
-        var bgRemaining = related.length - BG_INITIAL;
-        bgBtn.style.cssText = 'width:100%;padding:11px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;color:#f97316;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s;';
-        bgBtn.onmouseover = function() { this.style.background = '#ffedd5'; };
-        bgBtn.onmouseout  = function() { this.style.background = '#fff7ed'; };
-        bgBtn.innerHTML = 'আরো ' + bgRemaining + 'টি পণ্য দেখুন <span style="font-size:15px;">▾</span>';
-        bgBtn.addEventListener('click', function() {
-          bgExpanded = !bgExpanded;
-          bgHiddenCards.forEach(function(c) { c.style.display = bgExpanded ? '' : 'none'; });
-          bgBtn.innerHTML = bgExpanded
-            ? 'কম দেখুন <span style="font-size:15px;">▴</span>'
-            : 'আরো ' + bgRemaining + 'টি পণ্য দেখুন <span style="font-size:15px;">▾</span>';
-        });
-        bgToggleWrap.appendChild(bgBtn);
-        bottomGrid.appendChild(bgToggleWrap);
-      }
     }
   }
 
   if (typeof setMobileNavActive === 'function') setMobileNavActive('home');
   detailPage.classList.add('active');
   detailPage.classList.remove('detail-page');
+  document.body.classList.add('on-detail-page');
   window.scrollTo({ top: 0 });
 }
 async function loadSiteSettings() {
