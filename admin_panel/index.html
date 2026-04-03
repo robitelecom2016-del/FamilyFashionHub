@@ -425,7 +425,7 @@ tr:hover td { background: var(--bg); }
         <button class="btn btn-primary btn-sm" onclick="openProductModal()"><i class="fas fa-plus"></i> নতুন পণ্য</button>
         <button class="btn btn-success btn-sm" onclick="showPage('orders')"><i class="fas fa-shopping-bag"></i> অর্ডার দেখুন</button>
         <button class="btn btn-warning btn-sm" onclick="showPage('reviews')"><i class="fas fa-star"></i> রিভিউ দেখুন</button>
-        <button class="btn btn-info btn-sm" onclick="showPage('settings')"><i class="fas fa-image"></i> Slider ছবি</button>
+        <button class="btn btn-info btn-sm" onclick="showPage('settings');setTimeout(loadSliderImages,150)"><i class="fas fa-image"></i> Slider ছবি</button>
         <button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
       </div>
 
@@ -891,9 +891,22 @@ tr:hover td { background: var(--bg); }
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
               <p style="font-size:13px;font-weight:700;color:var(--text);"><i class="fas fa-th-large" style="color:var(--primary);margin-right:5px;"></i> বর্তমান স্লাইডার ছবি</p>
-              <span style="font-size:11px;color:var(--text-muted);background:var(--primary-light);color:var(--primary-dark);padding:4px 10px;border-radius:20px;"><i class="fas fa-info-circle"></i> প্রতিটি ছবিতে আলাদা ক্যাটাগরি লিংক সেট করুন</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:11px;color:var(--text-muted);background:var(--primary-light);color:var(--primary-dark);padding:4px 10px;border-radius:20px;"><i class="fas fa-info-circle"></i> প্রতিটি ছবিতে শিরোনাম (<i class="fas fa-font" style="color:#f59e0b;"></i>) ও লিংক (<i class="fas fa-save" style="color:var(--primary);"></i>) আলাদা সেভ করুন</span>
+                <button onclick="loadSliderImages()" class="btn btn-xs btn-outline"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
+              </div>
             </div>
-            <div id="sliderImagesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
+            <!-- Helper tip -->
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;">
+              <i class="fas fa-lightbulb" style="color:#f59e0b;font-size:16px;margin-top:1px;flex-shrink:0;"></i>
+              <div style="font-size:12px;color:#78350f;line-height:1.6;">
+                <strong>কীভাবে ব্যবহার করবেন:</strong>
+                ছবি আপলোড করুন → প্রতিটি কার্ডে <strong>শিরোনাম</strong> লিখুন (অ্যাম্বার বাটন <i class="fas fa-font"></i>) → <strong>লিংক</strong> সেট করুন (বেগুনি বাটন <i class="fas fa-save"></i>)।
+                ড্রপডাউন থেকে সরাসরি ক্যাটাগরি বেছে নিলে লিংক auto-fill হবে।
+                শিরোনাম থাকলে ফ্রন্টএন্ডে ছবির উপর সুন্দর টেক্সট দেখাবে।
+              </div>
+            </div>
+            <div id="sliderImagesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
               <div class="loading"><div class="spinner"></div></div>
             </div>
           </div>
@@ -3733,26 +3746,41 @@ function renderSliderImages(images) {
     return;
   }
   el.innerHTML = images.map((img, i) => {
-    const hasLink = img.link && img.link.trim();
+    const hasLink  = img.link  && img.link.trim();
+    const hasTitle = img.title && img.title.trim();
     return `
     <div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.08);background:#fff;">
       <div style="position:relative;">
-        <img src="${img.url}" style="width:100%;height:110px;object-fit:cover;display:block;">
+        <img src="${img.url}" style="width:100%;height:120px;object-fit:cover;display:block;">
         <div style="position:absolute;top:6px;right:6px;display:flex;gap:4px;">
           <span style="background:rgba(0,0,0,0.55);color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700;">${i+1}</span>
           <button onclick="deleteSliderImage(${i})" style="background:#ef4444;color:#fff;border:none;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;" title="মুছুন"><i class="fas fa-trash"></i></button>
         </div>
-        ${hasLink ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(124,58,237,0.85);padding:3px 6px;"><span style="font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" title="${img.link}"><i class="fas fa-link"></i> ${img.link.length > 22 ? img.link.slice(0,22)+'…' : img.link}</span></div>` : ''}
+        ${hasTitle ? `<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.72),transparent);padding:18px 8px 5px;pointer-events:none;"><span style="font-size:11px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">${img.title}</span></div>` : ''}
+        ${hasLink && !hasTitle ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(124,58,237,0.82);padding:3px 6px;"><span style="font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" title="${img.link}"><i class="fas fa-link"></i> ${img.link.length > 22 ? img.link.slice(0,22)+'…' : img.link}</span></div>` : ''}
       </div>
-      <div style="padding:8px;">
+      <div style="padding:8px;display:flex;flex-direction:column;gap:6px;">
+
+        <!-- Title Row -->
+        <div style="display:flex;gap:5px;align-items:center;">
+          <input type="text" id="sliderTitleInput_${i}" value="${(img.title||'').replace(/"/g,'&quot;')}" placeholder="স্লাইড শিরোনাম (ঐচ্ছিক)"
+            style="flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);outline:none;color:var(--text);"
+            onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')saveSliderTitle(${i})">
+          <button onclick="saveSliderTitle(${i})" style="background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="শিরোনাম সেভ করুন"><i class="fas fa-font"></i></button>
+        </div>
+
+        <!-- Link Row -->
         <div id="sliderLinkRow_${i}" style="display:flex;gap:5px;align-items:center;">
-          <input type="text" id="sliderLinkInput_${i}" value="${img.link || ''}" placeholder="ক্যাটাগরি লিংক যেমন: /category/toys" 
+          <input type="text" id="sliderLinkInput_${i}" value="${img.link || ''}" placeholder="/category/toys"
             style="flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);outline:none;color:var(--text);"
             onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
             onkeydown="if(event.key==='Enter')saveSliderLink(${i})">
           <button onclick="saveSliderLink(${i})" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="লিংক সেভ করুন"><i class="fas fa-save"></i></button>
         </div>
-        <div id="sliderCatDropdown_${i}" style="margin-top:5px;">
+
+        <!-- Category Dropdown -->
+        <div id="sliderCatDropdown_${i}">
           <select onchange="applySliderCatLink(${i},this.value)" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);color:var(--text-muted);cursor:pointer;outline:none;">
             <option value="">— ক্যাটাগরি বেছে নিন —</option>
           </select>
@@ -3794,6 +3822,26 @@ function applySliderCatLink(idx, value) {
   if (input) input.value = value;
 }
 
+async function saveSliderTitle(idx) {
+  const input = document.getElementById(`sliderTitleInput_${idx}`);
+  if (!input) return;
+  const title = input.value.trim();
+  try {
+    const res = await fetch(API_URL + '/admin/slider-images/' + idx + '/title', {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + adminToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('শিরোনাম সেভ হয়েছে ✓', 'success');
+      renderSliderImages(data.data);
+    } else {
+      toast(data.message || 'সমস্যা হয়েছে', 'error');
+    }
+  } catch { toast('সার্ভার সমস্যা', 'error'); }
+}
+
 async function saveSliderLink(idx) {
   const input = document.getElementById(`sliderLinkInput_${idx}`);
   if (!input) return;
@@ -3829,6 +3877,11 @@ async function uploadSliderImages(replace = false) {
   const form = new FormData();
   files.forEach(f => form.append('images', f));
   if (replace) form.append('replace', 'true');
+  // প্রতিটি ফাইলের জন্য title ও link পাঠাও (খালি হলেও)
+  files.forEach((f, i) => {
+    form.append(`title_${i}`, '');
+    form.append(`link_${i}`, '');
+  });
 
   try {
     bar.style.width = '40%';
@@ -3841,8 +3894,8 @@ async function uploadSliderImages(replace = false) {
     const data = await res.json();
     bar.style.width = '100%';
     if (data.success) {
-      text.textContent = 'আপলোড সম্পন্ন!';
-      toast('Slider ছবি আপলোড হয়েছে! (' + files.length + 'টি)', 'success');
+      text.textContent = 'আপলোড সম্পন্ন! শিরোনাম ও লিংক সেট করুন।';
+      toast('Slider ছবি আপলোড হয়েছে! (' + files.length + 'টি) — এখন শিরোনাম ও লিংক সেট করুন', 'success');
       renderSliderImages(data.data);
       input.value = '';
     } else {
@@ -3853,7 +3906,7 @@ async function uploadSliderImages(replace = false) {
     text.textContent = 'সংযোগ ব্যর্থ!';
     toast('সার্ভার সমস্যা', 'error');
   }
-  setTimeout(() => { prog.style.display = 'none'; bar.style.width = '0%'; }, 2000);
+  setTimeout(() => { prog.style.display = 'none'; bar.style.width = '0%'; }, 3000);
 }
 
 function handleSliderDrop(event) {
