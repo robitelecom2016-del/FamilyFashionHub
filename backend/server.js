@@ -1564,6 +1564,26 @@ app.delete('/api/admin/slider-images/:index', adminMiddleware, async (req, res) 
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// PUT — Admin: একটি Slider image-এর link আপডেট
+// ⚠️ এই route অবশ্যই /reorder এর আগে থাকতে হবে — নইলে Express /:index = "reorder" ধরে নেয়
+app.put('/api/admin/slider-images/:index/link', adminMiddleware, async (req, res) => {
+  try {
+    const idx = parseInt(req.params.index);
+    const { link } = req.body;
+    if (isNaN(idx)) return res.json({ success: false, message: 'Invalid index' });
+    const setting = await Settings.findOne({ key: 'sliderImages' });
+    let images = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    if (idx < 0 || idx >= images.length) return res.json({ success: false, message: 'Invalid index' });
+    images[idx] = { ...images[idx], link: link || '' };
+    await Settings.findOneAndUpdate(
+      { key: 'sliderImages' },
+      { key: 'sliderImages', value: images },
+      { upsert: true }
+    );
+    res.json({ success: true, data: images, message: 'Slider ছবির লিংক আপডেট হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // PUT — Admin: Slider image-এর order আপডেট (reorder)
 app.put('/api/admin/slider-images/reorder', adminMiddleware, async (req, res) => {
   try {
@@ -1575,24 +1595,6 @@ app.put('/api/admin/slider-images/reorder', adminMiddleware, async (req, res) =>
       { upsert: true }
     );
     res.json({ success: true, data: images, message: 'Slider image order আপডেট হয়েছে' });
-  } catch (e) { res.json({ success: false, message: e.message }); }
-});
-
-// PUT — Admin: একটি Slider image-এর link আপডেট
-app.put('/api/admin/slider-images/:index/link', adminMiddleware, async (req, res) => {
-  try {
-    const idx = parseInt(req.params.index);
-    const { link } = req.body;
-    const setting = await Settings.findOne({ key: 'sliderImages' });
-    let images = (setting && Array.isArray(setting.value)) ? setting.value : [];
-    if (idx < 0 || idx >= images.length) return res.json({ success: false, message: 'Invalid index' });
-    images[idx] = { ...images[idx], link: link || '' };
-    await Settings.findOneAndUpdate(
-      { key: 'sliderImages' },
-      { key: 'sliderImages', value: images },
-      { upsert: true }
-    );
-    res.json({ success: true, data: images, message: 'Slider ছবির লিংক আপডেট হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
@@ -1864,4 +1866,4 @@ app.get('/', (req, res) => res.json({
 
 // ===== START =====
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`)); 
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
