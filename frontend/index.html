@@ -4159,16 +4159,55 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
 
           // Admin প্যানেল থেকে সেট করা link ব্যবহার করো
           const sliderLink = (img.link || '').trim();
-          if (sliderLink) {
-            slide.onclick = () => {
-              if (sliderLink.startsWith('http://') || sliderLink.startsWith('https://')) {
-                window.open(sliderLink, '_blank');
-              } else {
-                window.location.href = sliderLink;
+
+          // link থেকে category/subcategory বের করার helper
+          function parseCatFromLink(link) {
+            try {
+              // যেকোনো format সাপোর্ট করে:
+              // ?category=toys  |  /?category=toys  |  #category=toys
+              // ?category=toys&subcategory=soft_toys
+              // /category/toys  |  /products?category=toys
+              const full = link.includes('://') ? link : ('https://x.com' + (link.startsWith('/') || link.startsWith('?') || link.startsWith('#') ? '' : '/') + link);
+              const url  = new URL(full);
+              let cat = url.searchParams.get('category') || '';
+              let sub = url.searchParams.get('subcategory') || '';
+              if (!cat) {
+                // /category/toys বা /#category=toys format
+                const hashParams = new URLSearchParams(url.hash.replace(/^#\/?/, ''));
+                cat = hashParams.get('category') || '';
+                sub = hashParams.get('subcategory') || '';
               }
-            };
+              if (!cat) {
+                // /toys বা /category/toys path format
+                const parts = url.pathname.replace(/^\//, '').split('/');
+                if (parts[0] === 'category' && parts[1]) cat = parts[1];
+                else if (parts[0] && parts[0] !== '') cat = parts[0];
+              }
+              return { cat: cat || 'all', sub: sub || '' };
+            } catch(e) {
+              // plain text category value যেমন "baby_dress" বা "toys"
+              return { cat: link.replace(/^[/?#]+/, '').split('&')[0].split('=').pop() || 'all', sub: '' };
+            }
+          }
+
+          if (sliderLink) {
+            if (sliderLink.startsWith('http://') || sliderLink.startsWith('https://')) {
+              // বাহ্যিক লিংক — নতুন ট্যাবে খুলবে
+              slide.onclick = () => window.open(sliderLink, '_blank');
+            } else {
+              // অভ্যন্তরীণ লিংক — category parse করে filterByCategory call করো
+              slide.onclick = () => {
+                const { cat, sub } = parseCatFromLink(sliderLink);
+                if (typeof filterByCategory === 'function') {
+                  filterByCategory(cat, sub);
+                  // পেজের product section-এ scroll করো
+                  const ps = document.getElementById('productSection') || document.getElementById('products');
+                  if (ps) ps.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              };
+            }
           } else if (img.linkCategory) {
-            // Fallback: পুরনো linkCategory ফিল্ড থাকলে
+            // Fallback: পুরনো linkCategory ফিল্ড
             slide.onclick = () => { if (typeof filterByCategory === 'function') filterByCategory(img.linkCategory); };
           } else {
             slide.style.cursor = 'default';
