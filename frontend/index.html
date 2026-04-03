@@ -988,16 +988,24 @@
           <div class="md:col-span-8">
             <div id="sliderWrapper" class="relative overflow-hidden md:rounded-lg bg-white md:shadow-md">
               <div id="sliderContainer" class="flex transition-transform duration-500 ease-out" style="transform: translateX(0%);">
-                <!-- API থেকে slider images load হবে — loadSliderImages() দ্বারা -->
-                <div class="min-w-full relative overflow-hidden" style="min-height:260px;background:linear-gradient(135deg,#ede9fe 0%,#f5f3ff 100%);display:flex;align-items:center;justify-content:center;">
-                  <div style="text-align:center;color:#a78bfa;">
-                    <div style="width:36px;height:36px;border:3px solid #c4b5fd;border-top-color:#7c3aed;border-radius:50%;margin:0 auto 10px;" id="sliderLoadSpinner"></div>
-                    <p style="font-size:13px;font-weight:600;">লোড হচ্ছে...</p>
-                  </div>
+                <div class="min-w-full relative cursor-pointer overflow-hidden" onclick="filterByCategory('baby-shoes')" title="Baby Shoes">
+                  <img src="#" alt="Baby Shoes" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">
+                </div>
+                <div class="min-w-full relative cursor-pointer overflow-hidden" onclick="filterByCategory('baby-toys')" title="Baby Toys">
+                  <img src="#" alt="Baby Toys" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">
+                </div>
+                <div class="min-w-full relative cursor-pointer overflow-hidden" onclick="filterByCategory('feeding-bottles')" title="Feeding Items">
+                  <img src="#" alt="Feeding Items" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">
+                </div>
+                <div class="min-w-full relative cursor-pointer overflow-hidden" onclick="filterByCategory('baby-dress')" title="Baby Dress">
+                  <img src="#" alt="Baby Dress" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;">
                 </div>
               </div>
               <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                 <button class="slider-dot w-6 h-2 bg-orange-600 rounded-full transition" onclick="currentSlide(0)"></button>
+                <button class="slider-dot w-3 h-2 bg-gray-400 rounded-full transition" onclick="currentSlide(1)"></button>
+                <button class="slider-dot w-3 h-2 bg-gray-400 rounded-full transition" onclick="currentSlide(2)"></button>
+                <button class="slider-dot w-3 h-2 bg-gray-400 rounded-full transition" onclick="currentSlide(3)"></button>
               </div>
             </div>
           </div>
@@ -4195,9 +4203,6 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
 
       // ── Dynamic slider loader ──
       window.renderSlider = function(images) {
-        // spinner বন্ধ করো
-        if (window._spinnerTimer) { clearInterval(window._spinnerTimer); window._spinnerTimer = null; }
-
         const container      = document.getElementById('sliderContainer');
         const dotsContainer  = document.querySelector('#sliderWrapper .absolute.bottom-3');
         if (!container || !dotsContainer) return;
@@ -4422,8 +4427,8 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
 
       var origFilter = window.filterByCategory;
       if (origFilter) {
-        window.filterByCategory = function(cat, sub) {
-          origFilter(cat, sub || '');
+        window.filterByCategory = function(cat) {
+          origFilter(cat);
           if (cat === 'all') {
             setMobileNavActive('home');
           } else {
@@ -4487,8 +4492,7 @@ window.scrollTo(0, 0);
 window.FFH_API = (function() {
   var h = window.location.hostname;
   if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
-  // Production backend
-  return 'https://familyfashionhub-backend.onrender.com/api';
+  return 'https://familyfashionhub.onrender.com/api';
 })();
 
 // ============================================================
@@ -4557,78 +4561,51 @@ window.FFH_API = (function() {
       var res  = await fetch(window.FFH_API + '/slider-images');
       var data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length) {
-        // renderSlider ready না হলে retry
-        if (typeof window.renderSlider === 'function') {
-          window.renderSlider(data.data);
-        } else {
-          var retries = 0;
-          var tryRender = setInterval(function() {
-            retries++;
-            if (typeof window.renderSlider === 'function') {
-              clearInterval(tryRender);
-              window.renderSlider(data.data);
-            } else if (retries > 20) {
-              clearInterval(tryRender);
-            }
-          }, 100);
-        }
-      } else {
-        // API তে slider নেই — static placeholder গুলো ঠিক রাখো (src="#" সরাই)
-        var container = document.getElementById('sliderContainer');
-        if (container) {
-          var imgs = container.querySelectorAll('img');
-          imgs.forEach(function(img) { if (img.src.endsWith('#')) img.closest('.min-w-full') && img.closest('.min-w-full').remove(); });
-        }
+        if (typeof window.renderSlider === 'function') window.renderSlider(data.data);
       }
-    } catch(e) {
-      console.warn('Slider load error:', e);
-    }
+    } catch(e) {}
   };
 
   window.loadSideBanner = async function() {
-    var el = document.getElementById('sideBannerContainer');
-    if (!el) return;
-
-    function _buildSideBannerEl(url, alt, link) {
-      var wrapper = document.createElement('div');
-      wrapper.className = 'rounded-lg shadow-lg overflow-hidden';
-      wrapper.style.height = '320px';
-      if (link) wrapper.style.cursor = 'pointer';
-
-      var img = document.createElement('img');
-      img.src = url;
-      img.alt = alt || 'Side Banner';
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;';
-      if (link) {
-        img.addEventListener('mouseover', function() { img.style.transform = 'scale(1.04)'; });
-        img.addEventListener('mouseout',  function() { img.style.transform = 'scale(1)'; });
-        wrapper.addEventListener('click', function() {
-          if (typeof window._sliderNavigate === 'function') window._sliderNavigate(link);
-          else if (link.startsWith('http')) window.open(link, '_blank');
-        });
-      }
-      wrapper.appendChild(img);
-      el.innerHTML = '';
-      el.appendChild(wrapper);
-    }
-
-    // ১. hero-side-image API (admin থেকে set করা)
     try {
+      // প্রথমে hero-side-image API থেকে load করো (admin panel থেকে set করা)
       var res  = await fetch(window.FFH_API + '/hero-side-image');
       var data = await res.json();
       if (data.success && data.data && data.data.url) {
-        _buildSideBannerEl(data.data.url, data.data.alt || '', data.data.link || '');
-        return;
+        var b  = data.data;
+        var el = document.getElementById('sideBannerContainer');
+        if (el) {
+          var lnk = b.link || '';
+          var clickCode = lnk ? 'window._sliderNavigate(\'' + lnk.replace(/'/g, "\\'") + '\')' : '';
+          var cursorStyle = lnk ? 'cursor:pointer;' : 'cursor:default;';
+          el.innerHTML = '<div class="rounded-lg shadow-lg overflow-hidden" style="height:320px;' + cursorStyle + '" ' +
+            (clickCode ? 'onclick="' + clickCode + '"' : '') + '>' +
+            '<img src="' + b.url + '" alt="' + (b.alt || 'Side Banner') + '" ' +
+            'style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;" ' +
+            'onmouseover="' + (lnk ? "this.style.transform='scale(1.04)'" : '') + '" ' +
+            'onmouseout="this.style.transform=\'scale(1)\'"></div>';
+        }
+        return; // hero-side-image পেয়েছি, sideBanner load করার দরকার নেই
       }
     } catch(e) {}
-
-    // ২. fallback: settings endpoint-এর sideBanner
+    // fallback: পুরনো sideBanner API (settings endpoint)
     try {
       var res2  = await fetch(window.FFH_API + '/settings');
       var data2 = await res2.json();
       if (data2.success && data2.data && data2.data.sideBanner && data2.data.sideBanner.image) {
-        var b2 = data2.data.sideBanner;
-        _buildSideBannerEl(b2.image, 'Side Banner', b2.link || '');
+        var b2  = data2.data.sideBanner;
+        var el2 = document.getElementById('sideBannerContainer');
+        if (el2) {
+          var lnk2 = b2.link || '';
+          var clickCode2 = lnk2 ? 'window._sliderNavigate(\'' + lnk2.replace(/'/g, "\\'") + '\')' : '';
+          var cursorStyle2 = lnk2 ? 'cursor:pointer;' : 'cursor:default;';
+          el2.innerHTML = '<div class="rounded-lg shadow-lg overflow-hidden" style="height:320px;' + cursorStyle2 + '" ' +
+            (clickCode2 ? 'onclick="' + clickCode2 + '"' : '') + '>' +
+            '<img src="' + b2.image + '" alt="Side Banner" ' +
+            'style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease;" ' +
+            'onmouseover="' + (lnk2 ? "this.style.transform='scale(1.04)'" : '') + '" ' +
+            'onmouseout="this.style.transform=\'scale(1)\'"></div>';
+        }
       }
     } catch(e) {}
   };
@@ -4653,17 +4630,7 @@ window.FFH_API = (function() {
   };
 
   function _runAllLoaders() {
-    // Spinner animate করো
-    var sp = document.getElementById('sliderLoadSpinner');
-    if (sp) {
-      var deg = 0;
-      window._spinnerTimer = setInterval(function() {
-        deg = (deg + 10) % 360;
-        sp.style.transform = 'rotate(' + deg + 'deg)';
-      }, 30);
-    }
-    // renderSlider define হওয়ার সুযোগ দিতে একটু delay
-    setTimeout(function() { window.loadSliderImages(); }, 50);
+    window.loadSliderImages();
     window.loadSideBanner();
     window.loadCollections();
     window.loadTestimonials();
@@ -5761,7 +5728,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      var API = window.FFH_API || 'https://familyfashionhub-backend.onrender.com/api';
+      var API = window.FFH_API || 'https://familyfashionhub.onrender.com/api';
       var token = localStorage.getItem('ffh_user_token') || '';
       var headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = 'Bearer ' + token;
