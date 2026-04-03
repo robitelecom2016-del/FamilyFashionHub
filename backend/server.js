@@ -1578,6 +1578,24 @@ app.put('/api/admin/slider-images/reorder', adminMiddleware, async (req, res) =>
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// PUT — Admin: একটি Slider image-এর link আপডেট
+app.put('/api/admin/slider-images/:index/link', adminMiddleware, async (req, res) => {
+  try {
+    const idx = parseInt(req.params.index);
+    const { link } = req.body;
+    const setting = await Settings.findOne({ key: 'sliderImages' });
+    let images = (setting && Array.isArray(setting.value)) ? setting.value : [];
+    if (idx < 0 || idx >= images.length) return res.json({ success: false, message: 'Invalid index' });
+    images[idx] = { ...images[idx], link: link || '' };
+    await Settings.findOneAndUpdate(
+      { key: 'sliderImages' },
+      { key: 'sliderImages', value: images },
+      { upsert: true }
+    );
+    res.json({ success: true, data: images, message: 'Slider ছবির লিংক আপডেট হয়েছে' });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // ===== HERO SIDE IMAGE API (Desktop mode: image beside slider) =====
 
 // GET — Public: হোমপেজ স্লাইডারের পাশের ইমেজ

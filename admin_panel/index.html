@@ -875,7 +875,7 @@ tr:hover td { background: var(--bg); }
             <i class="fas fa-cloud-upload-alt" style="font-size:36px;color:var(--primary);display:block;margin-bottom:8px;"></i>
             <p style="font-size:14px;color:var(--primary);font-weight:700;">স্লাইডার ছবি এখানে ড্রাগ করুন বা ক্লিক করুন</p>
             <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">একসাথে একাধিক ছবি আপলোড করা যাবে। পুরনো ছবি বাদ যাবে না।</p>
-            <input type="file" id="sliderImagesInput" multiple accept="image/*" style="display:none" onchange="uploadSliderImages()">
+            <input type="file" id="sliderImagesInput" multiple accept="image/*" style="display:none">
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
             <button class="btn btn-primary btn-sm" onclick="document.getElementById('sliderImagesInput').click()"><i class="fas fa-plus"></i> ছবি যোগ করুন</button>
@@ -890,8 +890,11 @@ tr:hover td { background: var(--bg); }
           </div>
           <!-- Current Slider Images -->
           <div>
-            <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;"><i class="fas fa-th-large" style="color:var(--primary);margin-right:5px;"></i> বর্তমান স্লাইডার ছবি</p>
-            <div id="sliderImagesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+              <p style="font-size:13px;font-weight:700;color:var(--text);"><i class="fas fa-th-large" style="color:var(--primary);margin-right:5px;"></i> বর্তমান স্লাইডার ছবি</p>
+              <span style="font-size:11px;color:var(--text-muted);background:var(--primary-light);color:var(--primary-dark);padding:4px 10px;border-radius:20px;"><i class="fas fa-info-circle"></i> প্রতিটি ছবিতে আলাদা ক্যাটাগরি লিংক সেট করুন</span>
+            </div>
+            <div id="sliderImagesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
               <div class="loading"><div class="spinner"></div></div>
             </div>
           </div>
@@ -1049,7 +1052,26 @@ tr:hover td { background: var(--bg); }
           <!-- Link -->
           <div class="form-group">
             <label class="form-label">ইমেজ লিংক <span style="font-size:11px;color:var(--text-muted);">(ক্লিক করলে যাবে — ঐচ্ছিক)</span></label>
-            <input type="text" class="form-control" id="heroSideLink" placeholder="যেমন: /category/sale বা https://...">
+            <input type="text" class="form-control" id="heroSideLink" placeholder="যেমন: /product/abc123 বা /category/toys বা https://...">
+            <!-- Quick pick: Category -->
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;">দ্রুত বেছে নিন:</span>
+              <select id="heroSideCatPick" onchange="if(this.value){document.getElementById('heroSideLink').value=this.value;this.value='';}" style="flex:1;min-width:160px;padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--font);color:var(--text);outline:none;cursor:pointer;">
+                <option value="">📂 ক্যাটাগরি লিংক বেছে নিন...</option>
+              </select>
+            </div>
+            <!-- Quick pick: Product -->
+            <div style="margin-top:6px;display:flex;gap:8px;align-items:center;">
+              <div style="position:relative;flex:1;">
+                <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:12px;"></i>
+                <input type="text" id="heroSideProductSearch" placeholder="🔍 পণ্যের নাম লিখুন — লিংক সেট হবে..." 
+                  style="width:100%;padding:7px 12px 7px 30px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--font);color:var(--text);outline:none;"
+                  onfocus="this.style.borderColor='var(--primary)'" onblur="setTimeout(()=>{document.getElementById('heroSideProductResults').style.display='none';},200)"
+                  oninput="searchProductsForHeroLink(this.value)">
+                <div id="heroSideProductResults" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--primary);border-top:none;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;z-index:99;box-shadow:0 8px 20px rgba(0,0,0,0.1);"></div>
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:5px;"><i class="fas fa-lightbulb" style="color:var(--warning);"></i> পণ্যের লিংক সেট করলে ছবিতে ক্লিক করলে সরাসরি সেই পণ্যে যাবে।</p>
           </div>
           <div class="form-group">
             <label class="form-label">Alt টেক্সট <span style="font-size:11px;color:var(--text-muted);">(SEO ও accessibility — ঐচ্ছিক)</span></label>
@@ -3706,6 +3728,16 @@ async function loadSliderImages() {
   const el = document.getElementById('sliderImagesList');
   if (!el) return;
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  // categories নিশ্চিত করো
+  if (typeof allCategories === 'undefined' || !allCategories.length) {
+    try {
+      const catData = await api('/categories');
+      if (catData.success && Array.isArray(catData.data)) {
+        allCategories = catData.data;
+        saveCategoriesToLocal && saveCategoriesToLocal();
+      }
+    } catch {}
+  }
   try {
     const res = await fetch(API_URL + '/slider-images');
     const data = await res.json();
@@ -3722,15 +3754,86 @@ function renderSliderImages(images) {
     el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);border:1.5px dashed var(--border);border-radius:10px;"><i class="fas fa-images" style="font-size:32px;margin-bottom:8px;display:block;opacity:0.3;"></i><p style="font-size:13px;">এখনো কোনো slider ছবি নেই। উপরে আপলোড করুন।</p></div>';
     return;
   }
-  el.innerHTML = images.map((img, i) => `
-    <div style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-      <img src="${img.url}" style="width:100%;height:100px;object-fit:cover;display:block;">
-      <div style="position:absolute;top:6px;right:6px;display:flex;gap:4px;">
-        <span style="background:rgba(0,0,0,0.55);color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700;">${i+1}</span>
-        <button onclick="deleteSliderImage(${i})" style="background:#ef4444;color:#fff;border:none;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;" title="মুছুন"><i class="fas fa-trash"></i></button>
+  el.innerHTML = images.map((img, i) => {
+    const hasLink = img.link && img.link.trim();
+    return `
+    <div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.08);background:#fff;">
+      <div style="position:relative;">
+        <img src="${img.url}" style="width:100%;height:110px;object-fit:cover;display:block;">
+        <div style="position:absolute;top:6px;right:6px;display:flex;gap:4px;">
+          <span style="background:rgba(0,0,0,0.55);color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700;">${i+1}</span>
+          <button onclick="deleteSliderImage(${i})" style="background:#ef4444;color:#fff;border:none;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;" title="মুছুন"><i class="fas fa-trash"></i></button>
+        </div>
+        ${hasLink ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(124,58,237,0.85);padding:3px 6px;"><span style="font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" title="${img.link}"><i class="fas fa-link"></i> ${img.link.length > 22 ? img.link.slice(0,22)+'…' : img.link}</span></div>` : ''}
       </div>
-      <div style="padding:6px 8px;background:#f9fafb;font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">ছবি ${i+1}</div>
-    </div>`).join('');
+      <div style="padding:8px;">
+        <div id="sliderLinkRow_${i}" style="display:flex;gap:5px;align-items:center;">
+          <input type="text" id="sliderLinkInput_${i}" value="${img.link || ''}" placeholder="ক্যাটাগরি লিংক যেমন: /category/toys" 
+            style="flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);outline:none;color:var(--text);"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')saveSliderLink(${i})">
+          <button onclick="saveSliderLink(${i})" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="লিংক সেভ করুন"><i class="fas fa-save"></i></button>
+        </div>
+        <div id="sliderCatDropdown_${i}" style="margin-top:5px;">
+          <select onchange="applySliderCatLink(${i},this.value)" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);color:var(--text-muted);cursor:pointer;outline:none;">
+            <option value="">— ক্যাটাগরি বেছে নিন —</option>
+          </select>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // category dropdown populate
+  const cats = typeof allCategories !== 'undefined' ? allCategories : [];
+  images.forEach((img, i) => {
+    const sel = document.querySelector(`#sliderCatDropdown_${i} select`);
+    if (!sel) return;
+    cats.forEach(cat => {
+      const fg = document.createElement('optgroup');
+      fg.label = cat.label || cat.value;
+      const mainOpt = document.createElement('option');
+      mainOpt.value = `/category/${cat.value}`;
+      mainOpt.textContent = `↳ সব ${cat.label || cat.value}`;
+      fg.appendChild(mainOpt);
+      if (Array.isArray(cat.subcategories)) {
+        cat.subcategories.forEach(sub => {
+          const o = document.createElement('option');
+          o.value = `/category/${cat.value}?sub=${sub.value}`;
+          o.textContent = sub.label || sub.value;
+          fg.appendChild(o);
+        });
+      }
+      sel.appendChild(fg);
+    });
+    // set current if exists
+    if (img.link) sel.value = img.link;
+  });
+}
+
+function applySliderCatLink(idx, value) {
+  if (!value) return;
+  const input = document.getElementById(`sliderLinkInput_${idx}`);
+  if (input) input.value = value;
+}
+
+async function saveSliderLink(idx) {
+  const input = document.getElementById(`sliderLinkInput_${idx}`);
+  if (!input) return;
+  const link = input.value.trim();
+  try {
+    const res = await fetch(API_URL + '/admin/slider-images/' + idx + '/link', {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + adminToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ link })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('স্লাইডার লিংক সেভ হয়েছে ✓', 'success');
+      renderSliderImages(data.data);
+    } else {
+      toast(data.message || 'সমস্যা হয়েছে', 'error');
+    }
+  } catch { toast('সার্ভার সমস্যা', 'error'); }
 }
 
 async function uploadSliderImages(replace = false) {
@@ -4231,6 +4334,9 @@ async function loadHeroSideImageAdmin() {
   document.getElementById('heroSideNewPreview').style.display = 'none';
   document.getElementById('heroSideCurrentPreview').style.display = 'none';
 
+  // Category dropdown পপুলেট করো
+  await populateHeroSideCatDropdown();
+
   try {
     const res  = await fetch(API_URL + '/hero-side-image');
     const data = await res.json();
@@ -4246,6 +4352,83 @@ async function loadHeroSideImageAdmin() {
   } catch {
     document.getElementById('heroSideCurrentPreview').style.display = 'none';
   }
+}
+
+async function populateHeroSideCatDropdown() {
+  const sel = document.getElementById('heroSideCatPick');
+  if (!sel) return;
+  // clear existing options except first
+  while (sel.options.length > 1) sel.remove(1);
+
+  let cats = typeof allCategories !== 'undefined' ? allCategories : [];
+  if (!cats.length) {
+    try {
+      const catData = await api('/categories');
+      if (catData.success && Array.isArray(catData.data)) {
+        cats = catData.data;
+        allCategories = cats;
+        saveCategoriesToLocal && saveCategoriesToLocal();
+      }
+    } catch {}
+  }
+  cats.forEach(cat => {
+    const fg = document.createElement('optgroup');
+    fg.label = cat.label || cat.value;
+    const mainOpt = document.createElement('option');
+    mainOpt.value = `/category/${cat.value}`;
+    mainOpt.textContent = `সব ${cat.label || cat.value}`;
+    fg.appendChild(mainOpt);
+    if (Array.isArray(cat.subcategories)) {
+      cat.subcategories.forEach(sub => {
+        const o = document.createElement('option');
+        o.value = `/category/${cat.value}?sub=${sub.value}`;
+        o.textContent = `  └ ${sub.label || sub.value}`;
+        fg.appendChild(o);
+      });
+    }
+    sel.appendChild(fg);
+  });
+}
+
+let _heroProductSearchTimer = null;
+async function searchProductsForHeroLink(q) {
+  const box = document.getElementById('heroSideProductResults');
+  if (!box) return;
+  if (!q || q.length < 2) { box.style.display = 'none'; return; }
+  clearTimeout(_heroProductSearchTimer);
+  _heroProductSearchTimer = setTimeout(async () => {
+    box.style.display = 'block';
+    box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--text-muted);">খুঁজছি...</div>';
+    try {
+      const res = await fetch(API_URL + '/products?search=' + encodeURIComponent(q) + '&limit=8');
+      const data = await res.json();
+      const products = (data.success && data.data) ? data.data : [];
+      if (!products.length) {
+        box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--text-muted);">কোনো পণ্য পাওয়া যায়নি</div>';
+        return;
+      }
+      box.innerHTML = products.map(p => `
+        <div onmousedown="setHeroSideProductLink('${p._id}','${(p.name||'').replace(/'/g,'')}')" 
+          style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;transition:background 0.15s;"
+          onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='#fff'">
+          <img src="${p.img || (p.images && p.images[0] ? p.images[0].url : '')}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;border:1px solid var(--border);flex-shrink:0;" onerror="this.style.display='none'">
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</p>
+            <p style="font-size:11px;color:var(--primary);">৳${p.price} — ${p.category || ''}</p>
+          </div>
+        </div>`).join('');
+    } catch {
+      box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--danger);">সার্ভার সমস্যা</div>';
+    }
+  }, 300);
+}
+
+function setHeroSideProductLink(productId, productName) {
+  const link = `/product/${productId}`;
+  document.getElementById('heroSideLink').value = link;
+  document.getElementById('heroSideProductSearch').value = productName;
+  document.getElementById('heroSideProductResults').style.display = 'none';
+  toast(`"${productName}" পণ্যের লিংক সেট হয়েছে ✓`, 'success');
 }
 
 function previewHeroSideImage(input) {
