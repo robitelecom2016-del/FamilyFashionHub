@@ -1681,6 +1681,9 @@
             <button class="dash-nav-item" id="sideNav-deleteacc" onclick="switchDashPanel('deleteacc')">
               <i class="fas fa-trash-alt"></i> Delete My Account <span class="dash-arrow">›</span>
             </button>
+            <button class="dash-nav-item" id="sideNav-analytics" onclick="switchDashPanel('analytics')" style="display:none;border-top:1px solid #374151;margin-top:4px;">
+              <i class="fas fa-chart-line" style="color:#22c55e;"></i> <span style="color:#22c55e;font-weight:700;">Analytics</span> <span class="dash-arrow">›</span>
+            </button>
           </div>
           <button class="dash-logout-btn" onclick="handleLogout()">
             <i class="fas fa-sign-out-alt"></i> Logout
@@ -1745,6 +1748,139 @@
               </button>
             </div>
           </div>
+
+          <!-- ===== ADMIN ANALYTICS PANEL ===== -->
+          <div class="dash-panel" id="panel-analytics">
+            <style>
+              .an-card { background:white; border-radius:10px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+              .an-stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+              .an-stat { background:white; border-radius:10px; padding:14px 16px; display:flex; flex-direction:column; gap:4px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+              .an-stat .num { font-size:1.7rem; font-weight:800; color:#111827; line-height:1; }
+              .an-stat .lbl { font-size:11px; color:#6b7280; }
+              .an-stat .ic  { font-size:20px; margin-bottom:4px; }
+              .an-tabs { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb; margin-bottom:14px; background:#f9fafb; }
+              .an-tab  { flex:1; padding:9px 0; font-size:12px; font-weight:600; text-align:center; cursor:pointer; border:none; background:none; color:#6b7280; font-family:inherit; transition:all .15s; }
+              .an-tab.active { background:white; color:#111827; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+              .an-bar-wrap { display:flex; align-items:flex-end; gap:3px; height:90px; padding:0 2px; }
+              .an-bar { flex:1; border-radius:3px 3px 0 0; background:#6366f1; min-height:3px; transition:height .3s; cursor:pointer; position:relative; }
+              .an-bar:hover::after { content:attr(data-tip); position:absolute; bottom:110%; left:50%; transform:translateX(-50%); background:#1f2937; color:white; font-size:10px; padding:2px 6px; border-radius:4px; white-space:nowrap; pointer-events:none; }
+              .an-bar.visits { background:#6366f1; }
+              .an-bar.clicks { background:#f97316; }
+              .an-live-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; display:inline-block; animation:blink 1.2s infinite; }
+              @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+              .an-table { width:100%; border-collapse:collapse; font-size:12px; }
+              .an-table th { background:#f3f4f6; padding:8px 10px; text-align:left; font-weight:600; color:#374151; }
+              .an-table td { padding:8px 10px; border-bottom:1px solid #f3f4f6; color:#374151; }
+              .an-table tr:last-child td { border-bottom:none; }
+              .an-section-title { font-size:13px; font-weight:700; color:#111827; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+              @media(max-width:640px){ .an-stat-grid{grid-template-columns:repeat(2,1fr);} }
+            </style>
+
+            <!-- টপ হেডার: Live badge + Refresh -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:14px 18px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:10px;color:white;">
+              <div>
+                <div style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;">
+                  <span class="an-live-dot"></span> Analytics Dashboard
+                </div>
+                <div style="font-size:11px;opacity:.75;margin-top:3px;" id="an-last-update">লোড হচ্ছে...</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select id="an-range-select" onchange="analyticsLoadOverview()" style="font-size:11px;padding:5px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:white;cursor:pointer;font-family:inherit;">
+                  <option value="7">গত ৭ দিন</option>
+                  <option value="30">গত ৩০ দিন</option>
+                </select>
+                <button onclick="analyticsRefreshAll()" id="an-refresh-btn" style="background:rgba(255,255,255,.2);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">
+                  <i class="fas fa-sync-alt"></i> রিফ্রেশ
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Stats -->
+            <div class="an-stat-grid" id="an-live-stats">
+              <div class="an-stat"><div class="ic">👁️</div><div class="num" id="an-live-visitors">–</div><div class="lbl">Live ভিজিটর (৫ মিনিট)</div></div>
+              <div class="an-stat"><div class="ic">📄</div><div class="num" id="an-live-pageviews">–</div><div class="lbl">Live Pageviews (৫ মিনিট)</div></div>
+              <div class="an-stat"><div class="ic">📅</div><div class="num" id="an-today-visits">–</div><div class="lbl">আজকের ভিজিট</div></div>
+              <div class="an-stat"><div class="ic">🖱️</div><div class="num" id="an-today-clicks">–</div><div class="lbl">আজকের পণ্য ক্লিক</div></div>
+            </div>
+
+            <!-- ট্যাব: Overview / Live / Products -->
+            <div class="an-tabs">
+              <button class="an-tab active" id="an-tab-overview" onclick="analyticsShowTab('overview')">📊 Overview</button>
+              <button class="an-tab" id="an-tab-live" onclick="analyticsShowTab('live')">🔴 Live Activity</button>
+              <button class="an-tab" id="an-tab-products" onclick="analyticsShowTab('products')">🛍️ পণ্য ক্লিক</button>
+              <button class="an-tab" id="an-tab-pages" onclick="analyticsShowTab('pages')">📋 Top Pages</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div id="an-pane-overview">
+              <div class="an-card" style="margin-bottom:12px;">
+                <div class="an-section-title">📈 ডেইলি ভিজিট চার্ট</div>
+                <div style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;">
+                  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#6366f1;border-radius:2px;display:inline-block;"></span>ভিজিট</span>
+                  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#f97316;border-radius:2px;display:inline-block;"></span>পণ্য ক্লিক</span>
+                </div>
+                <div id="an-daily-chart" class="an-bar-wrap"></div>
+                <div id="an-daily-labels" style="display:flex;gap:3px;font-size:9px;color:#9ca3af;margin-top:4px;overflow:hidden;"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="an-card">
+                  <div class="an-section-title">📊 পিরিয়ড সারসংক্ষেপ</div>
+                  <div id="an-period-summary" style="font-size:13px;"></div>
+                </div>
+                <div class="an-card">
+                  <div class="an-section-title">⏰ আজকের ঘণ্টাভিত্তিক ভিজিট</div>
+                  <div id="an-hourly-chart" class="an-bar-wrap" style="height:60px;"></div>
+                  <div style="display:flex;justify-content:space-between;font-size:9px;color:#9ca3af;margin-top:3px;"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>11PM</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Activity Tab -->
+            <div id="an-pane-live" style="display:none;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="an-card">
+                  <div class="an-section-title">📡 গত ১ ঘণ্টার Pageview (৫ মিনিট ব্যবধান)</div>
+                  <div id="an-live-chart" class="an-bar-wrap" style="height:70px;"></div>
+                  <div id="an-live-chart-labels" style="display:flex;gap:3px;font-size:9px;color:#9ca3af;margin-top:4px;overflow:hidden;"></div>
+                </div>
+                <div class="an-card">
+                  <div class="an-section-title">🕐 সর্বশেষ পণ্য ক্লিক</div>
+                  <div id="an-recent-clicks-list" style="font-size:12px;max-height:150px;overflow-y:auto;"></div>
+                </div>
+              </div>
+              <div class="an-card" style="margin-top:12px;">
+                <div class="an-section-title">🌐 সর্বশেষ পেজ ভিজিট</div>
+                <div id="an-recent-visits-list" style="font-size:12px;max-height:200px;overflow-y:auto;"></div>
+              </div>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="an-pane-products" style="display:none;">
+              <div class="an-card">
+                <div class="an-section-title">🏆 সবচেয়ে বেশি ক্লিক হওয়া পণ্য</div>
+                <div id="an-top-products-wrap" style="overflow-x:auto;">
+                  <table class="an-table" id="an-top-products-table">
+                    <thead><tr><th>#</th><th>পণ্যের নাম</th><th>ক্যাটাগরি</th><th>ক্লিক</th></tr></thead>
+                    <tbody id="an-top-products-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pages Tab -->
+            <div id="an-pane-pages" style="display:none;">
+              <div class="an-card">
+                <div class="an-section-title">📋 সবচেয়ে বেশি ভিজিট হওয়া পেজ</div>
+                <div id="an-top-pages-wrap" style="overflow-x:auto;">
+                  <table class="an-table" id="an-top-pages-table">
+                    <thead><tr><th>#</th><th>পেজ</th><th>ভিজিট</th></tr></thead>
+                    <tbody id="an-top-pages-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /panel-analytics -->
         </div>
       </div>
     </div>
@@ -3152,12 +3288,25 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         const loginBtn = document.getElementById('loginSubmitBtn');
         if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'লগইন হচ্ছে...'; }
         try {
-          const res  = await fetch(window.FFH_API + '/users/login', {
+          // প্রথমে admin login চেষ্টা, তারপর regular user login
+          let data = null;
+          const adminRes = await fetch(window.FFH_API + '/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password: pass }),
           });
-          const data = await res.json();
+          const adminData = await adminRes.json();
+          if (adminData.success && adminData.user && adminData.user.role === 'admin') {
+            data = adminData;
+          } else {
+            const userRes = await fetch(window.FFH_API + '/users/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password: pass }),
+            });
+            data = await userRes.json();
+          }
+
           if (!data.success) {
             err.style.display = 'block';
             err.textContent = data.message || 'লগইন ব্যর্থ হয়েছে।';
@@ -3175,6 +3324,14 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
           signInBtnEl.querySelector('i').className = 'fas fa-user-check text-lg text-orange-600';
           updateMobileSignInUI();
           if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'লগইন'; }
+
+          // Admin হলে analytics panel চালু করো
+          if (data.user.role === 'admin' && typeof window.FFH_analytics !== 'undefined') {
+            setTimeout(function() { window.FFH_analytics.init(); }, 300);
+          }
+          // login event dispatch
+          window.dispatchEvent(new Event('ffh_login'));
+
           const after = loginPage.dataset.afterLogin;
           delete loginPage.dataset.afterLogin;
           if (after === 'review' && pendingReview) {
@@ -4694,6 +4851,14 @@ function _ffhRestoreSession() {
       if (icon) icon.className = 'fas fa-user-check text-lg text-orange-600';
     }
     if (typeof updateMobileSignInUI === 'function') updateMobileSignInUI();
+    // Admin হলে analytics nav দেখাও
+    if (ffhUser.role === 'admin') {
+      setTimeout(function() {
+        var navBtn = document.getElementById('sideNav-analytics');
+        if (navBtn) navBtn.style.display = '';
+        if (window.FFH_analytics && window.FFH_analytics.init) window.FFH_analytics.init();
+      }, 500);
+    }
   }
 }
 
@@ -6339,6 +6504,377 @@ function FFH_shareFacebook() {
   var url = FFH_getCurrentProductURL();
   window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank', 'width=600,height=400');
 }
+</script>
+
+<!-- ===== ANALYTICS TRACKING + ADMIN ANALYTICS PANEL SCRIPT ===== -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Visitor ID (localStorage-এ রাখা UUID) ─────────────────────────────
+  function getVisitorId() {
+    var key = 'ffh_vid';
+    var vid = localStorage.getItem(key);
+    if (!vid) {
+      vid = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(key, vid);
+    }
+    return vid;
+  }
+
+  var _API = window.FFH_API || 'https://familyfashionhub.onrender.com/api';
+  var _vid = getVisitorId();
+
+  // ── Page Visit Track ──────────────────────────────────────────────────
+  function trackPageVisit(page) {
+    fetch(_API + '/analytics/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitorId: _vid,
+        page: page || '/',
+        referrer: document.referrer || ''
+      })
+    }).catch(function() {});
+  }
+
+  // ── Product Click Track ───────────────────────────────────────────────
+  window.FFH_trackProductClick = function(productId, productName, category) {
+    if (!productId) return;
+    fetch(_API + '/analytics/product-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitorId: _vid,
+        productId: String(productId),
+        productName: productName || '',
+        category: category || ''
+      })
+    }).catch(function() {});
+  };
+
+  // ── showProductDetailPage wrap: click track যোগ করো ─────────────────
+  function wrapProductDetailForTracking() {
+    var origFn = window.showProductDetailPage;
+    if (!origFn || origFn._ffhTrackWrapped) return;
+    window.showProductDetailPage = function(productId) {
+      // পণ্য খুঁজে বের করো
+      var prods = window._ffhApiProducts || window.products || window._ffhProducts || [];
+      var p = prods.find(function(x){ return (x.id||x._id) === productId; });
+      if (p) {
+        window.FFH_trackProductClick(productId, p.name, p.category);
+      } else {
+        window.FFH_trackProductClick(productId, '', '');
+      }
+      trackPageVisit('/product/' + productId);
+      return origFn.apply(this, arguments);
+    };
+    window.showProductDetailPage._ffhTrackWrapped = true;
+  }
+
+  // ── Page-level tracking (hash change) ────────────────────────────────
+  function trackCurrentHash() {
+    var hash = window.location.hash || '';
+    var page = hash || '/';
+    trackPageVisit(page);
+  }
+
+  // Initial track
+  setTimeout(function() {
+    trackCurrentHash();
+    wrapProductDetailForTracking();
+  }, 800);
+
+  // Hash change ট্র্যাক
+  window.addEventListener('hashchange', function() {
+    trackCurrentHash();
+  });
+
+  // wrap product detail function যদি পরে define হয়
+  var _wrapAttempts = 0;
+  var _wrapInterval = setInterval(function() {
+    _wrapAttempts++;
+    wrapProductDetailForTracking();
+    if (window.showProductDetailPage && window.showProductDetailPage._ffhTrackWrapped || _wrapAttempts > 20) {
+      clearInterval(_wrapInterval);
+    }
+  }, 500);
+
+  // ── Auto-refresh live stats প্রতি ৩০ সেকেন্ডে ─────────────────────
+  var _liveInterval = null;
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ADMIN ANALYTICS FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  window.analyticsShowTab = function(tab) {
+    ['overview','live','products','pages'].forEach(function(t) {
+      var pane = document.getElementById('an-pane-' + t);
+      var btn  = document.getElementById('an-tab-' + t);
+      if (pane) pane.style.display = (t === tab ? '' : 'none');
+      if (btn) btn.classList.toggle('active', t === tab);
+    });
+    if (tab === 'live') { analyticsLoadLive(); }
+    if (tab === 'products') { analyticsLoadProducts(); }
+    if (tab === 'pages') { analyticsLoadPages(); }
+  };
+
+  window.analyticsRefreshAll = function() {
+    var btn = document.getElementById('an-refresh-btn');
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+    var done = 0;
+    function onDone() {
+      done++;
+      if (done >= 2 && btn) { btn.innerHTML = '<i class="fas fa-sync-alt"></i> রিফ্রেশ'; btn.disabled = false; }
+    }
+    analyticsLoadLiveStats(onDone);
+    analyticsLoadOverview(onDone);
+  };
+
+  // Live Stats (top 4 cards)
+  function analyticsLoadLiveStats(cb) {
+    var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
+    fetch(_API + '/admin/analytics/live', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r){ return r.json(); }).then(function(d) {
+      if (!d.success) return;
+      var data = d.data;
+      setText('an-live-visitors',  data.liveVisitors);
+      setText('an-live-pageviews', data.livePageviews);
+      setText('an-today-visits',   data.todayVisits);
+      setText('an-today-clicks',   data.todayClicks);
+
+      // Live chart
+      if (data.liveChart) renderBarChart('an-live-chart', 'an-live-chart-labels', data.liveChart.map(function(b){ return {label:b.time, val:b.count}; }), '#22c55e');
+
+      // Recent visits
+      var vList = document.getElementById('an-recent-visits-list');
+      if (vList && data.recentVisits) {
+        vList.innerHTML = data.recentVisits.map(function(v) {
+          return '<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;">' +
+            '<i class="fas fa-globe" style="color:#6366f1;width:14px;"></i>' +
+            '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (v.page||'/') + '</span>' +
+            '<span style="font-size:10px;color:#9ca3af;flex-shrink:0;">' + fmtTime(v.createdAt) + '</span>' +
+          '</div>';
+        }).join('') || '<div style="color:#9ca3af;padding:10px 0;text-align:center;">কোনো ডেটা নেই</div>';
+      }
+
+      // Recent clicks
+      var cList = document.getElementById('an-recent-clicks-list');
+      if (cList && data.recentClicks) {
+        cList.innerHTML = data.recentClicks.map(function(c) {
+          return '<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;">' +
+            '<i class="fas fa-mouse-pointer" style="color:#f97316;width:14px;"></i>' +
+            '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (c.productName||'পণ্য') + '</span>' +
+            '<span style="font-size:10px;color:#9ca3af;flex-shrink:0;">' + fmtTime(c.createdAt) + '</span>' +
+          '</div>';
+        }).join('') || '<div style="color:#9ca3af;padding:10px 0;text-align:center;">কোনো ডেটা নেই</div>';
+      }
+
+      // Last update time
+      var el = document.getElementById('an-last-update');
+      if (el) el.textContent = 'সর্বশেষ আপডেট: ' + new Date().toLocaleTimeString('bn-BD');
+      if (cb) cb();
+    }).catch(function(){ if(cb) cb(); });
+  }
+
+  // Overview (daily chart + summary)
+  window.analyticsLoadOverview = function(cb) {
+    var days = (document.getElementById('an-range-select') || {}).value || '7';
+    var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
+    fetch(_API + '/admin/analytics/overview?days=' + days, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r){ return r.json(); }).then(function(d) {
+      if (!d.success) return;
+      var data = d.data;
+
+      // Daily chart — visits + clicks পাশাপাশি
+      var chartEl = document.getElementById('an-daily-chart');
+      var labelsEl = document.getElementById('an-daily-labels');
+      if (chartEl && data.dailyData) {
+        var maxVal = Math.max(1, Math.max.apply(null, data.dailyData.map(function(x){ return Math.max(x.visits, x.clicks); })));
+        chartEl.innerHTML = data.dailyData.map(function(d2) {
+          var vh = Math.round((d2.visits / maxVal) * 80) + 'px';
+          var ch = Math.round((d2.clicks / maxVal) * 80) + 'px';
+          var short = d2.date.slice(5); // MM-DD
+          return '<div style="flex:1;display:flex;gap:1px;align-items:flex-end;">' +
+            '<div class="an-bar visits" style="flex:1;height:' + vh + ';" data-tip="' + d2.visits + ' ভিজিট"></div>' +
+            '<div class="an-bar clicks" style="flex:1;height:' + ch + ';" data-tip="' + d2.clicks + ' ক্লিক"></div>' +
+          '</div>';
+        }).join('');
+        if (labelsEl) labelsEl.innerHTML = data.dailyData.map(function(d2){
+          return '<div style="flex:1;text-align:center;overflow:hidden;">' + d2.date.slice(5) + '</div>';
+        }).join('');
+      }
+
+      // Period summary
+      var sum = document.getElementById('an-period-summary');
+      if (sum) {
+        sum.innerHTML =
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            statBox('মোট ভিজিট', data.totalVisits, '#6366f1') +
+            statBox('Unique ভিজিটর', data.uniqueVisitors, '#8b5cf6') +
+            statBox('মোট ক্লিক', data.totalClicks, '#f97316') +
+            statBox('পিরিয়ড', data.days + ' দিন', '#22c55e') +
+          '</div>';
+      }
+
+      // Top products in overview products tab
+      if (data.topProducts) renderTopProducts(data.topProducts);
+      if (data.topPages) renderTopPages(data.topPages);
+
+      // Hourly chart from summary endpoint
+      loadHourly(token);
+      if (cb) cb();
+    }).catch(function(){ if(cb) cb(); });
+  };
+
+  function loadHourly(token) {
+    fetch(_API + '/admin/analytics/summary', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r){ return r.json(); }).then(function(d) {
+      if (!d.success || !d.data.hourlyData) return;
+      var hData = d.data.hourlyData;
+      renderBarChart('an-hourly-chart', null, hData.map(function(h){ return {label: h.hour+'h', val: h.count}; }), '#6366f1');
+    }).catch(function(){});
+  }
+
+  window.analyticsLoadLive = function() {
+    analyticsLoadLiveStats(null);
+  };
+
+  window.analyticsLoadProducts = function() {
+    var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
+    var days = (document.getElementById('an-range-select') || {}).value || '7';
+    fetch(_API + '/admin/analytics/products?days=' + days, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r){ return r.json(); }).then(function(d) {
+      if (d.success && d.data) renderTopProducts(d.data);
+    }).catch(function(){});
+  };
+
+  window.analyticsLoadPages = function() {
+    var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
+    var days = (document.getElementById('an-range-select') || {}).value || '7';
+    fetch(_API + '/admin/analytics/overview?days=' + days, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r){ return r.json(); }).then(function(d) {
+      if (d.success && d.data && d.data.topPages) renderTopPages(d.data.topPages);
+    }).catch(function(){});
+  };
+
+  // ── Render helpers ─────────────────────────────────────────────────────
+  function renderTopProducts(products) {
+    var tbody = document.getElementById('an-top-products-tbody');
+    if (!tbody) return;
+    if (!products || products.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;">কোনো ক্লিক ডেটা নেই</td></tr>'; return; }
+    tbody.innerHTML = products.slice(0,15).map(function(p, i) {
+      return '<tr><td style="font-weight:700;color:#6366f1;">' + (i+1) + '</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.name||p.productId||'–') + '</td>' +
+        '<td><span style="background:#f3f4f6;padding:2px 7px;border-radius:20px;font-size:11px;">' + (p.category||'–') + '</span></td>' +
+        '<td><strong>' + p.clicks + '</strong></td></tr>';
+    }).join('');
+  }
+
+  function renderTopPages(pages) {
+    var tbody = document.getElementById('an-top-pages-tbody');
+    if (!tbody) return;
+    if (!pages || pages.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#9ca3af;">কোনো ডেটা নেই</td></tr>'; return; }
+    tbody.innerHTML = pages.slice(0,15).map(function(p, i) {
+      return '<tr><td style="font-weight:700;color:#6366f1;">' + (i+1) + '</td>' +
+        '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px;">' + (p.page||'/') + '</td>' +
+        '<td><strong>' + p.count + '</strong></td></tr>';
+    }).join('');
+  }
+
+  function renderBarChart(barId, labelId, items, color) {
+    var el = document.getElementById(barId);
+    if (!el || !items) return;
+    var maxV = Math.max(1, Math.max.apply(null, items.map(function(x){ return x.val; })));
+    var elH  = el.offsetHeight || 70;
+    el.innerHTML = items.map(function(item) {
+      var h = Math.round((item.val / maxV) * (elH - 4)) + 'px';
+      return '<div class="an-bar" style="background:' + color + ';height:' + h + ';" data-tip="' + item.label + ': ' + item.val + '"></div>';
+    }).join('');
+    if (labelId) {
+      var lblEl = document.getElementById(labelId);
+      if (lblEl) lblEl.innerHTML = items.map(function(item){
+        return '<div style="flex:1;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">' + item.label + '</div>';
+      }).join('');
+    }
+  }
+
+  function statBox(label, val, color) {
+    return '<div style="background:#f9fafb;border-radius:8px;padding:12px;">' +
+      '<div style="font-size:1.3rem;font-weight:800;color:' + color + ';">' + val + '</div>' +
+      '<div style="font-size:11px;color:#6b7280;margin-top:2px;">' + label + '</div>' +
+    '</div>';
+  }
+
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val !== undefined && val !== null ? val : '–';
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleTimeString('bn-BD', { hour:'2-digit', minute:'2-digit' }); } catch(e) { return ''; }
+  }
+
+  // ── Analytics Panel Init (admin login হলে দেখাবে) ────────────────────
+  function initAnalyticsPanel() {
+    var user = null;
+    try { user = JSON.parse(localStorage.getItem('ffh_user') || 'null'); } catch(e){}
+    if (!user || user.role !== 'admin') return;
+
+    // Analytics nav button দেখাও
+    var navBtn = document.getElementById('sideNav-analytics');
+    if (navBtn) navBtn.style.display = '';
+
+    // switchDashPanel wrap: analytics panel খুললে auto-load
+    var origSwitch = window.switchDashPanel;
+    if (origSwitch && !origSwitch._analyticsWrapped) {
+      window.switchDashPanel = function(panel) {
+        origSwitch.apply(this, arguments);
+        if (panel === 'analytics') {
+          analyticsLoadLiveStats(null);
+          analyticsLoadOverview(null);
+          // প্রতি ৩০ সেকেন্ডে live stats refresh
+          if (_liveInterval) clearInterval(_liveInterval);
+          _liveInterval = setInterval(function() {
+            var activePane = document.getElementById('panel-analytics');
+            if (activePane && activePane.classList.contains('active')) {
+              analyticsLoadLiveStats(null);
+            }
+          }, 30000);
+        } else {
+          if (_liveInterval) { clearInterval(_liveInterval); _liveInterval = null; }
+        }
+      };
+      window.switchDashPanel._analyticsWrapped = true;
+    }
+  }
+
+  // Page load এবং login event-এর পরে init করো
+  document.addEventListener('DOMContentLoaded', initAnalyticsPanel);
+  setTimeout(initAnalyticsPanel, 1500);
+
+  // login/admin login-এর পরে re-init — _ffhRestoreSession এ already handle হয়
+  // কিন্তু যদি কেউ direct _ffhRestoreSession override করে তাহলেও কাজ করবে
+  window.addEventListener('ffh_login', function() {
+    setTimeout(initAnalyticsPanel, 300);
+  });
+
+  // ── expose public API ─────────────────────────────────────────────────
+  window.FFH_analytics = {
+    trackPageVisit: trackPageVisit,
+    trackProductClick: window.FFH_trackProductClick,
+    loadLive: analyticsLoadLiveStats,
+    loadOverview: window.analyticsLoadOverview,
+    init: initAnalyticsPanel,
+  };
+
+})();
 </script>
 
 </body>

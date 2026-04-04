@@ -1163,6 +1163,115 @@ app.get('/api/admin/analytics/products', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// ===== GET /api/admin/analytics/live — রিয়েল-টাইম লাইভ স্ট্যাটস (last 5 minutes) =====
+app.get('/api/admin/analytics/live', adminMiddleware, async (req, res) => {
+  try {
+    const now        = new Date();
+    const today      = now.toISOString().split('T')[0];
+    const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000);
+
+    // গত ৫ মিনিটে active ভিজিটর
+    const liveVisits  = await PageVisit.find({ createdAt: { $gte: fiveMinsAgo } }).lean();
+    const liveUnique  = new Set(liveVisits.map(v => v.visitorId || v.ip)).size;
+
+    // আজকের টোটাল ভিজিট ও ক্লিক
+    const todayVisits = await PageVisit.countDocuments({ date: today });
+    const todayClicks = await ProductClick.countDocuments({ date: today });
+
+    // গত ১ ঘণ্টার ভিজিট (প্রতি ৫ মিনিটে গ্রুপ)
+    const oneHourAgo  = new Date(now.getTime() - 60 * 60 * 1000);
+    const hourVisits  = await PageVisit.find({ createdAt: { $gte: oneHourAgo } }).lean();
+
+    // ৫ মিনিট বিরতিতে bucket করো
+    const buckets = {};
+    for (let i = 11; i >= 0; i--) {
+      const t = new Date(now.getTime() - i * 5 * 60 * 1000);
+      const label = t.getHours().toString().padStart(2,'0') + ':' + (Math.floor(t.getMinutes()/5)*5).toString().padStart(2,'0');
+      buckets[label] = 0;
+    }
+    hourVisits.forEach(v => {
+      const t     = new Date(v.createdAt);
+      const label = t.getHours().toString().padStart(2,'0') + ':' + (Math.floor(t.getMinutes()/5)*5).toString().padStart(2,'0');
+      if (buckets[label] !== undefined) buckets[label]++;
+    });
+    const liveChart = Object.entries(buckets).map(([time, count]) => ({ time, count }));
+
+    // সর্বশেষ ১০টি পেজ ভিজিট
+    const recentVisits = await PageVisit.find().sort({ createdAt: -1 }).limit(10).lean();
+
+    // সর্বশেষ ১০টি পণ্য ক্লিক
+    const recentClicks = await ProductClick.find().sort({ createdAt: -1 }).limit(10).lean();
+
+    res.json({
+      success: true,
+      data: {
+        liveVisitors:  liveUnique,
+        livePageviews: liveVisits.length,
+        todayVisits,
+        todayClicks,
+        liveChart,
+        recentVisits,
+        recentClicks,
+        timestamp: now.toISOString(),
+      }
+    });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== GET /api/admin/analytics/overview — 7/30 দিনের ওভারভিউ =====
+app.get('/api/admin/analytics/overview', adminMiddleware, async (req, res) => {
+  try {
+    const days   = parseInt(req.query.days || '7');
+    const now    = new Date();
+    const past   = new Date(now);
+    past.setDate(past.getDate() - days + 1);
+    const pastStr = past.toISOString().split('T')[0];
+
+    const visits  = await PageVisit.find({ date: { $gte: pastStr } }).lean();
+    const clicks  = await ProductClick.find({ date: { $gte: pastStr } }).lean();
+
+    // প্রতিদিনের তথ্য
+    const dayMap = {};
+    for (let i = days - 1; i >= 0; i--) {
+      const d   = new Date(now);
+      d.setDate(d.getDate() - i);
+      const ds  = d.toISOString().split('T')[0];
+      dayMap[ds] = { date: ds, visits: 0, unique: new Set(), clicks: 0 };
+    }
+    visits.forEach(v => { if (dayMap[v.date]) { dayMap[v.date].visits++; dayMap[v.date].unique.add(v.visitorId || v.ip); } });
+    clicks.forEach(c => { if (dayMap[c.date]) dayMap[c.date].clicks++; });
+
+    const dailyData = Object.values(dayMap).map(d => ({
+      date: d.date,
+      visits: d.visits,
+      unique: d.unique.size,
+      clicks: d.clicks,
+    }));
+
+    // টপ পেজ
+    const pageMap = {};
+    visits.forEach(v => { pageMap[v.page] = (pageMap[v.page] || 0) + 1; });
+    const topPages = Object.entries(pageMap).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([page,count])=>({page,count}));
+
+    // টপ পণ্য
+    const prodMap = {};
+    clicks.forEach(c => {
+      if (!prodMap[c.productId]) prodMap[c.productId] = { productId: c.productId, name: c.productName, category: c.category, clicks: 0 };
+      prodMap[c.productId].clicks++;
+    });
+    const topProducts = Object.values(prodMap).sort((a,b)=>b.clicks-a.clicks).slice(0,10);
+
+    const totalVisits   = visits.length;
+    const uniqueVisitors = new Set(visits.map(v => v.visitorId || v.ip)).size;
+    const totalClicks   = clicks.length;
+
+    res.json({
+      success: true,
+      data: { days, totalVisits, uniqueVisitors, totalClicks, dailyData, topPages, topProducts }
+    });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 // ===== ORDER ROUTES =====
 
 // ===== PHONE ORDER HISTORY — PUBLIC (অর্ডার ফর্মে ব্যবহার করা হয়) =====
