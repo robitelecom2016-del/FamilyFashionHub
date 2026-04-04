@@ -793,36 +793,56 @@ app.post('/api/users/login', async (req, res) => {
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.json({ success: false, message: 'ইমেইল ও পাসওয়ার্ড দিন' });
+    if (!email || !password) return res.json({ success: false, message: 'ইউজার নেম ও পাসওয়ার্ড দিন' });
     const normalizedEmail = email.toLowerCase().trim();
 
-    // প্রথমে .env-এর ADMIN_USERNAME দিয়ে চেক করো
-    if (
-      normalizedEmail === (process.env.ADMIN_USERNAME || '').toLowerCase() &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      // DB-তে এই admin খোঁজো
-      let user = await User.findOne({ email: normalizedEmail, role: 'admin' });
-      if (!user) {
-        // না থাকলে এখনই তৈরি করো
-        const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
-        user = await User.create({
-          name: 'Super Admin',
-          email: normalizedEmail,
-          password: hashed,
-          role: 'admin',
-        });
+    // DB থেকে admin খোঁজো
+    let user = await User.findOne({ email: normalizedEmail, role: 'admin' });
+
+    if (user) {
+      // ===== পাথ ১: DB-তে user আছে =====
+      // প্রথমে DB-এর hashed password চেক করো (change-password করার পরে এটাই হবে)
+      const matchHash = await bcrypt.compare(password, user.password);
+
+      if (!matchHash) {
+        // DB hash মেলেনি — .env-এর plain password দিয়ে একবার চেক করো
+        // (user যদি কখনো change-password না করে থাকে)
+        const matchEnv =
+          password === process.env.ADMIN_PASSWORD &&
+          normalizedEmail === (process.env.ADMIN_USERNAME || '').toLowerCase();
+
+        if (!matchEnv) {
+          return res.json({ success: false, message: 'পাসওয়ার্ড ভুল' });
+        }
+
+        // .env দিয়ে মিলেছে — DB-তে hash আপডেট করো যাতে পরেরবার hash-এ মেলে
+        const hashed = await bcrypt.hash(password, 12);
+        await User.findByIdAndUpdate(user._id, { password: hashed });
+        user.password = hashed;
       }
-      const token = jwt.sign({ id: user._id, email: user.email, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
-      return res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: 'admin' }, token });
+    } else {
+      // ===== পাথ ২: DB-তে user নেই — .env দিয়ে চেক করে তৈরি করো =====
+      const envMatch =
+        normalizedEmail === (process.env.ADMIN_USERNAME || '').toLowerCase() &&
+        password === process.env.ADMIN_PASSWORD;
+
+      if (!envMatch) return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
+
+      const hashed = await bcrypt.hash(password, 12);
+      user = await User.create({
+        name:     'Super Admin',
+        email:    normalizedEmail,
+        password: hashed,
+        role:     'admin',
+      });
+      console.log('✅ Admin DB entry auto-created:', normalizedEmail);
     }
 
-    // সাধারণ DB-based admin login
-    const user = await User.findOne({ email: normalizedEmail, role: 'admin' });
-    if (!user) return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.json({ success: false, message: 'পাসওয়ার্ড ভুল' });
-    const token = jwt.sign({ id: user._id, email: user.email, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: 'admin', name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
     res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: 'admin' }, token });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
@@ -852,6 +872,51 @@ app.delete('/api/admin/users/:id', adminMiddleware, async (req, res) => {
     await User.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'ব্যবহারকারী মুছে ফেলা হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== ADMIN CHANGE PASSWORD =====
+// POST /api/admin/change-password
+// বর্তমান পাসওয়ার্ড যাচাই করে নতুন পাসওয়ার্ড DB-তে সেভ করে।
+// Login flow-এ DB password আগে চেক করা হয়, তারপর .env fallback।
+// পাসওয়ার্ড পরিবর্তনের পরে DB-তে hashed password থাকবে, .env-এর plain text আর কাজ করবে না।
+app.post('/api/admin/change-password', adminMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // Validation
+    if (!currentPassword || !newPassword)
+      return res.json({ success: false, message: 'বর্তমান ও নতুন পাসওয়ার্ড দিন' });
+    if (newPassword.length < 6)
+      return res.json({ success: false, message: 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' });
+
+    // Token থেকে admin email বের করো
+    const adminEmail = req.user.email;
+    const user = await User.findOne({ email: adminEmail, role: 'admin' });
+    if (!user) return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
+
+    // বর্তমান পাসওয়ার্ড যাচাই —
+    // ১) প্রথমে bcrypt দিয়ে DB hash-এর বিরুদ্ধে চেক করো
+    // ২) না মিললে .env-এর plain ADMIN_PASSWORD-এর বিরুদ্ধে চেক করো (initial state)
+    const matchHash = await bcrypt.compare(currentPassword, user.password);
+    const matchEnv  = (currentPassword === process.env.ADMIN_PASSWORD &&
+                       adminEmail.toLowerCase() === (process.env.ADMIN_USERNAME || '').toLowerCase());
+
+    if (!matchHash && !matchEnv)
+      return res.json({ success: false, message: 'বর্তমান পাসওয়ার্ড ভুল' });
+
+    if (currentPassword === newPassword)
+      return res.json({ success: false, message: 'নতুন পাসওয়ার্ড বর্তমান পাসওয়ার্ডের মতো হতে পারবে না' });
+
+    // নতুন পাসওয়ার্ড hash করে DB-তে সেভ করো
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await User.findByIdAndUpdate(user._id, { password: hashed });
+
+    console.log(`✅ Admin password changed: ${adminEmail}`);
+    res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে! পরের লগইনে নতুন পাসওয়ার্ড ব্যবহার করুন।' });
+  } catch (e) {
+    console.error('❌ change-password error:', e.message);
+    res.json({ success: false, message: e.message });
+  }
 });
 
 // ===== ORDER ROUTES =====
