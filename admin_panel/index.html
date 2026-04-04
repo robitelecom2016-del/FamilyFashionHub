@@ -1561,14 +1561,14 @@ tr:hover td { background: var(--bg); }
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">এখান থেকে ফ্রন্টএন্ডের ডেলিভারি চার্জ নিয়ন্ত্রণ করুন। পরিবর্তন সাথে সাথে চেকআউট পেজে কার্যকর হবে।</p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label"><i class="fas fa-city" style="color:var(--primary);margin-right:6px;"></i>ঢাকার ভেতরে (BDT)</label>
+              <label class="form-label"><i class="fas fa-city" style="color:var(--primary);margin-right:6px;"></i>চট্টগ্রামের ভেতরে (BDT)</label>
               <div style="position:relative;">
                 <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:600;">৳</span>
                 <input type="number" class="form-control" id="dcInsideCharge" placeholder="80" min="0" style="padding-left:28px;" oninput="updateDeliveryPreview()">
               </div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label"><i class="fas fa-road" style="color:var(--warning);margin-right:6px;"></i>ঢাকার বাইরে (BDT)</label>
+              <label class="form-label"><i class="fas fa-road" style="color:var(--warning);margin-right:6px;"></i>চট্টগ্রামের বাইরে (BDT)</label>
               <div style="position:relative;">
                 <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:600;">৳</span>
                 <input type="number" class="form-control" id="dcOutsideCharge" placeholder="130" min="0" style="padding-left:28px;" oninput="updateDeliveryPreview()">
@@ -1605,8 +1605,8 @@ tr:hover td { background: var(--bg); }
           <div id="dcPreview" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #c4b5fd;border-radius:10px;padding:14px 18px;margin-bottom:18px;">
             <p style="font-size:12px;font-weight:600;color:#6d28d9;margin-bottom:10px;"><i class="fas fa-eye" style="margin-right:6px;"></i>ফ্রন্টএন্ডে এভাবে দেখাবে:</p>
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-              <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;">🏙️ ঢাকা ভেতর: <span style="color:var(--primary);" id="dcPvInside">৳৮০</span></div>
-              <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;">🚚 ঢাকার বাইরে: <span style="color:var(--warning);" id="dcPvOutside">৳১৩০</span></div>
+              <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;">🏙️ চট্টগ্রাম ভেতর: <span style="color:var(--primary);" id="dcPvInside">৳৮০</span></div>
+              <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;">🚚 চট্টগ্রামের বাইরে: <span style="color:var(--warning);" id="dcPvOutside">৳১৩০</span></div>
               <div id="dcPreviewFree" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;display:none;">🎁 <span id="dcPvFree" style="color:var(--success);">৳১০০০+</span> অর্ডারে ফ্রি!</div>
             </div>
           </div>
@@ -2008,7 +2008,7 @@ tr:hover td { background: var(--bg); }
         <div class="form-grid">
           <div class="form-group" style="grid-column:1/-1;">
             <label class="form-label">ডেলিভারি তথ্য</label>
-            <textarea class="form-control" id="productDeliveryInfo" rows="3" placeholder="যেমন: ঢাকার ভেতরে ৪৮ ঘন্টা, ঢাকার বাইরে ৩-৫ দিন। ডেলিভারি চার্জ: ঢাকায় ৬০৳, বাইরে ১২০৳"></textarea>
+            <textarea class="form-control" id="productDeliveryInfo" rows="3" placeholder="যেমন: চট্টগ্রামের ভেতরে ৪৮ ঘন্টা, বাইরে ৩-৫ দিন। ডেলিভারি চার্জ: চট্টগ্রামে ৮০৳, বাইরে ১৩০৳"></textarea>
           </div>
           <div class="form-group" style="grid-column:1/-1;">
             <label class="form-label">রিটার্ন / এক্সচেঞ্জ নীতি</label>
@@ -3575,8 +3575,8 @@ async function saveDeliverySettings() {
   const free    = parseFloat(document.getElementById('dcFreeAbove').value);
   const enabled = document.getElementById('dcFreeDeliveryEnabled').checked;
 
-  if (isNaN(inside)  || inside  < 0) return toast('ঢাকার ভেতরের চার্জ সঠিক নয়', 'error');
-  if (isNaN(outside) || outside < 0) return toast('ঢাকার বাইরের চার্জ সঠিক নয়', 'error');
+  if (isNaN(inside)  || inside  < 0) return toast('চট্টগ্রামের ভেতরের চার্জ সঠিক নয়', 'error');
+  if (isNaN(outside) || outside < 0) return toast('চট্টগ্রামের বাইরের চার্জ সঠিক নয়', 'error');
   if (enabled && (isNaN(free) || free <= 0)) return toast('ফ্রি ডেলিভারির পরিমাণ দিন', 'error');
 
   const data = await api('/admin/delivery-settings', 'POST', {

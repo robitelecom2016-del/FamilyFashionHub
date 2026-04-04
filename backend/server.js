@@ -1362,7 +1362,7 @@ app.post('/api/orders', async (req, res) => {
     const note =
       b.note || b.notes || b.message || b.orderNote || b.order_note || '';
 
-    // deliveryArea — 'dhaka'/'inside' = ঢাকার ভেতর, 'outside' = বাইরে
+    // deliveryArea — 'inside' = চট্টগ্রামের ভেতর, 'outside' = বাইরে
     const deliveryArea = (b.deliveryArea || b.delivery_area || b.area || 'inside') === 'outside' ? 'outside' : 'inside';
 
     // items — array or JSON string
@@ -1822,8 +1822,8 @@ app.get('/api/delivery-settings', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'deliveryCharge' });
     const defaults = {
-      insideCharge:    80,   // ঢাকার ভেতরে ডেলিভারি চার্জ (BDT)
-      outsideCharge:   130,  // ঢাকার বাইরে ডেলিভারি চার্জ (BDT)
+      insideCharge:    80,   // চট্টগ্রামের ভেতরে ডেলিভারি চার্জ (BDT)
+      outsideCharge:   130,  // চট্টগ্রামের বাইরে ডেলিভারি চার্জ (BDT)
       freeAbove:       1000, // এই পরিমাণের বেশি অর্ডারে ডেলিভারি ফ্রি (0 = disabled)
       freeDeliveryEnabled: true,
     };
