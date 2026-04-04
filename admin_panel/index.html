@@ -939,6 +939,36 @@ tr:hover td { background: var(--bg); }
     <!-- ANALYTICS PAGE -->
     <div class="page-section" id="page-analytics">
 
+      <!-- Live Counter Banner -->
+      <div style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:16px;padding:20px 24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:10px;height:10px;background:#10b981;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;box-shadow:0 0 0 3px rgba(16,185,129,0.3);"></span>
+            <span style="color:#c4b5fd;font-size:12px;font-weight:600;">এখন LIVE</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:6px;">
+            <span id="liveVisitorCount" style="font-size:34px;font-weight:900;color:#fff;line-height:1;">—</span>
+            <span style="color:#a78bfa;font-size:13px;">জন এখন সাইটে</span>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:20px;flex-wrap:wrap;">
+            <div style="text-align:center;">
+              <div id="liveTodayVisits" style="font-size:18px;font-weight:800;color:#fff;">—</div>
+              <div style="font-size:10px;color:#a78bfa;">আজকের পেজভিউ</div>
+            </div>
+            <div style="text-align:center;">
+              <div id="liveTodayClicks" style="font-size:18px;font-weight:800;color:#fbbf24;">—</div>
+              <div style="font-size:10px;color:#a78bfa;">আজকের পণ্য ক্লিক</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#a78bfa;margin-bottom:6px;">গত ১ ঘণ্টার ভিজিট (৫ মিনিট বিরতিতে)</div>
+        <div id="liveChartBars" style="display:flex;align-items:flex-end;gap:3px;height:36px;margin-bottom:8px;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span id="analyticsLastRefresh" style="font-size:10px;color:#7c3aed;"></span>
+          <button onclick="loadAnalytics();loadLiveCounter();" style="background:rgba(124,58,237,0.4);border:1px solid rgba(124,58,237,0.6);color:#c4b5fd;padding:4px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
+        </div>
+      </div>
+
       <!-- Top Stats -->
       <div class="analytics-grid" id="analyticsStats">
         <div class="analytics-card">
@@ -2583,9 +2613,13 @@ function showPage(page) {
   if (page === 'analytics') {
     loadAnalytics();
     loadProductClicks();
+    loadLiveCounter();
+    startAnalyticsAutoRefresh();
     // আজকের তারিখ default সেট করো
     const dp = document.getElementById('analyticsDatePicker');
     if (dp && !dp.value) dp.value = new Date().toISOString().split('T')[0];
+  } else {
+    stopAnalyticsAutoRefresh();
   }
 }
 
@@ -6252,64 +6286,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // =====================================================================
-// ===== ANALYTICS — FRONTEND TRACKING (ফ্রন্টএন্ডে যোগ করার কোড) =====
-// =====================================================================
-/*
-  নিচের কোডটি আপনার ফ্রন্টএন্ডের main JS ফাইলে যোগ করুন।
-  এটি automatically visitor ও product click track করবে।
-
-  // ১. Visitor ID তৈরি (একবার হলেই হয়)
-  function getVisitorId() {
-    let id = localStorage.getItem('ffh_vid');
-    if (!id) { id = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); localStorage.setItem('ffh_vid', id); }
-    return id;
-  }
-
-  // ২. Page visit track করুন (প্রতিটি page load-এ)
-  fetch(API_BASE + '/api/analytics/visit', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ visitorId: getVisitorId(), page: window.location.pathname, referrer: document.referrer })
-  }).catch(() => {});
-
-  // ৩. Product click track করুন (পণ্যে ক্লিক করলে)
-  function trackProductClick(productId, productName, category) {
-    fetch(API_BASE + '/api/analytics/product-click', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visitorId: getVisitorId(), productId, productName, category })
-    }).catch(() => {});
-  }
-*/
-
-// =====================================================================
 // ===== ANALYTICS DASHBOARD FUNCTIONS =====
 // =====================================================================
 
-async function loadAnalytics() {
+// ── Helper: API URL ও Token (বাকি code-এর সাথে match করে) ──────────
+function getAnalyticsAPI()   { return (typeof API_URL   !== 'undefined' ? API_URL   : localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub.onrender.com/api').replace(/\/api$/, ''); }
+function getAnalyticsToken() { return (typeof adminToken !== 'undefined' ? adminToken : localStorage.getItem('ffh_admin_token') || ''); }
+function analyticsHeaders()  { return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getAnalyticsToken() }; }
+
+// ── Live Auto-Refresh Timer ─────────────────────────────────────────
+let _analyticsRefreshTimer = null;
+
+function startAnalyticsAutoRefresh() {
+  stopAnalyticsAutoRefresh();
+  _analyticsRefreshTimer = setInterval(function () {
+    // শুধু analytics পেজ খোলা থাকলেই refresh হবে
+    const analyticsPage = document.getElementById('page-analytics');
+    if (analyticsPage && (analyticsPage.style.display === 'block' || analyticsPage.classList.contains('active'))) {
+      loadAnalytics(true); // silent=true — loader দেখাবে না
+      loadLiveCounter();
+    }
+  }, 60000); // প্রতি ৬০ সেকেন্ডে
+}
+function stopAnalyticsAutoRefresh() {
+  if (_analyticsRefreshTimer) { clearInterval(_analyticsRefreshTimer); _analyticsRefreshTimer = null; }
+}
+
+// ── Live Counter (গত ৫ মিনিটের active ভিজিটর) ──────────────────────
+async function loadLiveCounter() {
   try {
-    const r    = await fetch(API + '/api/admin/analytics/summary', { headers: { Authorization: 'Bearer ' + token } });
+    const BASE = getAnalyticsAPI();
+    const r = await fetch(BASE + '/api/admin/analytics/live', { headers: analyticsHeaders() });
+    const data = await r.json();
+    if (!data.success) return;
+    const d = data.data;
+    const el = document.getElementById('liveVisitorCount');
+    const tc = document.getElementById('liveTodayClicks');
+    const tv = document.getElementById('liveTodayVisits');
+    if (el) el.textContent = d.liveVisitors;
+    if (tc) tc.textContent = d.todayClicks.toLocaleString('bn-BD');
+    if (tv) tv.textContent = d.todayVisits.toLocaleString('bn-BD');
+
+    // Live mini chart (last 1 hour, 5-min buckets)
+    renderLiveChart(d.liveChart || []);
+  } catch(e) {}
+}
+
+function renderLiveChart(chartData) {
+  const el = document.getElementById('liveChartBars');
+  if (!el || !chartData.length) return;
+  const max = Math.max(...chartData.map(c => c.count), 1);
+  el.innerHTML = chartData.map(c => {
+    const pct = Math.round((c.count / max) * 100);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;">
+      <div style="width:100%;background:${pct > 0 ? '#7c3aed' : '#e5e7eb'};border-radius:3px 3px 0 0;height:${Math.max(pct,3)}%;min-height:3px;transition:height 0.4s;position:relative;" title="${c.time}: ${c.count}"></div>
+      <div style="font-size:8px;color:var(--text-muted);white-space:nowrap;">${c.time.slice(3)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Main Analytics Loader ───────────────────────────────────────────
+async function loadAnalytics(silent) {
+  const BASE = getAnalyticsAPI();
+  try {
+    if (!silent) {
+      ['weeklyChart','hourlyChart','topProductsBody','todayTopProductsBody','topPagesBody'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+      });
+    }
+
+    const r    = await fetch(BASE + '/api/admin/analytics/summary', { headers: analyticsHeaders() });
     const data = await r.json();
     if (!data.success) return;
     const d = data.data;
 
     // Top stats
-    document.getElementById('anTodayVisits').textContent  = d.today.visits.toLocaleString('bn-BD');
-    document.getElementById('anTodayUnique').textContent  = d.today.unique.toLocaleString('bn-BD');
-    document.getElementById('anMonthVisits').textContent  = d.month.visits.toLocaleString('bn-BD');
-    document.getElementById('anMonthUnique').textContent  = d.month.unique.toLocaleString('bn-BD');
+    const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+    set('anTodayVisits', d.today.visits.toLocaleString('bn-BD'));
+    set('anTodayUnique', d.today.unique.toLocaleString('bn-BD'));
+    set('anMonthVisits', d.month.visits.toLocaleString('bn-BD'));
+    set('anMonthUnique', d.month.unique.toLocaleString('bn-BD'));
 
-    // Weekly chart
+    // Last refreshed time
+    const ts = document.getElementById('analyticsLastRefresh');
+    if (ts) ts.textContent = 'সর্বশেষ আপডেট: ' + new Date().toLocaleTimeString('bn-BD');
+
     renderWeeklyChart(d.dailyData);
-
-    // Hourly chart
     renderHourlyChart(d.hourlyData);
-
-    // Top products (30 days)
-    renderTopProducts(d.topProducts, 'topProductsBody');
-
-    // Today top products
+    renderTopProducts(d.topProducts,      'topProductsBody');
     renderTopProducts(d.todayTopProducts, 'todayTopProductsBody', true);
-
-    // Top pages
     renderTopPages(d.topPages);
 
   } catch(e) { console.error('Analytics load error:', e); }
@@ -6319,12 +6385,12 @@ function renderWeeklyChart(dailyData) {
   const el = document.getElementById('weeklyChart');
   if (!el) return;
   const max = Math.max(...dailyData.map(d => d.total), 1);
-  let total = dailyData.reduce((s, d) => s + d.total, 0);
+  const total = dailyData.reduce((s, d) => s + d.total, 0);
   const label = document.getElementById('weekTotalLabel');
   if (label) label.textContent = 'মোট: ' + total.toLocaleString('bn-BD');
 
   el.innerHTML = dailyData.map(d => {
-    const pct = Math.round((d.total / max) * 100);
+    const pct = Math.max(Math.round((d.total / max) * 100), d.total > 0 ? 4 : 0);
     return `<div class="chart-bar-col">
       <div class="chart-bar" style="height:${pct}%;">
         <div class="chart-bar-tooltip">${d.total} ভিজিট<br>${d.unique} ইউনিক</div>
@@ -6339,7 +6405,7 @@ function renderHourlyChart(hourlyData) {
   if (!el) return;
   const max = Math.max(...hourlyData.map(h => h.count), 1);
   el.innerHTML = hourlyData.map(h => {
-    const pct = Math.round((h.count / max) * 100);
+    const pct = Math.max(Math.round((h.count / max) * 100), h.count > 0 ? 4 : 0);
     const label = h.hour < 12 ? h.hour + 'AM' : (h.hour === 12 ? '12PM' : (h.hour-12) + 'PM');
     return `<div class="hourly-bar" style="height:${pct}%;" title="${h.hour}:00 — ${h.count} ভিজিট">
       <div class="hourly-bar-tooltip">${label}: ${h.count}</div>
@@ -6347,7 +6413,7 @@ function renderHourlyChart(hourlyData) {
   }).join('');
 }
 
-function renderTopProducts(products, containerId, mini = false) {
+function renderTopProducts(products, containerId, mini) {
   const el = document.getElementById(containerId);
   if (!el) return;
   if (!products || products.length === 0) {
@@ -6362,9 +6428,9 @@ function renderTopProducts(products, containerId, mini = false) {
     return `<div class="product-rank-item">
       <div class="rank-num ${rc}">${i+1}</div>
       <div class="rank-bar-wrap" style="flex:1;">
-        <div style="display:flex;justify-content:space-between;">
-          <span style="font-size:13px;font-weight:600;color:var(--text);">${p.name || '(অজানা পণ্য)'}</span>
-          <span style="font-size:12px;color:var(--primary);font-weight:700;">${p.clicks} ক্লিক</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+          <span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%;">${p.name || '(অজানা পণ্য)'}</span>
+          <span style="font-size:12px;color:var(--primary);font-weight:700;white-space:nowrap;">${p.clicks} ক্লিক</span>
         </div>
         ${!mini ? `<div style="font-size:11px;color:var(--text-muted);">${p.category || ''}</div>` : ''}
         <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${pct}%;"></div></div>
@@ -6398,9 +6464,10 @@ function renderTopPages(pages) {
 }
 
 async function loadProductClicks() {
+  const BASE = getAnalyticsAPI();
   const days = document.getElementById('productClickRange')?.value || 30;
   try {
-    const r    = await fetch(`${API}/api/admin/analytics/products?days=${days}`, { headers: { Authorization: 'Bearer ' + token } });
+    const r    = await fetch(`${BASE}/api/admin/analytics/products?days=${days}`, { headers: analyticsHeaders() });
     const data = await r.json();
     if (!data.success) return;
     renderTopProducts(data.data, 'topProductsBody');
@@ -6408,42 +6475,39 @@ async function loadProductClicks() {
 }
 
 async function loadDashboardAnalytics() {
+  const BASE = getAnalyticsAPI();
   try {
-    const r    = await fetch(API + '/api/admin/analytics/summary', { headers: { Authorization: 'Bearer ' + token } });
+    const r    = await fetch(BASE + '/api/admin/analytics/summary', { headers: analyticsHeaders() });
     const data = await r.json();
     if (!data.success) return;
     const d = data.data;
-    const v1 = document.getElementById('dashTodayVisits');
-    const v2 = document.getElementById('dashTodayUnique');
-    const v3 = document.getElementById('dashMonthVisits');
-    const v4 = document.getElementById('dashTopProduct');
-    if (v1) v1.textContent = d.today.visits.toLocaleString('bn-BD');
-    if (v2) v2.textContent = d.today.unique.toLocaleString('bn-BD');
-    if (v3) v3.textContent = d.month.visits.toLocaleString('bn-BD');
-    if (v4) v4.textContent = d.todayTopProducts[0]?.name?.slice(0,18) || '—';
+    const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+    set('dashTodayVisits',  d.today.visits.toLocaleString('bn-BD'));
+    set('dashTodayUnique',  d.today.unique.toLocaleString('bn-BD'));
+    set('dashMonthVisits',  d.month.visits.toLocaleString('bn-BD'));
+    set('dashTopProduct',   d.todayTopProducts[0]?.name?.slice(0,18) || '—');
   } catch(e) {}
 }
 
 async function loadDailyAnalytics() {
+  const BASE = getAnalyticsAPI();
   const date = document.getElementById('analyticsDatePicker')?.value;
   if (!date) return toast('তারিখ সিলেক্ট করুন', 'error');
   const el = document.getElementById('dailyAnalyticsBody');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   try {
-    const r    = await fetch(`${API}/api/admin/analytics/daily?date=${date}`, { headers: { Authorization: 'Bearer ' + token } });
+    const r    = await fetch(`${BASE}/api/admin/analytics/daily?date=${date}`, { headers: analyticsHeaders() });
     const data = await r.json();
     if (!data.success) { el.innerHTML = '<p style="color:var(--danger);">ডেটা লোড ব্যর্থ</p>'; return; }
     const d = data.data;
 
-    // Hourly mini chart
     const max = Math.max(...d.hourly.map(h => h.count), 1);
     const hourlyBars = d.hourly.map(h => {
-      const pct = Math.round((h.count / max) * 100);
+      const pct = Math.max(Math.round((h.count / max) * 100), h.count > 0 ? 4 : 0);
       const label = h.hour < 12 ? h.hour + 'AM' : (h.hour === 12 ? '12PM' : (h.hour-12) + 'PM');
       return `<div class="hourly-bar" style="height:${pct}%;" title="${h.hour}:00 — ${h.count}"><div class="hourly-bar-tooltip">${label}: ${h.count}</div></div>`;
     }).join('');
 
-    // Top products for that day
     const prodMax = d.topProducts[0]?.clicks || 1;
     const prodRows = d.topProducts.length > 0 ? d.topProducts.map((p, i) => {
       const pct = Math.round((p.clicks / prodMax) * 100);
@@ -6461,17 +6525,17 @@ async function loadDailyAnalytics() {
     }).join('') : '<p style="color:var(--text-muted);font-size:13px;">এই দিনে কোনো পণ্য ক্লিক হয়নি</p>';
 
     el.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;" class="analytics-grid" style="margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
         <div style="background:var(--primary-light);border-radius:10px;padding:14px;text-align:center;">
-          <div style="font-size:22px;font-weight:800;color:var(--primary);">${d.totalVisits}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--primary);">${d.totalVisits.toLocaleString('bn-BD')}</div>
           <div style="font-size:11px;color:var(--text-muted);">মোট পেজভিউ</div>
         </div>
         <div style="background:#d1fae5;border-radius:10px;padding:14px;text-align:center;">
-          <div style="font-size:22px;font-weight:800;color:var(--success);">${d.uniqueVisitors}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--success);">${d.uniqueVisitors.toLocaleString('bn-BD')}</div>
           <div style="font-size:11px;color:var(--text-muted);">ইউনিক ভিজিটর</div>
         </div>
         <div style="background:#dbeafe;border-radius:10px;padding:14px;text-align:center;">
-          <div style="font-size:22px;font-weight:800;color:var(--info);">${d.totalClicks}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--info);">${d.totalClicks.toLocaleString('bn-BD')}</div>
           <div style="font-size:11px;color:var(--text-muted);">পণ্য ক্লিক</div>
         </div>
       </div>
