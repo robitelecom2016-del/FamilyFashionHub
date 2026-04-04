@@ -190,6 +190,34 @@ const orderSchema = new mongoose.Schema({
   createdAt:    { type: Date, default: Date.now },
 });
 
+
+// ===== ANALYTICS SCHEMAS =====
+
+// পেজ ভিজিট ট্র্যাকার
+const pageVisitSchema = new mongoose.Schema({
+  date:        { type: String, required: true, index: true }, // YYYY-MM-DD
+  hour:        { type: Number, default: 0 },                  // 0-23
+  visitorId:   { type: String, default: '' },                 // localStorage UUID
+  ip:          { type: String, default: '' },
+  userAgent:   { type: String, default: '' },
+  page:        { type: String, default: '/' },                // visited page path
+  referrer:    { type: String, default: '' },
+  country:     { type: String, default: '' },
+  createdAt:   { type: Date, default: Date.now, expires: 90 * 24 * 3600 }, // 90 দিন পর auto-delete
+});
+
+// পণ্য ক্লিক ট্র্যাকার
+const productClickSchema = new mongoose.Schema({
+  date:        { type: String, required: true, index: true }, // YYYY-MM-DD
+  hour:        { type: Number, default: 0 },
+  productId:   { type: String, required: true, index: true },
+  productName: { type: String, default: '' },
+  category:    { type: String, default: '' },
+  visitorId:   { type: String, default: '' },
+  ip:          { type: String, default: '' },
+  createdAt:   { type: Date, default: Date.now, expires: 90 * 24 * 3600 },
+});
+
 // ===== TESTIMONIAL SCHEMA =====
 const testimonialSchema = new mongoose.Schema({
   name:      { type: String, required: true },
@@ -206,7 +234,9 @@ const Review     = mongoose.model('Review',      reviewSchema);
 const User       = mongoose.model('User',        userSchema);
 const Settings   = mongoose.model('Settings',    settingsSchema);
 const Order      = mongoose.model('Order',       orderSchema);
-const Testimonial = mongoose.model('Testimonial', testimonialSchema);
+const Testimonial  = mongoose.model('Testimonial',   testimonialSchema);
+const PageVisit    = mongoose.model('PageVisit',     pageVisitSchema);
+const ProductClick = mongoose.model('ProductClick',  productClickSchema);
 
 // ===== AUTO ADMIN SETUP =====
 // .env-এর ADMIN_USERNAME ও ADMIN_PASSWORD দিয়ে স্বয়ংক্রিয়ভাবে admin তৈরি করবে
@@ -930,6 +960,207 @@ app.post('/api/admin/change-password', adminMiddleware, async (req, res) => {
     console.error('❌ change-password error:', e.message);
     res.json({ success: false, message: e.message });
   }
+});
+
+
+// =====================================================================
+// ===== ANALYTICS ROUTES =====
+// =====================================================================
+
+// Helper: visitor IP বের করো
+function getClientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+      || req.headers['x-real-ip']
+      || req.connection?.remoteAddress
+      || '';
+}
+
+// Helper: আজকের তারিখ YYYY-MM-DD
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// ===== POST /api/analytics/visit — ফ্রন্টএন্ড থেকে pageview ট্র্যাক করবে =====
+app.post('/api/analytics/visit', async (req, res) => {
+  try {
+    const { visitorId, page, referrer } = req.body;
+    const ip        = getClientIp(req);
+    const now       = new Date();
+    const date      = now.toISOString().split('T')[0];
+    const hour      = now.getHours();
+    const userAgent = req.headers['user-agent'] || '';
+
+    await PageVisit.create({ date, hour, visitorId: visitorId || '', ip, userAgent, page: page || '/', referrer: referrer || '' });
+    res.json({ success: true });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== POST /api/analytics/product-click — পণ্য ক্লিক ট্র্যাক =====
+app.post('/api/analytics/product-click', async (req, res) => {
+  try {
+    const { visitorId, productId, productName, category } = req.body;
+    if (!productId) return res.json({ success: false, message: 'productId দরকার' });
+    const ip   = getClientIp(req);
+    const now  = new Date();
+    const date = now.toISOString().split('T')[0];
+    const hour = now.getHours();
+
+    await ProductClick.create({ date, hour, productId, productName: productName || '', category: category || '', visitorId: visitorId || '', ip });
+    res.json({ success: true });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== GET /api/admin/analytics/summary — Admin Dashboard-এর জন্য সারসংক্ষেপ =====
+app.get('/api/admin/analytics/summary', adminMiddleware, async (req, res) => {
+  try {
+    const today  = todayStr();
+    // গত ৩০ দিনের তারিখ
+    const past30 = new Date();
+    past30.setDate(past30.getDate() - 30);
+    const past30Str = past30.toISOString().split('T')[0];
+
+    // আজকের ভিজিটর (unique visitorId)
+    const todayVisits   = await PageVisit.find({ date: today }).lean();
+    const todayUnique   = new Set(todayVisits.map(v => v.visitorId || v.ip)).size;
+    const todayTotal    = todayVisits.length;
+
+    // গত ৭ দিনের ডেইলি ভিজিট
+    const sevenDaysAgo  = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const sevenStr      = sevenDaysAgo.toISOString().split('T')[0];
+    const weekVisits    = await PageVisit.find({ date: { $gte: sevenStr } }).lean();
+
+    const dailyMap = {};
+    weekVisits.forEach(v => {
+      if (!dailyMap[v.date]) dailyMap[v.date] = { total: 0, unique: new Set() };
+      dailyMap[v.date].total++;
+      dailyMap[v.date].unique.add(v.visitorId || v.ip);
+    });
+    // শেষ ৭ দিনের array তৈরি করো
+    const dailyData = [];
+    for (let i = 6; i >= 0; i--) {
+      const d   = new Date();
+      d.setDate(d.getDate() - i);
+      const ds  = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' });
+      dailyData.push({
+        date:   ds,
+        label,
+        total:  dailyMap[ds]?.total  || 0,
+        unique: dailyMap[ds]?.unique?.size || 0,
+      });
+    }
+
+    // মোট ভিজিটর (৩০ দিন)
+    const allVisits30   = await PageVisit.find({ date: { $gte: past30Str } }).lean();
+    const totalVisits30 = allVisits30.length;
+    const uniqueVisitors30 = new Set(allVisits30.map(v => v.visitorId || v.ip)).size;
+
+    // সবচেয়ে বেশি ভিজিটেড পেজ (৩০ দিন)
+    const pageMap = {};
+    allVisits30.forEach(v => { pageMap[v.page] = (pageMap[v.page] || 0) + 1; });
+    const topPages = Object.entries(pageMap)
+      .sort((a,b) => b[1]-a[1]).slice(0, 10)
+      .map(([page, count]) => ({ page, count }));
+
+    // hourly breakdown আজকের
+    const hourlyMap = {};
+    todayVisits.forEach(v => { hourlyMap[v.hour] = (hourlyMap[v.hour] || 0) + 1; });
+    const hourlyData = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourlyMap[h] || 0 }));
+
+    // সবচেয়ে বেশি ক্লিক হওয়া পণ্য (৩০ দিন)
+    const clicks30      = await ProductClick.find({ date: { $gte: past30Str } }).lean();
+    const productMap    = {};
+    clicks30.forEach(c => {
+      const key = c.productId;
+      if (!productMap[key]) productMap[key] = { productId: key, name: c.productName, category: c.category, clicks: 0 };
+      productMap[key].clicks++;
+    });
+    const topProducts = Object.values(productMap)
+      .sort((a,b) => b.clicks - a.clicks).slice(0, 10);
+
+    // আজকের top products
+    const todayClicks   = await ProductClick.find({ date: today }).lean();
+    const todayProdMap  = {};
+    todayClicks.forEach(c => {
+      const key = c.productId;
+      if (!todayProdMap[key]) todayProdMap[key] = { productId: key, name: c.productName, category: c.category, clicks: 0 };
+      todayProdMap[key].clicks++;
+    });
+    const todayTopProducts = Object.values(todayProdMap)
+      .sort((a,b) => b.clicks - a.clicks).slice(0, 5);
+
+    res.json({
+      success: true,
+      data: {
+        today: { visits: todayTotal, unique: todayUnique },
+        month: { visits: totalVisits30, unique: uniqueVisitors30 },
+        dailyData,
+        topPages,
+        hourlyData,
+        topProducts,
+        todayTopProducts,
+      }
+    });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== GET /api/admin/analytics/daily?date=YYYY-MM-DD — নির্দিষ্ট দিনের বিস্তারিত =====
+app.get('/api/admin/analytics/daily', adminMiddleware, async (req, res) => {
+  try {
+    const date = req.query.date || todayStr();
+
+    const visits   = await PageVisit.find({ date }).sort({ createdAt: -1 }).limit(500).lean();
+    const clicks   = await ProductClick.find({ date }).sort({ createdAt: -1 }).limit(500).lean();
+
+    const uniqueV  = new Set(visits.map(v => v.visitorId || v.ip)).size;
+    const hourMap  = {};
+    visits.forEach(v => { hourMap[v.hour] = (hourMap[v.hour] || 0) + 1; });
+    const hourly   = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourMap[h] || 0 }));
+
+    const prodMap  = {};
+    clicks.forEach(c => {
+      if (!prodMap[c.productId]) prodMap[c.productId] = { productId: c.productId, name: c.productName, category: c.category, clicks: 0 };
+      prodMap[c.productId].clicks++;
+    });
+    const topProducts = Object.values(prodMap).sort((a,b) => b.clicks - a.clicks);
+
+    res.json({
+      success: true,
+      data: {
+        date,
+        totalVisits:  visits.length,
+        uniqueVisitors: uniqueV,
+        totalClicks:  clicks.length,
+        hourly,
+        topProducts,
+        visits: visits.slice(0, 100),
+      }
+    });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// ===== GET /api/admin/analytics/products — পণ্য ক্লিক রিপোর্ট (range) =====
+app.get('/api/admin/analytics/products', adminMiddleware, async (req, res) => {
+  try {
+    const days    = parseInt(req.query.days || '30');
+    const past    = new Date();
+    past.setDate(past.getDate() - days + 1);
+    const pastStr = past.toISOString().split('T')[0];
+
+    const clicks  = await ProductClick.find({ date: { $gte: pastStr } }).lean();
+    const prodMap = {};
+    clicks.forEach(c => {
+      if (!prodMap[c.productId]) prodMap[c.productId] = { productId: c.productId, name: c.productName, category: c.category, clicks: 0, uniqueVisitors: new Set() };
+      prodMap[c.productId].clicks++;
+      prodMap[c.productId].uniqueVisitors.add(c.visitorId || c.ip);
+    });
+    const products = Object.values(prodMap)
+      .map(p => ({ ...p, uniqueVisitors: p.uniqueVisitors.size }))
+      .sort((a,b) => b.clicks - a.clicks);
+
+    res.json({ success: true, data: products });
+  } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
 // ===== ORDER ROUTES =====

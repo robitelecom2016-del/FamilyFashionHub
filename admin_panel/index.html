@@ -360,6 +360,42 @@ tr:hover td { background: var(--bg); }
 /* Rating display */
 .rating-display span { font-size: 14px; }
 
+
+/* ===== ANALYTICS PAGE ===== */
+.analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.analytics-card { background: var(--card); border-radius: 14px; padding: 20px; border: 1px solid var(--border); }
+.analytics-card .ac-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
+.analytics-card .ac-val { font-size: 26px; font-weight: 800; color: var(--text); }
+.analytics-card .ac-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.chart-bar-wrap { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding: 8px 0; }
+.chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.chart-bar { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.5s ease; cursor: pointer; position: relative; }
+.chart-bar:hover { background: var(--primary-dark); }
+.chart-bar-tooltip { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 11px; white-space: nowrap; display: none; z-index: 10; }
+.chart-bar:hover .chart-bar-tooltip { display: block; }
+.chart-label { font-size: 9px; color: var(--text-muted); white-space: nowrap; }
+.hourly-bar-wrap { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
+.hourly-bar { flex: 1; background: #a78bfa; border-radius: 3px 3px 0 0; min-height: 2px; cursor: pointer; position: relative; transition: background 0.2s; }
+.hourly-bar:hover { background: var(--primary); }
+.hourly-bar-tooltip { position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; padding: 2px 6px; border-radius: 5px; font-size: 10px; white-space: nowrap; display: none; z-index: 10; }
+.hourly-bar:hover .hourly-bar-tooltip { display: block; }
+.product-rank-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.product-rank-item:last-child { border-bottom: none; }
+.rank-num { width: 26px; height: 26px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.rank-num.gold { background: #fef3c7; color: #92400e; }
+.rank-num.silver { background: #f3f4f6; color: #374151; }
+.rank-num.bronze { background: #fce7f3; color: #9d174d; }
+.rank-bar-wrap { flex: 1; }
+.rank-bar-bg { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.rank-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.6s ease; }
+.analytics-date-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 768px) {
+  .analytics-grid { grid-template-columns: 1fr 1fr; }
+  .chart-label { font-size: 8px; }
+  .analytics-date-filter { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 400px) { .analytics-grid { grid-template-columns: 1fr; } }
+
 /* ===== DAILY REPORT PAGE ===== */
 .daily-report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
 .daily-stat-card { background: var(--card); border-radius: 14px; padding: 18px 16px; border: 1px solid var(--border); text-align: center; }
@@ -714,6 +750,7 @@ tr:hover td { background: var(--bg); }
     <button class="nav-item" onclick="showPage('testimonials')"><i class="fas fa-quote-left"></i> টেস্টিমোনিয়াল</button>
     <button class="nav-item" onclick="showPage('collections')"><i class="fas fa-th-large"></i> কালেকশন</button>
     <button class="nav-item" onclick="showPage('heroside')"><i class="fas fa-image"></i> স্লাইডার সাইড ইমেজ</button>
+    <button class="nav-item" onclick="showPage('analytics')"><i class="fas fa-chart-line"></i> ভিজিটর অ্যানালিটিক্স</button>
     <button class="nav-item" onclick="showPage('settings');loadSliderImages()"><i class="fas fa-cog"></i> সেটিংস</button>
   </nav>
   <div class="sidebar-footer">
@@ -795,6 +832,32 @@ tr:hover td { background: var(--bg); }
         </div>
       </div>
 
+      <!-- Analytics Summary Quick View -->
+      <div class="card" style="margin-top:16px;margin-bottom:0px;">
+        <div class="card-header">
+          <h3><i class="fas fa-chart-line" style="color:var(--primary)"></i> আজকের ভিজিটর সারসংক্ষেপ</h3>
+          <button class="btn btn-xs btn-outline" onclick="showPage('analytics')"><i class="fas fa-expand-alt"></i> বিস্তারিত দেখুন</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;padding:16px;" id="dashAnalyticsSummary">
+          <div style="text-align:center;background:var(--primary-light);border-radius:10px;padding:12px;">
+            <div style="font-size:22px;font-weight:800;color:var(--primary);" id="dashTodayVisits">—</div>
+            <div style="font-size:11px;color:var(--text-muted);">আজকের ভিজিট</div>
+          </div>
+          <div style="text-align:center;background:#d1fae5;border-radius:10px;padding:12px;">
+            <div style="font-size:22px;font-weight:800;color:var(--success);" id="dashTodayUnique">—</div>
+            <div style="font-size:11px;color:var(--text-muted);">ইউনিক ভিজিটর</div>
+          </div>
+          <div style="text-align:center;background:#dbeafe;border-radius:10px;padding:12px;">
+            <div style="font-size:22px;font-weight:800;color:var(--info);" id="dashMonthVisits">—</div>
+            <div style="font-size:11px;color:var(--text-muted);">এই মাসের ভিজিট</div>
+          </div>
+          <div style="text-align:center;background:#fef3c7;border-radius:10px;padding:12px;">
+            <div style="font-size:22px;font-weight:800;color:var(--warning);" id="dashTopProduct" style="font-size:13px !important;">—</div>
+            <div style="font-size:11px;color:var(--text-muted);">আজকের ট্রেন্ডিং পণ্য</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Top Products & Pending Approvals -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;" class="dashboard-two-col">
         <div class="card">
@@ -872,7 +935,126 @@ tr:hover td { background: var(--bg); }
       </div>
     </div>
 
-    <!-- DAILY REPORT -->
+
+    <!-- ANALYTICS PAGE -->
+    <div class="page-section" id="page-analytics">
+
+      <!-- Top Stats -->
+      <div class="analytics-grid" id="analyticsStats">
+        <div class="analytics-card">
+          <div class="ac-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-eye"></i></div>
+          <div class="ac-val" id="anTodayVisits">—</div>
+          <div class="ac-label">আজকের পেজভিউ</div>
+        </div>
+        <div class="analytics-card">
+          <div class="ac-icon" style="background:#d1fae5;color:#10b981;"><i class="fas fa-user-check"></i></div>
+          <div class="ac-val" id="anTodayUnique">—</div>
+          <div class="ac-label">আজকের ইউনিক ভিজিটর</div>
+        </div>
+        <div class="analytics-card">
+          <div class="ac-icon" style="background:#dbeafe;color:#3b82f6;"><i class="fas fa-calendar-alt"></i></div>
+          <div class="ac-val" id="anMonthVisits">—</div>
+          <div class="ac-label">এই মাসের পেজভিউ (৩০ দিন)</div>
+        </div>
+        <div class="analytics-card">
+          <div class="ac-icon" style="background:#fef3c7;color:#f59e0b;"><i class="fas fa-users"></i></div>
+          <div class="ac-val" id="anMonthUnique">—</div>
+          <div class="ac-label">এই মাসের ইউনিক ভিজিটর</div>
+        </div>
+      </div>
+
+      <!-- ৭ দিনের চার্ট + হার্লি চার্ট -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" class="dashboard-two-col">
+
+        <!-- ৭ দিনের ভিজিট চার্ট -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-chart-bar" style="color:var(--primary)"></i> গত ৭ দিনের ভিজিট</h3>
+            <span id="weekTotalLabel" style="font-size:11px;color:var(--text-muted);"></span>
+          </div>
+          <div class="card-body">
+            <div class="chart-bar-wrap" id="weeklyChart">
+              <div class="loading"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- আজকের ঘণ্টাভিত্তিক চার্ট -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-clock" style="color:var(--primary)"></i> আজকের ঘণ্টাভিত্তিক ভিজিট</h3>
+          </div>
+          <div class="card-body">
+            <div class="hourly-bar-wrap" id="hourlyChart">
+              <div class="loading"><div class="spinner"></div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+              <span style="font-size:10px;color:var(--text-muted);">রাত ১২টা</span>
+              <span style="font-size:10px;color:var(--text-muted);">দুপুর ১২টা</span>
+              <span style="font-size:10px;color:var(--text-muted);">রাত ১২টা</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- নির্দিষ্ট তারিখের বিস্তারিত -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3><i class="fas fa-calendar-day" style="color:var(--primary)"></i> নির্দিষ্ট দিনের বিস্তারিত</h3>
+          <div class="analytics-date-filter">
+            <input type="date" class="form-control form-control-sm" id="analyticsDatePicker" style="width:160px;">
+            <button class="btn btn-sm btn-primary" onclick="loadDailyAnalytics()"><i class="fas fa-search"></i> দেখুন</button>
+          </div>
+        </div>
+        <div class="card-body" id="dailyAnalyticsBody">
+          <p style="color:var(--text-muted);font-size:13px;">উপরে তারিখ সিলেক্ট করুন।</p>
+        </div>
+      </div>
+
+      <!-- দুই কলাম: Top Products + Top Pages -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" class="dashboard-two-col">
+
+        <!-- সবচেয়ে ক্লিক হওয়া পণ্য -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-fire" style="color:#ef4444"></i> সবচেয়ে ক্লিক হওয়া পণ্য</h3>
+            <select class="form-control form-control-sm" id="productClickRange" onchange="loadProductClicks()" style="width:110px;">
+              <option value="7">৭ দিন</option>
+              <option value="30" selected>৩০ দিন</option>
+              <option value="90">৯০ দিন</option>
+            </select>
+          </div>
+          <div class="card-body" id="topProductsBody">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- সবচেয়ে ভিজিট হওয়া পেজ -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-link" style="color:var(--info)"></i> সবচেয়ে ভিজিট হওয়া পেজ</h3>
+            <span style="font-size:11px;color:var(--text-muted);">গত ৩০ দিন</span>
+          </div>
+          <div class="card-body" id="topPagesBody">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- আজকের Top Products (mini) -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3><i class="fas fa-star" style="color:var(--warning)"></i> আজকে সবচেয়ে বেশি দেখা পণ্য</h3>
+          <button class="btn btn-xs btn-outline" onclick="loadAnalytics()"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div class="card-body" id="todayTopProductsBody">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+    </div>
+
+        <!-- DAILY REPORT -->
     <div class="page-section" id="page-daily-report">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
         <div class="card" style="flex:1;min-width:220px;">
@@ -2245,7 +2427,7 @@ function showAdminPanel() {
     document.getElementById('adminName').textContent = adminUser.name || 'Admin';
     document.getElementById('adminAvatar').textContent = (adminUser.name || 'A')[0].toUpperCase();
   }
-  loadStats(); loadDashboard();
+  loadStats(); loadDashboard(); loadDashboardAnalytics();
   startOrderPolling();
   loadCategoriesFromServer();
 }
@@ -2355,7 +2537,9 @@ function openModal(id) { document.getElementById(id).classList.add('show'); }
 
 // ===== NAVIGATION =====
 const pageMeta = {
-  dashboard: { title: 'ড্যাশবোর্ড', breadcrumb: 'Home / Dashboard' },
+  dashboard: { title: 'ড্যাশবোর্ড', breadcrumb: 'Home / Dashboard' ,
+  'analytics': { title: 'ভিজিটর অ্যানালিটিক্স', breadcrumb: 'Home / Analytics' },
+},
   'daily-report': { title: 'দৈনিক রিপোর্ট', breadcrumb: 'Home / Daily Report' },
   products: { title: 'পণ্য সমূহ', breadcrumb: 'Home / Products' },
   stock: { title: 'স্টক ম্যানেজমেন্ট', breadcrumb: 'Home / Stock' },
@@ -2396,6 +2580,13 @@ function showPage(page) {
   if (page === 'heroside') loadHeroSideImageAdmin();
   if (page === 'daily-report') { setTodayDate(); loadDailyReport(); }
   if (page === 'stock') loadStock();
+  if (page === 'analytics') {
+    loadAnalytics();
+    loadProductClicks();
+    // আজকের তারিখ default সেট করো
+    const dp = document.getElementById('analyticsDatePicker');
+    if (dp && !dp.value) dp.value = new Date().toISOString().split('T')[0];
+  }
 }
 
 function toggleSidebar() {
@@ -6058,6 +6249,245 @@ document.addEventListener('DOMContentLoaded', () => {
     document.head.appendChild(script);
   }
 */
+
+
+// =====================================================================
+// ===== ANALYTICS — FRONTEND TRACKING (ফ্রন্টএন্ডে যোগ করার কোড) =====
+// =====================================================================
+/*
+  নিচের কোডটি আপনার ফ্রন্টএন্ডের main JS ফাইলে যোগ করুন।
+  এটি automatically visitor ও product click track করবে।
+
+  // ১. Visitor ID তৈরি (একবার হলেই হয়)
+  function getVisitorId() {
+    let id = localStorage.getItem('ffh_vid');
+    if (!id) { id = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); localStorage.setItem('ffh_vid', id); }
+    return id;
+  }
+
+  // ২. Page visit track করুন (প্রতিটি page load-এ)
+  fetch(API_BASE + '/api/analytics/visit', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ visitorId: getVisitorId(), page: window.location.pathname, referrer: document.referrer })
+  }).catch(() => {});
+
+  // ৩. Product click track করুন (পণ্যে ক্লিক করলে)
+  function trackProductClick(productId, productName, category) {
+    fetch(API_BASE + '/api/analytics/product-click', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId: getVisitorId(), productId, productName, category })
+    }).catch(() => {});
+  }
+*/
+
+// =====================================================================
+// ===== ANALYTICS DASHBOARD FUNCTIONS =====
+// =====================================================================
+
+async function loadAnalytics() {
+  try {
+    const r    = await fetch(API + '/api/admin/analytics/summary', { headers: { Authorization: 'Bearer ' + token } });
+    const data = await r.json();
+    if (!data.success) return;
+    const d = data.data;
+
+    // Top stats
+    document.getElementById('anTodayVisits').textContent  = d.today.visits.toLocaleString('bn-BD');
+    document.getElementById('anTodayUnique').textContent  = d.today.unique.toLocaleString('bn-BD');
+    document.getElementById('anMonthVisits').textContent  = d.month.visits.toLocaleString('bn-BD');
+    document.getElementById('anMonthUnique').textContent  = d.month.unique.toLocaleString('bn-BD');
+
+    // Weekly chart
+    renderWeeklyChart(d.dailyData);
+
+    // Hourly chart
+    renderHourlyChart(d.hourlyData);
+
+    // Top products (30 days)
+    renderTopProducts(d.topProducts, 'topProductsBody');
+
+    // Today top products
+    renderTopProducts(d.todayTopProducts, 'todayTopProductsBody', true);
+
+    // Top pages
+    renderTopPages(d.topPages);
+
+  } catch(e) { console.error('Analytics load error:', e); }
+}
+
+function renderWeeklyChart(dailyData) {
+  const el = document.getElementById('weeklyChart');
+  if (!el) return;
+  const max = Math.max(...dailyData.map(d => d.total), 1);
+  let total = dailyData.reduce((s, d) => s + d.total, 0);
+  const label = document.getElementById('weekTotalLabel');
+  if (label) label.textContent = 'মোট: ' + total.toLocaleString('bn-BD');
+
+  el.innerHTML = dailyData.map(d => {
+    const pct = Math.round((d.total / max) * 100);
+    return `<div class="chart-bar-col">
+      <div class="chart-bar" style="height:${pct}%;">
+        <div class="chart-bar-tooltip">${d.total} ভিজিট<br>${d.unique} ইউনিক</div>
+      </div>
+      <div class="chart-label">${d.label}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderHourlyChart(hourlyData) {
+  const el = document.getElementById('hourlyChart');
+  if (!el) return;
+  const max = Math.max(...hourlyData.map(h => h.count), 1);
+  el.innerHTML = hourlyData.map(h => {
+    const pct = Math.round((h.count / max) * 100);
+    const label = h.hour < 12 ? h.hour + 'AM' : (h.hour === 12 ? '12PM' : (h.hour-12) + 'PM');
+    return `<div class="hourly-bar" style="height:${pct}%;" title="${h.hour}:00 — ${h.count} ভিজিট">
+      <div class="hourly-bar-tooltip">${label}: ${h.count}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTopProducts(products, containerId, mini = false) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!products || products.length === 0) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;">এখনো কোনো ডেটা নেই</p>';
+    return;
+  }
+  const max = products[0].clicks;
+  const rankColors = ['gold', 'silver', 'bronze'];
+  el.innerHTML = products.slice(0, mini ? 5 : 10).map((p, i) => {
+    const pct = Math.round((p.clicks / max) * 100);
+    const rc  = rankColors[i] || '';
+    return `<div class="product-rank-item">
+      <div class="rank-num ${rc}">${i+1}</div>
+      <div class="rank-bar-wrap" style="flex:1;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:600;color:var(--text);">${p.name || '(অজানা পণ্য)'}</span>
+          <span style="font-size:12px;color:var(--primary);font-weight:700;">${p.clicks} ক্লিক</span>
+        </div>
+        ${!mini ? `<div style="font-size:11px;color:var(--text-muted);">${p.category || ''}</div>` : ''}
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${pct}%;"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTopPages(pages) {
+  const el = document.getElementById('topPagesBody');
+  if (!el) return;
+  if (!pages || pages.length === 0) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;">এখনো কোনো ডেটা নেই</p>';
+    return;
+  }
+  const max = pages[0].count;
+  el.innerHTML = pages.map((p, i) => {
+    const pct = Math.round((p.count / max) * 100);
+    const pageName = p.page.length > 35 ? p.page.slice(0,32)+'...' : p.page;
+    return `<div class="product-rank-item">
+      <div class="rank-num">${i+1}</div>
+      <div class="rank-bar-wrap" style="flex:1;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:12px;font-weight:600;color:var(--text);" title="${p.page}">${pageName}</span>
+          <span style="font-size:12px;color:var(--info);font-weight:700;">${p.count}</span>
+        </div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${pct}%;background:var(--info);"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadProductClicks() {
+  const days = document.getElementById('productClickRange')?.value || 30;
+  try {
+    const r    = await fetch(`${API}/api/admin/analytics/products?days=${days}`, { headers: { Authorization: 'Bearer ' + token } });
+    const data = await r.json();
+    if (!data.success) return;
+    renderTopProducts(data.data, 'topProductsBody');
+  } catch(e) { console.error(e); }
+}
+
+async function loadDashboardAnalytics() {
+  try {
+    const r    = await fetch(API + '/api/admin/analytics/summary', { headers: { Authorization: 'Bearer ' + token } });
+    const data = await r.json();
+    if (!data.success) return;
+    const d = data.data;
+    const v1 = document.getElementById('dashTodayVisits');
+    const v2 = document.getElementById('dashTodayUnique');
+    const v3 = document.getElementById('dashMonthVisits');
+    const v4 = document.getElementById('dashTopProduct');
+    if (v1) v1.textContent = d.today.visits.toLocaleString('bn-BD');
+    if (v2) v2.textContent = d.today.unique.toLocaleString('bn-BD');
+    if (v3) v3.textContent = d.month.visits.toLocaleString('bn-BD');
+    if (v4) v4.textContent = d.todayTopProducts[0]?.name?.slice(0,18) || '—';
+  } catch(e) {}
+}
+
+async function loadDailyAnalytics() {
+  const date = document.getElementById('analyticsDatePicker')?.value;
+  if (!date) return toast('তারিখ সিলেক্ট করুন', 'error');
+  const el = document.getElementById('dailyAnalyticsBody');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const r    = await fetch(`${API}/api/admin/analytics/daily?date=${date}`, { headers: { Authorization: 'Bearer ' + token } });
+    const data = await r.json();
+    if (!data.success) { el.innerHTML = '<p style="color:var(--danger);">ডেটা লোড ব্যর্থ</p>'; return; }
+    const d = data.data;
+
+    // Hourly mini chart
+    const max = Math.max(...d.hourly.map(h => h.count), 1);
+    const hourlyBars = d.hourly.map(h => {
+      const pct = Math.round((h.count / max) * 100);
+      const label = h.hour < 12 ? h.hour + 'AM' : (h.hour === 12 ? '12PM' : (h.hour-12) + 'PM');
+      return `<div class="hourly-bar" style="height:${pct}%;" title="${h.hour}:00 — ${h.count}"><div class="hourly-bar-tooltip">${label}: ${h.count}</div></div>`;
+    }).join('');
+
+    // Top products for that day
+    const prodMax = d.topProducts[0]?.clicks || 1;
+    const prodRows = d.topProducts.length > 0 ? d.topProducts.map((p, i) => {
+      const pct = Math.round((p.clicks / prodMax) * 100);
+      return `<div class="product-rank-item">
+        <div class="rank-num">${i+1}</div>
+        <div class="rank-bar-wrap" style="flex:1;">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:13px;font-weight:600;">${p.name || '(অজানা)'}</span>
+            <span style="font-size:12px;color:var(--primary);font-weight:700;">${p.clicks} ক্লিক</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">${p.category || ''}</div>
+          <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${pct}%;"></div></div>
+        </div>
+      </div>`;
+    }).join('') : '<p style="color:var(--text-muted);font-size:13px;">এই দিনে কোনো পণ্য ক্লিক হয়নি</p>';
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;" class="analytics-grid" style="margin-bottom:12px;">
+        <div style="background:var(--primary-light);border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:var(--primary);">${d.totalVisits}</div>
+          <div style="font-size:11px;color:var(--text-muted);">মোট পেজভিউ</div>
+        </div>
+        <div style="background:#d1fae5;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:var(--success);">${d.uniqueVisitors}</div>
+          <div style="font-size:11px;color:var(--text-muted);">ইউনিক ভিজিটর</div>
+        </div>
+        <div style="background:#dbeafe;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:var(--info);">${d.totalClicks}</div>
+          <div style="font-size:11px;color:var(--text-muted);">পণ্য ক্লিক</div>
+        </div>
+      </div>
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text);">ঘণ্টাভিত্তিক ভিজিট</h4>
+      <div class="hourly-bar-wrap" style="margin-bottom:4px;">${hourlyBars}</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+        <span style="font-size:10px;color:var(--text-muted);">রাত ১২টা</span>
+        <span style="font-size:10px;color:var(--text-muted);">দুপুর ১২টা</span>
+        <span style="font-size:10px;color:var(--text-muted);">রাত ১২টা</span>
+      </div>
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text);">সেদিনের ক্লিক হওয়া পণ্য</h4>
+      ${prodRows}
+    `;
+  } catch(e) { el.innerHTML = '<p style="color:var(--danger);">ত্রুটি: ' + e.message + '</p>'; }
+}
+
 
 </script>
 </body>
