@@ -98,6 +98,18 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
   padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 50;
 }
+
+/* মোবাইলে topbar সম্পূর্ণ fixed — স্ক্রোল করলেও স্থির থাকে */
+@media (max-width: 768px) {
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 98;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  }
+  .main-content { padding-top: 58px; }
+}
 .topbar-left { display: flex; align-items: center; gap: 12px; }
 .topbar-title { font-size: 18px; font-weight: 700; color: var(--text); }
 .topbar-breadcrumb { font-size: 12px; color: var(--text-muted); }
