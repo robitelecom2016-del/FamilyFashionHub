@@ -2023,7 +2023,7 @@
     <div class="bg-white max-w-2xl w-full rounded-2xl max-h-[90vh] overflow-y-auto p-6 popup-scale modal-no-close">
       <div class="flex justify-between items-start"><h2 class="text-2xl font-bold">🛍️ Order Confirmation</h2><button id="closePaymentBtn" class="text-3xl">&times;</button></div>
       <div class="mt-4 border-b pb-4"><h3 class="text-lg font-semibold mb-3">Your Products:</h3><div id="orderSummaryItems" class="space-y-3"></div></div>
-      <div class="mt-4"><h3 class="text-xl font-bold mb-3">Cash on Delivery</h3><form id="paymentForm" class="space-y-3" novalidate><div><input type="text" id="orderName" placeholder="Your Name" class="w-full border p-3 rounded-lg" required><p class="text-red-500 text-sm hidden error-message" id="nameError">Please enter your name</p></div><div><input type="tel" id="orderPhone" placeholder="Phone Number" class="w-full border p-3 rounded-lg" required pattern="[0-9]{11}"><p class="text-red-500 text-sm hidden error-message" id="phoneError">১১ ডিজিটের Phone Number দিন</p></div><div><textarea id="orderAddress" placeholder="Address (Area, District)" class="w-full border p-3 rounded-lg" rows="2" required></textarea><p class="text-red-500 text-sm hidden error-message" id="addressError">Please enter your address</p></div><div class="bg-gray-100 p-3 rounded-lg"><p class="font-medium">Delivery Charge:</p><label class="flex items-center gap-2 mt-1"><input type="radio" name="deliveryArea" value="dhaka" class="accent-green-600" checked> <span>ঢাকা ভেতর (৮০ BDT)</span></label><label class="flex items-center gap-2"><input type="radio" name="deliveryArea" value="outside"> <span>ঢাকার বাইরে (১৩০ BDT)</span></label><p class="text-sm text-green-700 mt-2">* ১০০০ BDTর বেশি অর্ডারে ডেলিভারি ফ্রি!</p></div><div class="flex gap-2"><input type="text" placeholder="Coupon Code" class="border p-3 rounded-lg flex-1"><button type="button" class="bg-blue-600 text-white px-5 rounded-lg">প্রয়োগ</button></div><textarea id="orderNote" placeholder="Order Note (Optional)" class="w-full border p-3 rounded-lg"></textarea><div class="flex justify-between text-xl font-bold border-t pt-4"><span>Total:</span><span id="finalTotalAmount">০ BDT</span></div><button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-xl text-lg">Confirm Order</button></form></div>
+      <div class="mt-4"><h3 class="text-xl font-bold mb-3">Cash on Delivery</h3><form id="paymentForm" class="space-y-3" novalidate><div><input type="text" id="orderName" placeholder="Your Name" class="w-full border p-3 rounded-lg" required><p class="text-red-500 text-sm hidden error-message" id="nameError">Please enter your name</p></div><div><input type="tel" id="orderPhone" placeholder="Phone Number" class="w-full border p-3 rounded-lg" required pattern="[0-9]{11}"><p class="text-red-500 text-sm hidden error-message" id="phoneError">১১ ডিজিটের Phone Number দিন</p></div><div><textarea id="orderAddress" placeholder="Address (Area, District)" class="w-full border p-3 rounded-lg" rows="2" required></textarea><p class="text-red-500 text-sm hidden error-message" id="addressError">Please enter your address</p></div><div class="bg-gray-100 p-3 rounded-lg"><p class="font-medium">Delivery Charge:</p><label class="flex items-center gap-2 mt-1"><input type="radio" name="deliveryArea" value="inside" class="accent-green-600" checked> <span id="deliveryInsideLabel">চট্টগ্রাম ভেতর (৮০ BDT)</span></label><label class="flex items-center gap-2"><input type="radio" name="deliveryArea" value="outside"> <span id="deliveryOutsideLabel">চট্টগ্রামের বাইরে (১৩০ BDT)</span></label><p class="text-sm text-green-700 mt-2" id="deliveryFreeNote">* ১০০০ BDTর বেশি অর্ডারে ডেলিভারি ফ্রি!</p></div><div class="flex gap-2"><input type="text" placeholder="Coupon Code" class="border p-3 rounded-lg flex-1"><button type="button" class="bg-blue-600 text-white px-5 rounded-lg">প্রয়োগ</button></div><textarea id="orderNote" placeholder="Order Note (Optional)" class="w-full border p-3 rounded-lg"></textarea><div class="flex justify-between text-xl font-bold border-t pt-4"><span>Total:</span><span id="finalTotalAmount">০ BDT</span></div><button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-xl text-lg">Confirm Order</button></form></div>
     </div>
   </div>
 
@@ -3720,6 +3720,7 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
           const qty = parseInt(detailPageQty.value) || 1;
           addToCart(currentProduct, qty);
           updateOrderSummary();
+          if (typeof window.loadDeliverySettings === 'function') window.loadDeliverySettings();
           paymentModal.classList.remove('invisible', 'opacity-0');
         }
       });   
@@ -3979,10 +3980,11 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
       function updateFinalTotal(subtotal) {
         let delivery = 0;
         const selectedRadio = document.querySelector('input[name="deliveryArea"]:checked');
+        const dc = window._deliverySettings || { insideCharge: 80, outsideCharge: 130, freeAbove: 1000, freeDeliveryEnabled: true };
         if (selectedRadio) {
-          delivery = selectedRadio.value === 'dhaka' ? 80 : 130;
+          delivery = selectedRadio.value === 'outside' ? dc.outsideCharge : dc.insideCharge;
         }
-        if (subtotal >= 1000) delivery = 0;
+        if (dc.freeDeliveryEnabled && subtotal >= dc.freeAbove) delivery = 0;
         const final = subtotal + delivery;
         finalTotalSpan.innerText = '৳' + final;
       }
@@ -4059,11 +4061,13 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
           const nameVal = document.getElementById('orderName')?.value?.trim() || '';
           const phoneVal = document.getElementById('orderPhone')?.value?.trim() || '';
           const addressVal = document.getElementById('orderAddress')?.value?.trim() || '';
-          const deliveryAreaRaw = document.querySelector('input[name="deliveryArea"]:checked')?.value || 'dhaka';
+          const deliveryAreaRaw = document.querySelector('input[name="deliveryArea"]:checked')?.value || 'inside';
           const deliveryArea = deliveryAreaRaw === 'outside' ? 'outside' : 'inside';
           const subtotal = cart.reduce((s,i) => s + i.price * (i.qty || i.quantity || 1), 0);
-          const deliveryCharge = deliveryAreaRaw === 'outside' ? 130 : 80;
-          const total = subtotal + (subtotal >= 1000 ? 0 : deliveryCharge);
+          const dc = window._deliverySettings || { insideCharge: 80, outsideCharge: 130, freeAbove: 1000, freeDeliveryEnabled: true };
+          const deliveryCharge = deliveryArea === 'outside' ? dc.outsideCharge : dc.insideCharge;
+          const isFree = dc.freeDeliveryEnabled && subtotal >= dc.freeAbove;
+          const total = subtotal + (isFree ? 0 : deliveryCharge);
           
           const orderData = {
             customerName: nameVal,
@@ -4128,6 +4132,7 @@ cartItemsContainer.querySelectorAll('a[data-id]').forEach(link => {
         document.getElementById('viewCartBtn').addEventListener('click', () => {
           hideCartPopup();
           updateOrderSummary();
+          if (typeof window.loadDeliverySettings === 'function') window.loadDeliverySettings();
           paymentModal.classList.remove('invisible', 'opacity-0');
         });
 
@@ -4789,11 +4794,55 @@ window.FFH_API = (function() {
     } catch(e) { _renderTestimonials(STATIC_TESTIMONIALS); }
   };
 
+  // ===== DELIVERY SETTINGS LOADER =====
+  window.loadDeliverySettings = async function() {
+    try {
+      var res  = await fetch(window.FFH_API + '/delivery-settings');
+      var data = await res.json();
+      if (data.success && data.data) {
+        var dc = data.data;
+        window._deliverySettings = dc;
+
+        // Radio label গুলো update করো
+        var insideLabel  = document.getElementById('deliveryInsideLabel');
+        var outsideLabel = document.getElementById('deliveryOutsideLabel');
+        var freeNote     = document.getElementById('deliveryFreeNote');
+
+        if (insideLabel) {
+          insideLabel.textContent = 'চট্টগ্রাম ভেতর (' + dc.insideCharge + ' BDT)';
+        }
+        if (outsideLabel) {
+          outsideLabel.textContent = 'চট্টগ্রামের বাইরে (' + dc.outsideCharge + ' BDT)';
+        }
+        if (freeNote) {
+          if (dc.freeDeliveryEnabled && dc.freeAbove > 0) {
+            freeNote.textContent = '* ' + dc.freeAbove + ' BDTর বেশি অর্ডারে ডেলিভারি ফ্রি!';
+            freeNote.style.display = 'block';
+          } else {
+            freeNote.style.display = 'none';
+          }
+        }
+
+        // Cart-এ total থাকলে সাথে সাথে update করো
+        if (typeof updateFinalTotal === 'function') {
+          var subtotal = (window._cart || []).reduce(function(s, i) {
+            return s + (i.price * (i.qty || i.quantity || 1));
+          }, 0);
+          updateFinalTotal(subtotal);
+        }
+      }
+    } catch(e) {
+      // fallback: default values
+      window._deliverySettings = { insideCharge: 80, outsideCharge: 130, freeAbove: 1000, freeDeliveryEnabled: true };
+    }
+  };
+
   function _runAllLoaders() {
     window.loadSliderImages();
     window.loadSideBanner();
     window.loadCollections();
     window.loadTestimonials();
+    window.loadDeliverySettings();
   }
 
   if (document.readyState === 'loading') {
