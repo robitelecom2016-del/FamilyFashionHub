@@ -2997,6 +2997,11 @@ badgeHtml = '<div class="organic-badge">🌱 অর্গানিক</div>';
         const product = products.find(p => p.id === productId);
         if (!product) return;
         
+        // ── Analytics: পণ্য ক্লিক ট্র্যাক করো ──
+        if (typeof window.FFH_trackProductClick === 'function') {
+          window.FFH_trackProductClick(product.id, product.name, product.category || '');
+        }
+        
         currentProduct = product;
         
         homePage.classList.add('hidden');
@@ -5250,6 +5255,10 @@ badgeHtml = '';
     });
     card.addEventListener('click', function(e) {
       if (e.target.closest('.quick-add-btn')) return;
+      // ── Analytics: পণ্য ক্লিক ট্র্যাক করো ──
+      if (typeof window.FFH_trackProductClick === 'function') {
+        window.FFH_trackProductClick(p.id, p.name, p.category);
+      }
       window._ffhCurrentDetailProduct = p;
       _ffhShowApiDetail(p);
     });
@@ -5303,6 +5312,10 @@ function _ffhRenderCatGrid(productList, grid, mGrid, empty, mEmpty) {
     });
     card.addEventListener('click', function(e) {
       if (e.target.closest('.quick-add-btn')) return;
+      // ── Analytics: পণ্য ক্লিক ট্র্যাক করো ──
+      if (typeof window.FFH_trackProductClick === 'function') {
+        window.FFH_trackProductClick(p.id, p.name, p.category);
+      }
       _ffhShowApiDetail(p);
     });
     grid.appendChild(card);
@@ -5321,7 +5334,13 @@ function _ffhRenderCatGrid(productList, grid, mGrid, empty, mEmpty) {
       c.addEventListener('click', function(e) {
         if (e.target.closest('.quick-add-btn')) return;
         var prod = (window._ffhApiProducts||[]).find(function(pp){ return pp.id === c.dataset.id; });
-        if (prod) _ffhShowApiDetail(prod);
+        if (prod) {
+          // ── Analytics: পণ্য ক্লিক ট্র্যাক করো (mobile) ──
+          if (typeof window.FFH_trackProductClick === 'function') {
+            window.FFH_trackProductClick(prod.id, prod.name, prod.category);
+          }
+          _ffhShowApiDetail(prod);
+        }
       });
     });
   }
@@ -5332,6 +5351,16 @@ function _ffhShowApiDetail(p) {
   var homePage   = document.getElementById('homePage');
   var catPage    = document.getElementById('categoryPage');
   if (!detailPage) return;
+
+  // ══ Analytics: পণ্য ক্লিক ও পেজ ভিজিট ট্র্যাক করো ══
+  if (p && p.id) {
+    if (typeof window.FFH_trackProductClick === 'function') {
+      window.FFH_trackProductClick(p.id, p.name || '', p.category || '');
+    }
+    if (typeof window.FFH_analytics !== 'undefined' && typeof window.FFH_analytics.trackPageVisit === 'function') {
+      window.FFH_analytics.trackPageVisit('/product/' + p.id);
+    }
+  }
 
   // ══ URL আপডেট করো: product slug hash সেট করো ══
   if (p && p.name) {
@@ -6522,12 +6551,16 @@ function FFH_shareFacebook() {
     return vid;
   }
 
-  var _API = window.FFH_API || 'https://familyfashionhub.onrender.com/api';
+  // ── API Base URL — সবসময় সর্বশেষ window.FFH_API ব্যবহার করো ────────
+  function _getAPI() {
+    return window.FFH_API || 'https://familyfashionhub.onrender.com/api';
+  }
+
   var _vid = getVisitorId();
 
   // ── Page Visit Track ──────────────────────────────────────────────────
   function trackPageVisit(page, _retry) {
-    fetch(_API + '/analytics/visit', {
+    fetch(_getAPI() + '/analytics/visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -6544,7 +6577,7 @@ function FFH_shareFacebook() {
   // ── Product Click Track ───────────────────────────────────────────────
   window.FFH_trackProductClick = function(productId, productName, category) {
     if (!productId) return;
-    fetch(_API + '/analytics/product-click', {
+    fetch(_getAPI() + '/analytics/product-click', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -6556,19 +6589,12 @@ function FFH_shareFacebook() {
     }).catch(function() {});
   };
 
-  // ── showProductDetailPage wrap: click track যোগ করো ─────────────────
+  // ── showProductDetailPage wrap: static product-এর জন্য page visit track ─
+  // (API product-এর tracking _ffhShowApiDetail-এ সরাসরি আছে)
   function wrapProductDetailForTracking() {
     var origFn = window.showProductDetailPage;
     if (!origFn || origFn._ffhTrackWrapped) return;
     window.showProductDetailPage = function(productId) {
-      // পণ্য খুঁজে বের করো
-      var prods = window._ffhApiProducts || window.products || window._ffhProducts || [];
-      var p = prods.find(function(x){ return (x.id||x._id) === productId; });
-      if (p) {
-        window.FFH_trackProductClick(productId, p.name, p.category);
-      } else {
-        window.FFH_trackProductClick(productId, '', '');
-      }
       trackPageVisit('/product/' + productId);
       return origFn.apply(this, arguments);
     };
@@ -6645,7 +6671,7 @@ function FFH_shareFacebook() {
       if (el && (el.textContent === '–' || el.textContent === '')) el.textContent = '...';
     });
 
-    fetch(_API + '/admin/analytics/live', {
+    fetch(_getAPI() + '/admin/analytics/live', {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json(); }).then(function(d) {
       if (!d.success) { if (cb) cb(); return; }
@@ -6702,7 +6728,7 @@ function FFH_shareFacebook() {
     var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
     if (!token) { if (cb) cb(); return; }
 
-    fetch(_API + '/admin/analytics/overview?days=' + days, {
+    fetch(_getAPI() + '/admin/analytics/overview?days=' + days, {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json(); }).then(function(d) {
       if (!d.success) { if (cb) cb(); return; }
@@ -6752,7 +6778,7 @@ function FFH_shareFacebook() {
   };
 
   function loadHourly(token) {
-    fetch(_API + '/admin/analytics/summary', {
+    fetch(_getAPI() + '/admin/analytics/summary', {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json(); }).then(function(d) {
       if (!d.success || !d.data.hourlyData) return;
@@ -6768,7 +6794,7 @@ function FFH_shareFacebook() {
   window.analyticsLoadProducts = function() {
     var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
     var days = (document.getElementById('an-range-select') || {}).value || '7';
-    fetch(_API + '/admin/analytics/products?days=' + days, {
+    fetch(_getAPI() + '/admin/analytics/products?days=' + days, {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json(); }).then(function(d) {
       if (d.success && d.data) renderTopProducts(d.data);
@@ -6778,7 +6804,7 @@ function FFH_shareFacebook() {
   window.analyticsLoadPages = function() {
     var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
     var days = (document.getElementById('an-range-select') || {}).value || '7';
-    fetch(_API + '/admin/analytics/overview?days=' + days, {
+    fetch(_getAPI() + '/admin/analytics/overview?days=' + days, {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json(); }).then(function(d) {
       if (d.success && d.data && d.data.topPages) renderTopPages(d.data.topPages);
@@ -6897,11 +6923,11 @@ function FFH_shareFacebook() {
 
   // ── expose public API ─────────────────────────────────────────────────
   window.FFH_analytics = {
-    trackPageVisit: trackPageVisit,
+    trackPageVisit:    trackPageVisit,
     trackProductClick: window.FFH_trackProductClick,
-    loadLive: analyticsLoadLiveStats,
-    loadOverview: window.analyticsLoadOverview,
-    init: initAnalyticsPanel,
+    loadLive:          analyticsLoadLiveStats,
+    loadOverview:      window.analyticsLoadOverview,
+    init:              initAnalyticsPanel,
   };
 
 })();
