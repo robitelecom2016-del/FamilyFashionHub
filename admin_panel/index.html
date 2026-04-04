@@ -1375,10 +1375,52 @@ tr:hover td { background: var(--bg); }
         </div>
       </div>
 
+      <!-- পাসওয়ার্ড পরিবর্তন -->
       <div class="settings-section">
-        <div class="card-header"><h3><i class="fas fa-key" style="color:var(--warning)"></i> পাসওয়ার্ড পরিবর্তন</h3></div>
+        <div class="card-header">
+          <h3><i class="fas fa-key" style="color:var(--warning)"></i> পাসওয়ার্ড পরিবর্তন</h3>
+        </div>
         <div class="card-body">
-          <div class="form-group"><label class="form-label">নতুন পাসওয়ার্ড</label><input type="password" class="form-control" id="newPassword" placeholder="••••••••"></div>
+          <div id="pwChangeAlert" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;"></div>
+          <div class="form-grid" style="margin-bottom:14px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label"><i class="fas fa-lock" style="color:var(--text-muted);margin-right:4px;"></i> বর্তমান পাসওয়ার্ড</label>
+              <div style="position:relative;">
+                <input type="password" class="form-control" id="currentPassword" placeholder="বর্তমান পাসওয়ার্ড লিখুন">
+                <button type="button" onclick="togglePwVisibility('currentPassword','eyeIcon1')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:0;"><i class="fas fa-eye" id="eyeIcon1"></i></button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label"><i class="fas fa-lock-open" style="color:var(--text-muted);margin-right:4px;"></i> নতুন পাসওয়ার্ড</label>
+              <div style="position:relative;">
+                <input type="password" class="form-control" id="newPassword" placeholder="নতুন পাসওয়ার্ড লিখুন" oninput="checkPwStrength(this.value)">
+                <button type="button" onclick="togglePwVisibility('newPassword','eyeIcon2')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:0;"><i class="fas fa-eye" id="eyeIcon2"></i></button>
+              </div>
+              <!-- শক্তি বার -->
+              <div style="margin-top:6px;height:4px;border-radius:99px;background:var(--border);overflow:hidden;">
+                <div id="pwStrengthBar" style="height:100%;width:0%;border-radius:99px;transition:width 0.3s,background 0.3s;"></div>
+              </div>
+              <span id="pwStrengthLabel" style="font-size:11px;color:var(--text-muted);margin-top:3px;display:block;"></span>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label"><i class="fas fa-check-circle" style="color:var(--text-muted);margin-right:4px;"></i> পাসওয়ার্ড নিশ্চিত করুন</label>
+              <div style="position:relative;">
+                <input type="password" class="form-control" id="confirmPassword" placeholder="আবার লিখুন" oninput="checkPwMatch()">
+                <button type="button" onclick="togglePwVisibility('confirmPassword','eyeIcon3')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:0;"><i class="fas fa-eye" id="eyeIcon3"></i></button>
+              </div>
+              <span id="pwMatchLabel" style="font-size:11px;margin-top:3px;display:block;"></span>
+            </div>
+          </div>
+          <button class="btn btn-warning" onclick="changeAdminPassword()" id="changePwBtn">
+            <i class="fas fa-key"></i> পাসওয়ার্ড পরিবর্তন করুন
+          </button>
+        </div>
+      </div>
+
+      <!-- API ও Frontend URL -->
+      <div class="settings-section">
+        <div class="card-header"><h3><i class="fas fa-link" style="color:var(--info)"></i> সংযোগ সেটিংস</h3></div>
+        <div class="card-body">
           <div class="form-group"><label class="form-label">API URL (ব্যাকএন্ড)</label><input type="text" class="form-control" id="settingApiUrl" placeholder="http://localhost:5000/api"></div>
           <div class="form-group"><label class="form-label">Frontend URL <span style="font-size:11px;color:var(--text-muted);">(ক্যাটাগরি লিংক তৈরির জন্য)</span></label><input type="text" class="form-control" id="settingFrontendUrl" placeholder="https://yoursite.com"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -3181,6 +3223,121 @@ async function saveSettings() {
   const data = await api('/settings', 'POST', body);
   if (data.success) toast('সেটিংস সেভ হয়েছে');
   else toast(data.message || 'সমস্যা', 'error');
+}
+
+// ===== পাসওয়ার্ড পরিবর্তন =====
+function togglePwVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon  = document.getElementById(iconId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+}
+
+function checkPwStrength(val) {
+  const bar   = document.getElementById('pwStrengthBar');
+  const label = document.getElementById('pwStrengthLabel');
+  if (!val) { bar.style.width='0%'; label.textContent=''; return; }
+  let score = 0;
+  if (val.length >= 6)  score++;
+  if (val.length >= 10) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { w:'20%', bg:'#ef4444', text:'খুব দুর্বল' },
+    { w:'40%', bg:'#f97316', text:'দুর্বল' },
+    { w:'60%', bg:'#f59e0b', text:'মাঝারি' },
+    { w:'80%', bg:'#3b82f6', text:'ভালো' },
+    { w:'100%',bg:'#10b981', text:'শক্তিশালী ✓' },
+  ];
+  const lv = levels[Math.min(score,4)];
+  bar.style.width = lv.w;
+  bar.style.background = lv.bg;
+  label.textContent = lv.text;
+  label.style.color  = lv.bg;
+}
+
+function checkPwMatch() {
+  const nw  = document.getElementById('newPassword').value;
+  const cf  = document.getElementById('confirmPassword').value;
+  const lbl = document.getElementById('pwMatchLabel');
+  if (!cf) { lbl.textContent=''; return; }
+  if (nw === cf) {
+    lbl.textContent = '✓ পাসওয়ার্ড মিলেছে';
+    lbl.style.color = '#10b981';
+  } else {
+    lbl.textContent = '✗ পাসওয়ার্ড মিলছে না';
+    lbl.style.color = '#ef4444';
+  }
+}
+
+function showPwAlert(msg, type) {
+  const el = document.getElementById('pwChangeAlert');
+  const styles = {
+    success: 'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;',
+    error:   'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;',
+  };
+  el.style.cssText = styles[type] || styles.error;
+  el.innerHTML = (type==='success'?'<i class="fas fa-check-circle"></i> ':'<i class="fas fa-exclamation-circle"></i> ') + msg;
+  el.style.display = 'block';
+  if (type === 'success') setTimeout(() => { el.style.display='none'; }, 4000);
+}
+
+async function changeAdminPassword() {
+  const current  = document.getElementById('currentPassword').value;
+  const newPw    = document.getElementById('newPassword').value;
+  const confirmPw= document.getElementById('confirmPassword').value;
+  const btn      = document.getElementById('changePwBtn');
+
+  // Validation
+  if (!current)   return showPwAlert('বর্তমান পাসওয়ার্ড দিন।', 'error');
+  if (!newPw)     return showPwAlert('নতুন পাসওয়ার্ড দিন।', 'error');
+  if (newPw.length < 6) return showPwAlert('নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।', 'error');
+  if (newPw !== confirmPw) return showPwAlert('নতুন পাসওয়ার্ড ও নিশ্চিত পাসওয়ার্ড মিলছে না।', 'error');
+  if (current === newPw)   return showPwAlert('নতুন পাসওয়ার্ড বর্তমান পাসওয়ার্ডের মতো হতে পারবে না।', 'error');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> পরিবর্তন হচ্ছে...';
+
+  try {
+    const res = await fetch(API_URL + '/admin/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+      body: JSON.stringify({ currentPassword: current, newPassword: newPw })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showPwAlert('পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে! পরের লগইনে নতুন পাসওয়ার্ড ব্যবহার করুন।', 'success');
+      // ফর্ম রিসেট
+      document.getElementById('currentPassword').value  = '';
+      document.getElementById('newPassword').value      = '';
+      document.getElementById('confirmPassword').value  = '';
+      document.getElementById('pwStrengthBar').style.width = '0%';
+      document.getElementById('pwStrengthLabel').textContent = '';
+      document.getElementById('pwMatchLabel').textContent    = '';
+      // আইকন রিসেট
+      ['eyeIcon1','eyeIcon2','eyeIcon3'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = 'fas fa-eye';
+      });
+      ['currentPassword','newPassword','confirmPassword'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.type = 'password';
+      });
+    } else {
+      showPwAlert(data.message || 'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে। বর্তমান পাসওয়ার্ড সঠিক কিনা দেখুন।', 'error');
+    }
+  } catch(e) {
+    showPwAlert('সার্ভারের সাথে সংযোগ হচ্ছে না।', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-key"></i> পাসওয়ার্ড পরিবর্তন করুন';
 }
 
 function saveApiUrl() {
