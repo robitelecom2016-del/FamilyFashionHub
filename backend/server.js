@@ -1815,6 +1815,42 @@ app.get('/api/settings', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// ===== DELIVERY CHARGE SETTINGS =====
+
+// GET /api/delivery-settings — Public (frontend checkout এ ব্যবহার হবে)
+app.get('/api/delivery-settings', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'deliveryCharge' });
+    const defaults = {
+      insideCharge:    80,   // ঢাকার ভেতরে ডেলিভারি চার্জ (BDT)
+      outsideCharge:   130,  // ঢাকার বাইরে ডেলিভারি চার্জ (BDT)
+      freeAbove:       1000, // এই পরিমাণের বেশি অর্ডারে ডেলিভারি ফ্রি (0 = disabled)
+      freeDeliveryEnabled: true,
+    };
+    const data = setting ? { ...defaults, ...setting.value } : defaults;
+    res.json({ success: true, data });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
+// POST /api/admin/delivery-settings — Admin only
+app.post('/api/admin/delivery-settings', adminMiddleware, async (req, res) => {
+  try {
+    const { insideCharge, outsideCharge, freeAbove, freeDeliveryEnabled } = req.body;
+    const value = {
+      insideCharge:        parseFloat(insideCharge)  || 0,
+      outsideCharge:       parseFloat(outsideCharge) || 0,
+      freeAbove:           parseFloat(freeAbove)     || 0,
+      freeDeliveryEnabled: freeDeliveryEnabled === true || freeDeliveryEnabled === 'true',
+    };
+    await Settings.findOneAndUpdate(
+      { key: 'deliveryCharge' },
+      { key: 'deliveryCharge', value },
+      { upsert: true }
+    );
+    res.json({ success: true, message: 'ডেলিভারি চার্জ সেভ হয়েছে', data: value });
+  } catch (e) { res.json({ success: false, message: e.message }); }
+});
+
 app.post('/api/settings', adminMiddleware, async (req, res) => {
   try {
     const entries = Object.entries(req.body);
