@@ -2499,6 +2499,27 @@ app.get('/', (req, res) => res.json({
   admin: process.env.ADMIN_URL,
 }));
 
+// ===== RENDER FREE TIER — SLEEP PREVENTION =====
+// Render free plan ১৫ মিনিট idle থাকলে server sleep করে।
+// নিচের code প্রতি ১৪ মিনিটে নিজেকে ping করে জাগিয়ে রাখে।
+if (process.env.NODE_ENV !== 'development') {
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.FRONTEND_URL || '';
+  const BACKEND_URL = (process.env.RENDER_EXTERNAL_URL ||
+    ('https://' + (process.env.RENDER_EXTERNAL_HOSTNAME || ''))).replace(/\/$/, '');
+
+  if (BACKEND_URL && BACKEND_URL !== 'https://') {
+    setInterval(async () => {
+      try {
+        const http = require('https');
+        http.get(BACKEND_URL + '/', (res) => {
+          console.log(`🔔 Keep-alive ping → ${res.statusCode}`);
+        }).on('error', () => {});
+      } catch(e) {}
+    }, 14 * 60 * 1000); // প্রতি ১৪ মিনিটে
+    console.log('✅ Keep-alive ping চালু হয়েছে →', BACKEND_URL);
+  }
+}
+
 // ===== START =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
