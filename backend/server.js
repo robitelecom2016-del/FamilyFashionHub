@@ -816,9 +816,8 @@ app.post('/api/admin/login', async (req, res) => {
         }
 
         // .env দিয়ে মিলেছে — DB-তে hash আপডেট করো যাতে পরেরবার hash-এ মেলে
-        const hashed = await bcrypt.hash(password, 12);
-        await User.findByIdAndUpdate(user._id, { password: hashed });
-        user.password = hashed;
+        user.password = await bcrypt.hash(password, 12);
+        await user.save();
       }
     } else {
       // ===== পাথ ২: DB-তে user নেই — .env দিয়ে চেক করে তৈরি করো =====
@@ -889,17 +888,19 @@ app.post('/api/admin/change-password', adminMiddleware, async (req, res) => {
     if (newPassword.length < 6)
       return res.json({ success: false, message: 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' });
 
-    // Token থেকে admin email বের করো
-    const adminEmail = req.user.email;
-    const user = await User.findOne({ email: adminEmail, role: 'admin' });
-    if (!user) return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
+    // Token থেকে user id বের করো — email নয়, id দিয়ে খোঁজা বেশি নির্ভরযোগ্য
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'admin')
+      return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
 
-    // বর্তমান পাসওয়ার্ড যাচাই —
-    // ১) প্রথমে bcrypt দিয়ে DB hash-এর বিরুদ্ধে চেক করো
-    // ২) না মিললে .env-এর plain ADMIN_PASSWORD-এর বিরুদ্ধে চেক করো (initial state)
+    // বর্তমান পাসওয়ার্ড যাচাই
+    // ১) DB-এর hashed password দিয়ে bcrypt.compare
+    // ২) না মিললে .env ADMIN_PASSWORD plain text fallback
     const matchHash = await bcrypt.compare(currentPassword, user.password);
-    const matchEnv  = (currentPassword === process.env.ADMIN_PASSWORD &&
-                       adminEmail.toLowerCase() === (process.env.ADMIN_USERNAME || '').toLowerCase());
+    const matchEnv  = !matchHash &&
+                      currentPassword === process.env.ADMIN_PASSWORD &&
+                      user.email.toLowerCase() === (process.env.ADMIN_USERNAME || '').toLowerCase();
 
     if (!matchHash && !matchEnv)
       return res.json({ success: false, message: 'বর্তমান পাসওয়ার্ড ভুল' });
@@ -907,12 +908,12 @@ app.post('/api/admin/change-password', adminMiddleware, async (req, res) => {
     if (currentPassword === newPassword)
       return res.json({ success: false, message: 'নতুন পাসওয়ার্ড বর্তমান পাসওয়ার্ডের মতো হতে পারবে না' });
 
-    // নতুন পাসওয়ার্ড hash করে DB-তে সেভ করো
-    const hashed = await bcrypt.hash(newPassword, 12);
-    await User.findByIdAndUpdate(user._id, { password: hashed });
+    // নতুন পাসওয়ার্ড hash করে সরাসরি document-এ সেভ করো
+    user.password = await bcrypt.hash(newPassword, 12);
+    await user.save();
 
-    console.log(`✅ Admin password changed: ${adminEmail}`);
-    res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে! পরের লগইনে নতুন পাসওয়ার্ড ব্যবহার করুন।' });
+    console.log(`✅ Admin password changed successfully: ${user.email}`);
+    res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!' });
   } catch (e) {
     console.error('❌ change-password error:', e.message);
     res.json({ success: false, message: e.message });
