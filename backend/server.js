@@ -162,6 +162,7 @@ const userSchema = new mongoose.Schema({
   password:  { type: String, required: true },
   role:      { type: String, default: 'user' },
   createdAt: { type: Date, default: Date.now },
+  passwordChangedAt: { type: Date, default: null },
 });
 
 const settingsSchema = new mongoose.Schema({
@@ -790,6 +791,8 @@ app.post('/api/users/login', async (req, res) => {
 });
 
 // Admin Login — email অথবা ADMIN_USERNAME দিয়ে login করা যাবে
+// নিয়ম: পাসওয়ার্ড একবার change করলে .env-এর পুরনো পাসওয়ার্ড আর কাজ করবে না।
+//        শুধুমাত্র নতুন পাসওয়ার্ড (DB-তে hash করা) দিয়েই লগইন করতে হবে।
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -801,12 +804,20 @@ app.post('/api/admin/login', async (req, res) => {
 
     if (user) {
       // ===== পাথ ১: DB-তে user আছে =====
-      // প্রথমে DB-এর hashed password চেক করো (change-password করার পরে এটাই হবে)
+
+      // passwordChangedAt থাকলে মানে পাসওয়ার্ড পরিবর্তন হয়েছে।
+      // সেক্ষেত্রে শুধু DB-এর hash দিয়েই যাচাই হবে — .env fallback নেই।
+      const passwordWasChanged = !!user.passwordChangedAt;
+
       const matchHash = await bcrypt.compare(password, user.password);
 
       if (!matchHash) {
-        // DB hash মেলেনি — .env-এর plain password দিয়ে একবার চেক করো
-        // (user যদি কখনো change-password না করে থাকে)
+        if (passwordWasChanged) {
+          // পাসওয়ার্ড পরিবর্তন হয়েছে, .env fallback নেই
+          return res.json({ success: false, message: 'পাসওয়ার্ড ভুল' });
+        }
+
+        // পাসওয়ার্ড কখনো পরিবর্তন হয়নি — .env-এর plain password দিয়ে একবার চেক করো
         const matchEnv =
           password === process.env.ADMIN_PASSWORD &&
           normalizedEmail === (process.env.ADMIN_USERNAME || '').toLowerCase();
@@ -910,6 +921,7 @@ app.post('/api/admin/change-password', adminMiddleware, async (req, res) => {
 
     // নতুন পাসওয়ার্ড hash করে সরাসরি document-এ সেভ করো
     user.password = await bcrypt.hash(newPassword, 12);
+    user.passwordChangedAt = new Date(); // এখন থেকে .env fallback আর কাজ করবে না
     await user.save();
 
     console.log(`✅ Admin password changed successfully: ${user.email}`);
