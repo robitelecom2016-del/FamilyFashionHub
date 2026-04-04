@@ -6526,7 +6526,7 @@ function FFH_shareFacebook() {
   var _vid = getVisitorId();
 
   // ── Page Visit Track ──────────────────────────────────────────────────
-  function trackPageVisit(page) {
+  function trackPageVisit(page, _retry) {
     fetch(_API + '/analytics/visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -6535,7 +6535,10 @@ function FFH_shareFacebook() {
         page: page || '/',
         referrer: document.referrer || ''
       })
-    }).catch(function() {});
+    }).catch(function() {
+      // Backend sleep থেকে জেগে উঠছে — একবার retry করো (১০ সেকেন্ড পরে)
+      if (!_retry) setTimeout(function() { trackPageVisit(page, true); }, 10000);
+    });
   }
 
   // ── Product Click Track ───────────────────────────────────────────────
@@ -6634,15 +6637,23 @@ function FFH_shareFacebook() {
   // Live Stats (top 4 cards)
   function analyticsLoadLiveStats(cb) {
     var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
+    if (!token) { if (cb) cb(); return; }
+
+    // Loading placeholder
+    ['an-live-visitors','an-live-pageviews','an-today-visits','an-today-clicks'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && (el.textContent === '–' || el.textContent === '')) el.textContent = '...';
+    });
+
     fetch(_API + '/admin/analytics/live', {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json(); }).then(function(d) {
-      if (!d.success) return;
+      if (!d.success) { if (cb) cb(); return; }
       var data = d.data;
-      setText('an-live-visitors',  data.liveVisitors);
-      setText('an-live-pageviews', data.livePageviews);
-      setText('an-today-visits',   data.todayVisits);
-      setText('an-today-clicks',   data.todayClicks);
+      setText('an-live-visitors',  data.liveVisitors  !== undefined ? data.liveVisitors  : 0);
+      setText('an-live-pageviews', data.livePageviews !== undefined ? data.livePageviews : 0);
+      setText('an-today-visits',   data.todayVisits   !== undefined ? data.todayVisits   : 0);
+      setText('an-today-clicks',   data.todayClicks   !== undefined ? data.todayClicks   : 0);
 
       // Live chart
       if (data.liveChart) renderBarChart('an-live-chart', 'an-live-chart-labels', data.liveChart.map(function(b){ return {label:b.time, val:b.count}; }), '#22c55e');
@@ -6675,17 +6686,26 @@ function FFH_shareFacebook() {
       var el = document.getElementById('an-last-update');
       if (el) el.textContent = 'সর্বশেষ আপডেট: ' + new Date().toLocaleTimeString('bn-BD');
       if (cb) cb();
-    }).catch(function(){ if(cb) cb(); });
+    }).catch(function(err) {
+      console.warn('Analytics live stats fetch error:', err);
+      ['an-live-visitors','an-live-pageviews','an-today-visits','an-today-clicks'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.textContent === '...') el.textContent = '–';
+      });
+      if (cb) cb();
+    });
   }
 
   // Overview (daily chart + summary)
   window.analyticsLoadOverview = function(cb) {
     var days = (document.getElementById('an-range-select') || {}).value || '7';
     var token = localStorage.getItem('ffh_user_token') || localStorage.getItem('ffh_admin_token') || '';
+    if (!token) { if (cb) cb(); return; }
+
     fetch(_API + '/admin/analytics/overview?days=' + days, {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json(); }).then(function(d) {
-      if (!d.success) return;
+      if (!d.success) { if (cb) cb(); return; }
       var data = d.data;
 
       // Daily chart — visits + clicks পাশাপাশি
@@ -6696,7 +6716,6 @@ function FFH_shareFacebook() {
         chartEl.innerHTML = data.dailyData.map(function(d2) {
           var vh = Math.round((d2.visits / maxVal) * 80) + 'px';
           var ch = Math.round((d2.clicks / maxVal) * 80) + 'px';
-          var short = d2.date.slice(5); // MM-DD
           return '<div style="flex:1;display:flex;gap:1px;align-items:flex-end;">' +
             '<div class="an-bar visits" style="flex:1;height:' + vh + ';" data-tip="' + d2.visits + ' ভিজিট"></div>' +
             '<div class="an-bar clicks" style="flex:1;height:' + ch + ';" data-tip="' + d2.clicks + ' ক্লিক"></div>' +
@@ -6712,10 +6731,10 @@ function FFH_shareFacebook() {
       if (sum) {
         sum.innerHTML =
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-            statBox('মোট ভিজিট', data.totalVisits, '#6366f1') +
-            statBox('Unique ভিজিটর', data.uniqueVisitors, '#8b5cf6') +
-            statBox('মোট ক্লিক', data.totalClicks, '#f97316') +
-            statBox('পিরিয়ড', data.days + ' দিন', '#22c55e') +
+            statBox('মোট ভিজিট', data.totalVisits || 0, '#6366f1') +
+            statBox('Unique ভিজিটর', data.uniqueVisitors || 0, '#8b5cf6') +
+            statBox('মোট ক্লিক', data.totalClicks || 0, '#f97316') +
+            statBox('পিরিয়ড', (data.days || days) + ' দিন', '#22c55e') +
           '</div>';
       }
 
@@ -6726,7 +6745,10 @@ function FFH_shareFacebook() {
       // Hourly chart from summary endpoint
       loadHourly(token);
       if (cb) cb();
-    }).catch(function(){ if(cb) cb(); });
+    }).catch(function(err) {
+      console.warn('Analytics overview error:', err);
+      if (cb) cb();
+    });
   };
 
   function loadHourly(token) {
@@ -6831,12 +6853,20 @@ function FFH_shareFacebook() {
     var navBtn = document.getElementById('sideNav-analytics');
     if (navBtn) navBtn.style.display = '';
 
+    // switchDashPanel এখনো define না হলে retry করো
+    if (!window.switchDashPanel) {
+      setTimeout(initAnalyticsPanel, 300);
+      return;
+    }
+
     // switchDashPanel wrap: analytics panel খুললে auto-load
     var origSwitch = window.switchDashPanel;
     if (origSwitch && !origSwitch._analyticsWrapped) {
       window.switchDashPanel = function(panel) {
         origSwitch.apply(this, arguments);
         if (panel === 'analytics') {
+          // overview tab সক্রিয় করো এবং data লোড করো
+          analyticsShowTab('overview');
           analyticsLoadLiveStats(null);
           analyticsLoadOverview(null);
           // প্রতি ৩০ সেকেন্ডে live stats refresh
