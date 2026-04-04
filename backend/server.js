@@ -10,6 +10,26 @@ require('dotenv').config();
 
 const app = express();
 
+// =====================================================================
+// ===== SSE — নতুন অর্ডার notification-এর জন্য connected admin clients =====
+// প্রতিটি connected admin browser একটি res object হিসেবে এখানে থাকবে।
+// নতুন অর্ডার এলে সবাইকে একসাথে notify করা হবে — মাত্র একবার।
+// =====================================================================
+const sseClients = new Set();
+
+// Helper: সমস্ত connected admin-কে SSE event পাঠাও
+function broadcastSSE(eventData) {
+  const payload = `data: ${JSON.stringify(eventData)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(payload);
+    } catch (_) {
+      // লেখা না গেলে client সরিয়ে দাও
+      sseClients.delete(client);
+    }
+  }
+}
+
 // ===== CORS CONFIG =====
 // Frontend ও Admin উভয় URL থেকে request গ্রহণ করবে
 // FRONTEND_URL ও ADMIN_URL-এ https:// না থাকলে স্বয়ংক্রিয়ভাবে যোগ হবে
@@ -85,7 +105,7 @@ mongoose.connect(process.env.MONGODB_URI)
     } catch(e) {
       // index নেই — no problem
     }
-    
+
     // Drop the problematic phone index on users collection
     try {
       await mongoose.connection.collection('users').dropIndex('phone_1');
@@ -94,13 +114,13 @@ mongoose.connect(process.env.MONGODB_URI)
       // index না থাকলে কিছু করার নেই
       if (e.code !== 27) console.log('ℹ️ phone_1 index not found, skipping');
     }
-    
+
     autoSetupAdmin();
     seedDefaultCollections();
     seedSideBanner();
-    seedHeroSideImage();      // new
-    seedTestimonials();       // new
-    seedSliderImages();       // new
+    seedHeroSideImage();
+    seedTestimonials();
+    seedSliderImages();
   })
   .catch(err => console.error('❌ MongoDB Error:', err));
 
@@ -121,25 +141,25 @@ const productSchema = new mongoose.Schema({
   featured:    { type: Boolean, default: false },
 
   // ===== বিস্তারিত পণ্য তথ্য =====
-  sizes:          [{ type: String }],                  // সাইজ যেমন: S, M, L, XL, 0-6M
-  colors:         [{ type: String }],                  // রঙ যেমন: লাল, নীল, সাদা
-  ageGroup:       { type: String, default: '' },        // বয়স: 0-6 মাস, 6-12 মাস ইত্যাদি
-  material:       { type: String, default: '' },        // কাপড়: Cotton, Fleece ইত্যাদি
-  stock:          { type: Number, default: 0 },         // স্টক সংখ্যা
-  sku:            { type: String, default: '' },         // স্টক কোড
-  weight:         { type: String, default: '' },         // ওজন/মাপ
-  deliveryInfo:   { type: String, default: '' },         // ডেলিভারি তথ্য
-  returnPolicy:   { type: String, default: '' },         // রিটার্ন নীতি
-  highlights:     [{ type: String }],                   // মূল বৈশিষ্ট্য তালিকা
-  careInstructions: { type: String, default: '' },      // পরিচর্যা নির্দেশনা
-  tags:           [{ type: String }],                   // সার্চ ট্যাগ
+  sizes:          [{ type: String }],
+  colors:         [{ type: String }],
+  ageGroup:       { type: String, default: '' },
+  material:       { type: String, default: '' },
+  stock:          { type: Number, default: 0 },
+  sku:            { type: String, default: '' },
+  weight:         { type: String, default: '' },
+  deliveryInfo:   { type: String, default: '' },
+  returnPolicy:   { type: String, default: '' },
+  highlights:     [{ type: String }],
+  careInstructions: { type: String, default: '' },
+  tags:           [{ type: String }],
 
-  // ===== SEO Fields (Auto-generated or manually set) =====
-  seoTitle:       { type: String, default: '' },        // Meta Title — গুগলে দেখাবে
-  seoDescription: { type: String, default: '' },        // Meta Description
-  seoKeywords:    [{ type: String }],                   // SEO Keywords
-  seoCanonical:   { type: String, default: '' },        // Canonical URL
-  seoOgImage:     { type: String, default: '' },        // Open Graph Image URL
+  // ===== SEO Fields =====
+  seoTitle:       { type: String, default: '' },
+  seoDescription: { type: String, default: '' },
+  seoKeywords:    [{ type: String }],
+  seoCanonical:   { type: String, default: '' },
+  seoOgImage:     { type: String, default: '' },
 
   createdAt:   { type: Date, default: Date.now },
 });
@@ -171,8 +191,8 @@ const settingsSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-  shortId:      { type: String, default: '', index: true }, // ফ্রন্টএন্ডে দেখানো ছোট ID — যেমন 62024DF8
-  userEmail:    { type: String, default: '' },              // লগইন করা user-এর email (My Orders ফিল্টারের জন্য)
+  shortId:      { type: String, default: '', index: true },
+  userEmail:    { type: String, default: '' },
   customerName: { type: String, default: '' },
   phone:        { type: String, default: '' },
   address:      { type: String, default: '' },
@@ -190,25 +210,22 @@ const orderSchema = new mongoose.Schema({
   createdAt:    { type: Date, default: Date.now },
 });
 
-
 // ===== ANALYTICS SCHEMAS =====
 
-// পেজ ভিজিট ট্র্যাকার
 const pageVisitSchema = new mongoose.Schema({
-  date:        { type: String, required: true, index: true }, // YYYY-MM-DD
-  hour:        { type: Number, default: 0 },                  // 0-23
-  visitorId:   { type: String, default: '' },                 // localStorage UUID
+  date:        { type: String, required: true, index: true },
+  hour:        { type: Number, default: 0 },
+  visitorId:   { type: String, default: '' },
   ip:          { type: String, default: '' },
   userAgent:   { type: String, default: '' },
-  page:        { type: String, default: '/' },                // visited page path
+  page:        { type: String, default: '/' },
   referrer:    { type: String, default: '' },
   country:     { type: String, default: '' },
-  createdAt:   { type: Date, default: Date.now, expires: 90 * 24 * 3600 }, // 90 দিন পর auto-delete
+  createdAt:   { type: Date, default: Date.now, expires: 90 * 24 * 3600 },
 });
 
-// পণ্য ক্লিক ট্র্যাকার
 const productClickSchema = new mongoose.Schema({
-  date:        { type: String, required: true, index: true }, // YYYY-MM-DD
+  date:        { type: String, required: true, index: true },
   hour:        { type: Number, default: 0 },
   productId:   { type: String, required: true, index: true },
   productName: { type: String, default: '' },
@@ -229,20 +246,19 @@ const testimonialSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-const Product    = mongoose.model('Product',     productSchema);
-const Review     = mongoose.model('Review',      reviewSchema);
-const User       = mongoose.model('User',        userSchema);
-const Settings   = mongoose.model('Settings',    settingsSchema);
-const Order      = mongoose.model('Order',       orderSchema);
-const Testimonial  = mongoose.model('Testimonial',   testimonialSchema);
-const PageVisit    = mongoose.model('PageVisit',     pageVisitSchema);
-const ProductClick = mongoose.model('ProductClick',  productClickSchema);
+const Product      = mongoose.model('Product',      productSchema);
+const Review       = mongoose.model('Review',       reviewSchema);
+const User         = mongoose.model('User',         userSchema);
+const Settings     = mongoose.model('Settings',     settingsSchema);
+const Order        = mongoose.model('Order',        orderSchema);
+const Testimonial  = mongoose.model('Testimonial',  testimonialSchema);
+const PageVisit    = mongoose.model('PageVisit',    pageVisitSchema);
+const ProductClick = mongoose.model('ProductClick', productClickSchema);
 
 // ===== AUTO ADMIN SETUP =====
-// .env-এর ADMIN_USERNAME ও ADMIN_PASSWORD দিয়ে স্বয়ংক্রিয়ভাবে admin তৈরি করবে
 async function autoSetupAdmin() {
   try {
-    const adminEmail = process.env.ADMIN_USERNAME; // username হিসেবে email ব্যবহার
+    const adminEmail = process.env.ADMIN_USERNAME;
     const adminPass  = process.env.ADMIN_PASSWORD;
 
     if (!adminEmail || !adminPass) {
@@ -430,6 +446,83 @@ function adminMiddleware(req, res, next) {
   } catch { res.json({ success: false, message: 'Invalid token' }); }
 }
 
+// =====================================================================
+// ===== SSE ENDPOINT — Admin নতুন অর্ডার real-time notification পাবে =====
+// =====================================================================
+// Admin panel একবার এই endpoint-এ connect করবে।
+// নতুন অর্ডার এলে server নিজেই push করবে — বারবার poll করতে হবে না।
+// এতে ডাবল নোটিফিকেশনের সম্ভাবনা শূন্য।
+//
+// ফ্রন্টএন্ডে ব্যবহার (Admin layout বা App.js-এ একবার):
+//
+//   useEffect(() => {
+//     const token = localStorage.getItem('adminToken');
+//     const url = `${API_BASE}/api/admin/notifications/stream?token=${token}`;
+//     const evtSource = new EventSource(url);
+//     evtSource.onmessage = (e) => {
+//       const data = JSON.parse(e.data);
+//       if (data.type === 'new_order') {
+//         // নোটিফিকেশন দেখান
+//         showNotification(`নতুন অর্ডার! #${data.shortId} — ${data.customerName}`);
+//       }
+//     };
+//     return () => evtSource.close(); // ← এই cleanup-ই ডাবল বন্ধ করে
+//   }, []); // শুধু একবার mount
+//
+// =====================================================================
+app.get('/api/admin/notifications/stream', (req, res) => {
+  // EventSource সরাসরি custom header support করে না।
+  // তাই token query string-এ নেওয়া হচ্ছে: ?token=xxx
+  const token = req.query.token || (req.headers.authorization || '').split(' ')[1];
+
+  if (!token) {
+    res.status(401).end('Unauthorized');
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      res.status(403).end('Forbidden');
+      return;
+    }
+  } catch {
+    res.status(401).end('Invalid token');
+    return;
+  }
+
+  // SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Nginx buffering বন্ধ
+  res.flushHeaders();
+
+  // প্রথমেই একটি connected event পাঠাও
+  res.write(`data: ${JSON.stringify({ type: 'connected', message: 'SSE সংযুক্ত হয়েছে' })}\n\n`);
+
+  // Client যোগ করো
+  sseClients.add(res);
+  console.log(`📡 SSE client connected. Total: ${sseClients.size}`);
+
+  // প্রতি ৩০ সেকেন্ডে heartbeat — connection জীবিত রাখে
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': heartbeat\n\n');
+    } catch (_) {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    }
+  }, 30000);
+
+  // Client disconnect হলে পরিষ্কার করো
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+    console.log(`📡 SSE client disconnected. Total: ${sseClients.size}`);
+  });
+});
+
 // ===== PRODUCT ROUTES =====
 
 app.get('/api/products', async (req, res) => {
@@ -472,14 +565,12 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
       images = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
     }
     const img = images.length > 0 ? images[0].url : '';
-    // Array field parse helper (comma-separated string অথবা array হতে পারে)
     const parseArr = v => {
       if (!v) return [];
       if (Array.isArray(v)) return v.map(x => x.trim()).filter(Boolean);
       return v.split(',').map(x => x.trim()).filter(Boolean);
     };
 
-    // Auto-generate SEO if not provided
     const SITE_NAME = 'Family Fashion Hub';
     const SITE_URL  = (process.env.FRONTEND_URL || 'https://familyfashionhub.com').replace(/\/$/, '');
     const finalSeoTitle = seoTitle || `${name} | ${SITE_NAME}`;
@@ -488,7 +579,6 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
     const finalSeoKw    = parseArr(seoKeywords).length
       ? parseArr(seoKeywords)
       : [name, category, SITE_NAME, 'bangladesh', 'বাংলাদেশ', 'online shopping bd'].filter(Boolean);
-    const slug          = (name || '').toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'-');
     const finalCanonical = seoCanonical || '';
     const finalOgImage   = seoOgImage   || '';
 
@@ -497,25 +587,25 @@ app.post('/api/products', adminMiddleware, upload.array('images', 10), async (re
       price:       +price,
       oldPrice:    +(oldPrice || 0),
       saving:      +(saving   || 0),
+      img,
+      images,
       category,
       subcategory: subcategory || '',
-      img, images,
       onSale:   onSale   === 'true',
       soldOut:  soldOut  === 'true',
       featured: featured === 'true',
-      ageGroup:         ageGroup || '',
-      material:         material || '',
-      stock:            +(stock  || 0),
-      sku:              sku || '',
-      weight:           weight || '',
-      deliveryInfo:     deliveryInfo || '',
-      returnPolicy:     returnPolicy || '',
+      ageGroup:         ageGroup         || '',
+      material:         material         || '',
+      stock:            +(stock          || 0),
+      sku:              sku              || '',
+      weight:           weight           || '',
+      deliveryInfo:     deliveryInfo     || '',
+      returnPolicy:     returnPolicy     || '',
       careInstructions: careInstructions || '',
       sizes:      parseArr(sizes),
       colors:     parseArr(colors),
       highlights: parseArr(highlights),
       tags:       parseArr(tags),
-      // SEO fields — auto-generated যদি admin না দেয়
       seoTitle:       finalSeoTitle,
       seoDescription: finalSeoDesc,
       seoKeywords:    finalSeoKw,
@@ -540,7 +630,6 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       return v.split(',').map(x => x.trim()).filter(Boolean);
     };
 
-    // Auto-generate SEO if not provided
     const SITE_NAME      = 'Family Fashion Hub';
     const finalSeoTitle  = seoTitle || `${name} | ${SITE_NAME}`;
     const finalSeoDesc   = seoDescription
@@ -571,7 +660,6 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       colors:     parseArr(colors),
       highlights: parseArr(highlights),
       tags:       parseArr(tags),
-      // SEO — auto-generate করা হলে save করো
       seoTitle:       finalSeoTitle,
       seoDescription: finalSeoDesc,
       seoKeywords:    finalSeoKw,
@@ -590,7 +678,6 @@ app.put('/api/products/:id', adminMiddleware, upload.array('images', 10), async 
       const results = await uploadMultiple(req.files);
       update.images = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
       update.img    = update.images[0].url;
-      // নতুন ছবি আপলোড হলে OG image auto-set করো (যদি admin না দেয়)
       if (!seoOgImage) update.seoOgImage = update.img;
     }
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
@@ -618,13 +705,9 @@ app.delete('/api/products/:id/images/:publicId', adminMiddleware, async (req, re
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.json({ success: false, message: 'পণ্য পাওয়া যায়নি' });
-    // publicId URL-encoded হয়ে আসে, decode করো
     const publicId = decodeURIComponent(req.params.publicId);
-    // Cloudinary থেকে মুছো
     await cloudinary.uploader.destroy(publicId).catch(() => {});
-    // DB থেকে সরাও
     product.images = (product.images || []).filter(img => img.public_id !== publicId);
-    // প্রধান img আপডেট করো
     product.img = product.images.length > 0 ? product.images[0].url : '';
     await product.save();
     res.json({ success: true, data: product.images, message: 'ছবি মুছে ফেলা হয়েছে' });
@@ -636,7 +719,7 @@ app.put('/api/products/:id/images/reorder', adminMiddleware, async (req, res) =>
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.json({ success: false, message: 'পণ্য পাওয়া যায়নি' });
-    const { images } = req.body; // [{url, public_id}, ...] নতুন ক্রমে
+    const { images } = req.body;
     if (!Array.isArray(images)) return res.json({ success: false, message: 'images array প্রয়োজন' });
     product.images = images;
     product.img = images.length > 0 ? images[0].url : '';
@@ -705,7 +788,6 @@ app.delete('/api/reviews/:id', adminMiddleware, async (req, res) => {
 
 // ===== TESTIMONIAL ROUTES =====
 
-// Public: enabled testimonials পাঠাও
 app.get('/api/testimonials', async (req, res) => {
   try {
     const testimonials = await Testimonial.find({ enabled: true }).sort({ createdAt: -1 });
@@ -713,7 +795,6 @@ app.get('/api/testimonials', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin: সব testimonials পাঠাও
 app.get('/api/admin/testimonials', adminMiddleware, async (req, res) => {
   try {
     const testimonials = await Testimonial.find().sort({ createdAt: -1 });
@@ -721,7 +802,6 @@ app.get('/api/admin/testimonials', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin: নতুন testimonial তৈরি করো
 app.post('/api/admin/testimonials', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { name, title, text, rating, enabled } = req.body;
@@ -742,7 +822,6 @@ app.post('/api/admin/testimonials', adminMiddleware, upload.single('image'), asy
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin: testimonial আপডেট করো
 app.put('/api/admin/testimonials/:id', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const existing = await Testimonial.findById(req.params.id);
@@ -768,7 +847,6 @@ app.put('/api/admin/testimonials/:id', adminMiddleware, upload.single('image'), 
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin: testimonial মুছো
 app.delete('/api/admin/testimonials/:id', adminMiddleware, async (req, res) => {
   try {
     await Testimonial.findByIdAndDelete(req.params.id);
@@ -776,7 +854,6 @@ app.delete('/api/admin/testimonials/:id', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin: testimonial enable/disable toggle
 app.put('/api/admin/testimonials/:id/toggle', adminMiddleware, async (req, res) => {
   try {
     const t = await Testimonial.findById(req.params.id);
@@ -793,7 +870,6 @@ app.post('/api/users/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
     if (!name || !email || !password) return res.json({ success: false, message: 'নাম, ইমেইল ও পাসওয়ার্ড দিন' });
-    // Gmail / valid email format check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.json({ success: false, message: 'সঠিক ইমেইল ঠিকানা দিন' });
     const normalizedEmail = email.toLowerCase().trim();
@@ -820,34 +896,24 @@ app.post('/api/users/login', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin Login — email অথবা ADMIN_USERNAME দিয়ে login করা যাবে
-// নিয়ম: পাসওয়ার্ড একবার change করলে .env-এর পুরনো পাসওয়ার্ড আর কাজ করবে না।
-//        শুধুমাত্র নতুন পাসওয়ার্ড (DB-তে hash করা) দিয়েই লগইন করতে হবে।
+// Admin Login
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.json({ success: false, message: 'ইউজার নেম ও পাসওয়ার্ড দিন' });
     const normalizedEmail = email.toLowerCase().trim();
 
-    // DB থেকে admin খোঁজো
     let user = await User.findOne({ email: normalizedEmail, role: 'admin' });
 
     if (user) {
-      // ===== পাথ ১: DB-তে user আছে =====
-
-      // passwordChangedAt থাকলে মানে পাসওয়ার্ড পরিবর্তন হয়েছে।
-      // সেক্ষেত্রে শুধু DB-এর hash দিয়েই যাচাই হবে — .env fallback নেই।
       const passwordWasChanged = !!user.passwordChangedAt;
-
       const matchHash = await bcrypt.compare(password, user.password);
 
       if (!matchHash) {
         if (passwordWasChanged) {
-          // পাসওয়ার্ড পরিবর্তন হয়েছে, .env fallback নেই
           return res.json({ success: false, message: 'পাসওয়ার্ড ভুল' });
         }
 
-        // পাসওয়ার্ড কখনো পরিবর্তন হয়নি — .env-এর plain password দিয়ে একবার চেক করো
         const matchEnv =
           password === process.env.ADMIN_PASSWORD &&
           normalizedEmail === (process.env.ADMIN_USERNAME || '').toLowerCase();
@@ -856,12 +922,10 @@ app.post('/api/admin/login', async (req, res) => {
           return res.json({ success: false, message: 'পাসওয়ার্ড ভুল' });
         }
 
-        // .env দিয়ে মিলেছে — DB-তে hash আপডেট করো যাতে পরেরবার hash-এ মেলে
         user.password = await bcrypt.hash(password, 12);
         await user.save();
       }
     } else {
-      // ===== পাথ ২: DB-তে user নেই — .env দিয়ে চেক করে তৈরি করো =====
       const envMatch =
         normalizedEmail === (process.env.ADMIN_USERNAME || '').toLowerCase() &&
         password === process.env.ADMIN_PASSWORD;
@@ -915,29 +979,20 @@ app.delete('/api/admin/users/:id', adminMiddleware, async (req, res) => {
 });
 
 // ===== ADMIN CHANGE PASSWORD =====
-// POST /api/admin/change-password
-// বর্তমান পাসওয়ার্ড যাচাই করে নতুন পাসওয়ার্ড DB-তে সেভ করে।
-// Login flow-এ DB password আগে চেক করা হয়, তারপর .env fallback।
-// পাসওয়ার্ড পরিবর্তনের পরে DB-তে hashed password থাকবে, .env-এর plain text আর কাজ করবে না।
 app.post('/api/admin/change-password', adminMiddleware, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    // Validation
     if (!currentPassword || !newPassword)
       return res.json({ success: false, message: 'বর্তমান ও নতুন পাসওয়ার্ড দিন' });
     if (newPassword.length < 6)
       return res.json({ success: false, message: 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' });
 
-    // Token থেকে user id বের করো — email নয়, id দিয়ে খোঁজা বেশি নির্ভরযোগ্য
     const userId = req.user.id || req.user._id;
     const user = await User.findById(userId);
     if (!user || user.role !== 'admin')
       return res.json({ success: false, message: 'Admin খুঁজে পাওয়া যায়নি' });
 
-    // বর্তমান পাসওয়ার্ড যাচাই
-    // ১) DB-এর hashed password দিয়ে bcrypt.compare
-    // ২) না মিললে .env ADMIN_PASSWORD plain text fallback
     const matchHash = await bcrypt.compare(currentPassword, user.password);
     const matchEnv  = !matchHash &&
                       currentPassword === process.env.ADMIN_PASSWORD &&
@@ -949,25 +1004,21 @@ app.post('/api/admin/change-password', adminMiddleware, async (req, res) => {
     if (currentPassword === newPassword)
       return res.json({ success: false, message: 'নতুন পাসওয়ার্ড বর্তমান পাসওয়ার্ডের মতো হতে পারবে না' });
 
-    // নতুন পাসওয়ার্ড hash করে সরাসরি document-এ সেভ করো
-    user.password = await bcrypt.hash(newPassword, 12);
-    user.passwordChangedAt = new Date(); // এখন থেকে .env fallback আর কাজ করবে না
+    user.password          = await bcrypt.hash(newPassword, 12);
+    user.passwordChangedAt = new Date();
     await user.save();
 
-    console.log(`✅ Admin password changed successfully: ${user.email}`);
-    res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!' });
+    res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে' });
   } catch (e) {
     console.error('❌ change-password error:', e.message);
     res.json({ success: false, message: e.message });
   }
 });
 
-
 // =====================================================================
 // ===== ANALYTICS ROUTES =====
 // =====================================================================
 
-// Helper: visitor IP বের করো
 function getClientIp(req) {
   return (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
       || req.headers['x-real-ip']
@@ -975,12 +1026,10 @@ function getClientIp(req) {
       || '';
 }
 
-// Helper: আজকের তারিখ YYYY-MM-DD
 function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
 
-// ===== POST /api/analytics/visit — ফ্রন্টএন্ড থেকে pageview ট্র্যাক করবে =====
 app.post('/api/analytics/visit', async (req, res) => {
   try {
     const { visitorId, page, referrer } = req.body;
@@ -995,7 +1044,6 @@ app.post('/api/analytics/visit', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== POST /api/analytics/product-click — পণ্য ক্লিক ট্র্যাক =====
 app.post('/api/analytics/product-click', async (req, res) => {
   try {
     const { visitorId, productId, productName, category } = req.body;
@@ -1010,21 +1058,17 @@ app.post('/api/analytics/product-click', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== GET /api/admin/analytics/summary — Admin Dashboard-এর জন্য সারসংক্ষেপ =====
 app.get('/api/admin/analytics/summary', adminMiddleware, async (req, res) => {
   try {
     const today  = todayStr();
-    // গত ৩০ দিনের তারিখ
     const past30 = new Date();
     past30.setDate(past30.getDate() - 30);
     const past30Str = past30.toISOString().split('T')[0];
 
-    // আজকের ভিজিটর (unique visitorId)
     const todayVisits   = await PageVisit.find({ date: today }).lean();
     const todayUnique   = new Set(todayVisits.map(v => v.visitorId || v.ip)).size;
     const todayTotal    = todayVisits.length;
 
-    // গত ৭ দিনের ডেইলি ভিজিট
     const sevenDaysAgo  = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     const sevenStr      = sevenDaysAgo.toISOString().split('T')[0];
@@ -1036,7 +1080,6 @@ app.get('/api/admin/analytics/summary', adminMiddleware, async (req, res) => {
       dailyMap[v.date].total++;
       dailyMap[v.date].unique.add(v.visitorId || v.ip);
     });
-    // শেষ ৭ দিনের array তৈরি করো
     const dailyData = [];
     for (let i = 6; i >= 0; i--) {
       const d   = new Date();
@@ -1051,24 +1094,20 @@ app.get('/api/admin/analytics/summary', adminMiddleware, async (req, res) => {
       });
     }
 
-    // মোট ভিজিটর (৩০ দিন)
     const allVisits30   = await PageVisit.find({ date: { $gte: past30Str } }).lean();
     const totalVisits30 = allVisits30.length;
     const uniqueVisitors30 = new Set(allVisits30.map(v => v.visitorId || v.ip)).size;
 
-    // সবচেয়ে বেশি ভিজিটেড পেজ (৩০ দিন)
     const pageMap = {};
     allVisits30.forEach(v => { pageMap[v.page] = (pageMap[v.page] || 0) + 1; });
     const topPages = Object.entries(pageMap)
       .sort((a,b) => b[1]-a[1]).slice(0, 10)
       .map(([page, count]) => ({ page, count }));
 
-    // hourly breakdown আজকের
     const hourlyMap = {};
     todayVisits.forEach(v => { hourlyMap[v.hour] = (hourlyMap[v.hour] || 0) + 1; });
     const hourlyData = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourlyMap[h] || 0 }));
 
-    // সবচেয়ে বেশি ক্লিক হওয়া পণ্য (৩০ দিন)
     const clicks30      = await ProductClick.find({ date: { $gte: past30Str } }).lean();
     const productMap    = {};
     clicks30.forEach(c => {
@@ -1079,7 +1118,6 @@ app.get('/api/admin/analytics/summary', adminMiddleware, async (req, res) => {
     const topProducts = Object.values(productMap)
       .sort((a,b) => b.clicks - a.clicks).slice(0, 10);
 
-    // আজকের top products
     const todayClicks   = await ProductClick.find({ date: today }).lean();
     const todayProdMap  = {};
     todayClicks.forEach(c => {
@@ -1105,7 +1143,6 @@ app.get('/api/admin/analytics/summary', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== GET /api/admin/analytics/daily?date=YYYY-MM-DD — নির্দিষ্ট দিনের বিস্তারিত =====
 app.get('/api/admin/analytics/daily', adminMiddleware, async (req, res) => {
   try {
     const date = req.query.date || todayStr();
@@ -1140,7 +1177,6 @@ app.get('/api/admin/analytics/daily', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== GET /api/admin/analytics/products — পণ্য ক্লিক রিপোর্ট (range) =====
 app.get('/api/admin/analytics/products', adminMiddleware, async (req, res) => {
   try {
     const days    = parseInt(req.query.days || '30');
@@ -1163,26 +1199,21 @@ app.get('/api/admin/analytics/products', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== GET /api/admin/analytics/live — রিয়েল-টাইম লাইভ স্ট্যাটস (last 5 minutes) =====
 app.get('/api/admin/analytics/live', adminMiddleware, async (req, res) => {
   try {
     const now        = new Date();
     const today      = now.toISOString().split('T')[0];
     const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
-    // গত ৫ মিনিটে active ভিজিটর
     const liveVisits  = await PageVisit.find({ createdAt: { $gte: fiveMinsAgo } }).lean();
     const liveUnique  = new Set(liveVisits.map(v => v.visitorId || v.ip)).size;
 
-    // আজকের টোটাল ভিজিট ও ক্লিক
     const todayVisits = await PageVisit.countDocuments({ date: today });
     const todayClicks = await ProductClick.countDocuments({ date: today });
 
-    // গত ১ ঘণ্টার ভিজিট (প্রতি ৫ মিনিটে গ্রুপ)
     const oneHourAgo  = new Date(now.getTime() - 60 * 60 * 1000);
     const hourVisits  = await PageVisit.find({ createdAt: { $gte: oneHourAgo } }).lean();
 
-    // ৫ মিনিট বিরতিতে bucket করো
     const buckets = {};
     for (let i = 11; i >= 0; i--) {
       const t = new Date(now.getTime() - i * 5 * 60 * 1000);
@@ -1196,10 +1227,7 @@ app.get('/api/admin/analytics/live', adminMiddleware, async (req, res) => {
     });
     const liveChart = Object.entries(buckets).map(([time, count]) => ({ time, count }));
 
-    // সর্বশেষ ১০টি পেজ ভিজিট
     const recentVisits = await PageVisit.find().sort({ createdAt: -1 }).limit(10).lean();
-
-    // সর্বশেষ ১০টি পণ্য ক্লিক
     const recentClicks = await ProductClick.find().sort({ createdAt: -1 }).limit(10).lean();
 
     res.json({
@@ -1218,7 +1246,6 @@ app.get('/api/admin/analytics/live', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== GET /api/admin/analytics/overview — 7/30 দিনের ওভারভিউ =====
 app.get('/api/admin/analytics/overview', adminMiddleware, async (req, res) => {
   try {
     const days   = parseInt(req.query.days || '7');
@@ -1230,7 +1257,6 @@ app.get('/api/admin/analytics/overview', adminMiddleware, async (req, res) => {
     const visits  = await PageVisit.find({ date: { $gte: pastStr } }).lean();
     const clicks  = await ProductClick.find({ date: { $gte: pastStr } }).lean();
 
-    // প্রতিদিনের তথ্য
     const dayMap = {};
     for (let i = days - 1; i >= 0; i--) {
       const d   = new Date(now);
@@ -1248,12 +1274,10 @@ app.get('/api/admin/analytics/overview', adminMiddleware, async (req, res) => {
       clicks: d.clicks,
     }));
 
-    // টপ পেজ
     const pageMap = {};
     visits.forEach(v => { pageMap[v.page] = (pageMap[v.page] || 0) + 1; });
     const topPages = Object.entries(pageMap).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([page,count])=>({page,count}));
 
-    // টপ পণ্য
     const prodMap = {};
     clicks.forEach(c => {
       if (!prodMap[c.productId]) prodMap[c.productId] = { productId: c.productId, name: c.productName, category: c.category, clicks: 0 };
@@ -1261,9 +1285,9 @@ app.get('/api/admin/analytics/overview', adminMiddleware, async (req, res) => {
     });
     const topProducts = Object.values(prodMap).sort((a,b)=>b.clicks-a.clicks).slice(0,10);
 
-    const totalVisits   = visits.length;
+    const totalVisits    = visits.length;
     const uniqueVisitors = new Set(visits.map(v => v.visitorId || v.ip)).size;
-    const totalClicks   = clicks.length;
+    const totalClicks    = clicks.length;
 
     res.json({
       success: true,
@@ -1272,11 +1296,11 @@ app.get('/api/admin/analytics/overview', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// =====================================================================
 // ===== ORDER ROUTES =====
+// =====================================================================
 
-// ===== PHONE ORDER HISTORY — PUBLIC (অর্ডার ফর্মে ব্যবহার করা হয়) =====
-// অর্ডার দেওয়ার আগে customer নিজেও তার phone-এর history দেখতে পারবে
-// শুধু summary দেয়, বিস্তারিত তথ্য দেয় না (privacy)
+// ===== PHONE ORDER HISTORY — PUBLIC =====
 app.get('/api/orders/phone-summary/:phone', async (req, res) => {
   try {
     const phone = req.params.phone.replace(/\D/g, '');
@@ -1295,11 +1319,8 @@ app.get('/api/orders/phone-summary/:phone', async (req, res) => {
     const processing = matched.filter(o => o.status === 'processing').length;
     const shipped    = matched.filter(o => o.status === 'shipped').length;
 
-    // "রিসিভ করেনি" = pending + cancelled
     const notReceived  = pending + cancelled;
-    // "কনফার্ম করেছে" = delivered + shipped + processing
     const confirmed    = delivered + shipped + processing;
-
     const cancelRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
 
     let riskLevel = 'low';
@@ -1309,16 +1330,8 @@ app.get('/api/orders/phone-summary/:phone', async (req, res) => {
     res.json({
       success: true,
       data: {
-        total,
-        confirmed,   // ওয়েবসাইটে অর্ডার কনফার্ম করেছে
-        notReceived, // অর্ডার করে রেখে দিয়েছে (রিসিভ করেনি)
-        delivered,
-        cancelled,
-        pending,
-        processing,
-        shipped,
-        cancelRate,
-        riskLevel,   // low / medium / high
+        total, confirmed, notReceived, delivered, cancelled,
+        pending, processing, shipped, cancelRate, riskLevel,
         customerName: matched[0]?.customerName || '',
         lastOrderDate: matched[0]?.createdAt || null,
       }
@@ -1326,12 +1339,19 @@ app.get('/api/orders/phone-summary/:phone', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== ORDER DEBUG (temporary — frontend কী পাঠাচ্ছে দেখার জন্য) =====
+// ===== ORDER DEBUG =====
 app.post('/api/orders/debug', (req, res) => {
   console.log('ORDER DEBUG body:', JSON.stringify(req.body, null, 2));
   res.json({ success: true, received: req.body });
 });
 
+// =====================================================================
+// ===== POST /api/orders — নতুন অর্ডার তৈরি =====
+// নতুন অর্ডার DB-তে সেভ হওয়ার পর SSE দিয়ে সমস্ত connected
+// admin-কে একটিমাত্র event পাঠানো হয়। এতে ডাবল নোটিফিকেশন
+// সম্পূর্ণ বন্ধ হয় কারণ server-ই নিয়ন্ত্রণ করে কখন ও কতবার
+// পাঠাবে — ফ্রন্টএন্ড polling-এর উপর নির্ভর করতে হয় না।
+// =====================================================================
 app.post('/api/orders', async (req, res) => {
   try {
     const b = req.body;
@@ -1346,7 +1366,6 @@ app.post('/api/orders', async (req, res) => {
       } catch { /* guest order */ }
     }
 
-    // ফ্রন্টএন্ড যেকোনো field name দিয়ে পাঠাক — সব handle করা হচ্ছে
     const customerName =
       b.customerName || b.customer_name || b.name || b.fullName ||
       b.full_name || b.userName || b.user_name || b.buyerName || '';
@@ -1362,16 +1381,13 @@ app.post('/api/orders', async (req, res) => {
     const note =
       b.note || b.notes || b.message || b.orderNote || b.order_note || '';
 
-    // deliveryArea — 'inside' = চট্টগ্রামের ভেতর, 'outside' = বাইরে
     const deliveryArea = (b.deliveryArea || b.delivery_area || b.area || 'inside') === 'outside' ? 'outside' : 'inside';
 
-    // items — array or JSON string
     let items = b.items || b.cartItems || b.cart || b.products || [];
     if (typeof items === 'string') {
       try { items = JSON.parse(items); } catch { items = []; }
     }
 
-    // total — calculate from items if not provided
     let total = parseFloat(b.total || b.totalPrice || b.total_price ||
       b.amount || b.grandTotal || b.grand_total || 0);
 
@@ -1383,7 +1399,7 @@ app.post('/api/orders', async (req, res) => {
       }, 0);
     }
 
-    // Validation — বাংলায় error দাও
+    // Validation
     const errors = [];
     if (!customerName) errors.push('গ্রাহকের নাম দিন');
     if (!phone)        errors.push('ফোন নম্বর দিন');
@@ -1394,7 +1410,6 @@ app.post('/api/orders', async (req, res) => {
       return res.json({ success: false, message: errors.join(', ') });
     }
 
-    // items normalize
     const normalizedItems = items.map(item => ({
       productId: item.productId || item.product_id || item._id || item.id || '',
       name:      item.name || item.productName || item.product_name || item.title || '',
@@ -1420,6 +1435,23 @@ app.post('/api/orders', async (req, res) => {
     order.shortId = shortId;
     await order.save();
 
+    // =====================================================================
+    // SSE — সমস্ত connected admin-কে notify করো (মাত্র একবার)
+    // broadcastSSE একটি central function, তাই যেকোনো সংখ্যক
+    // client থাকলেও প্রতিটি পাবে ঠিক একটি করে event।
+    // =====================================================================
+    broadcastSSE({
+      type:         'new_order',
+      orderId:      order._id,
+      shortId,
+      customerName,
+      phone,
+      total,
+      deliveryArea,
+      itemCount:    normalizedItems.length,
+      createdAt:    order.createdAt,
+    });
+
     // এই phone-এর আগের অর্ডার ইতিহাস (admin কে সতর্ক করার জন্য)
     const cleanPhone = phone.replace(/\D/g, '');
     const prevOrders = await Order.find({ _id: { $ne: order._id } }, 'phone status total').lean();
@@ -1444,7 +1476,6 @@ app.post('/api/orders', async (req, res) => {
       message: 'অর্ডার সফলভাবে দেওয়া হয়েছে! আমরা শীঘ্রই যোগাযোগ করব।',
       orderId: order._id,
       shortId,
-      // এই phone-এর পূর্ববর্তী অর্ডার ইতিহাস
       phoneHistory: {
         previousOrders: prevTotal,
         confirmed:      prevConfirmed,
@@ -1484,7 +1515,6 @@ app.get('/api/orders/my', authMiddleware, async (req, res) => {
 });
 
 // ===== PUBLIC ORDER TRACKING =====
-// shortId (62024DF8) অথবা full MongoDB _id — দুটোই কাজ করবে
 app.get('/api/orders/:id', async (req, res) => {
   try {
     let { id } = req.params;
@@ -1492,10 +1522,8 @@ app.get('/api/orders/:id', async (req, res) => {
 
     let order = null;
 
-    // ১. shortId দিয়ে খোঁজো (8 hex char)
     if (/^[a-fA-F0-9]{8}$/.test(id)) {
       order = await Order.findOne({ shortId: id.toUpperCase() });
-      // পুরনো অর্ডার যেখানে shortId নেই সেগুলো _id দিয়ে মেলাও
       if (!order) {
         const all = await Order.find({});
         order = all.find(o => o._id.toString().slice(-8).toUpperCase() === id.toUpperCase()) || null;
@@ -1504,9 +1532,7 @@ app.get('/api/orders/:id', async (req, res) => {
           await order.save();
         }
       }
-    }
-    // ২. full MongoDB ObjectId দিয়ে খোঁজো
-    else if (/^[a-fA-F0-9]{24}$/.test(id)) {
+    } else if (/^[a-fA-F0-9]{24}$/.test(id)) {
       order = await Order.findById(id);
       if (order && !order.shortId) {
         order.shortId = order._id.toString().slice(-8).toUpperCase();
@@ -1573,13 +1599,11 @@ app.get('/api/admin/orders', adminMiddleware, async (req, res) => {
 });
 
 // ===== PHONE CUSTOMER TRACKING =====
-// নির্দিষ্ট ফোন নম্বরের সব অর্ডার ও পরিসংখ্যান
 app.get('/api/admin/orders/track/:phone', adminMiddleware, async (req, res) => {
   try {
     const phone = req.params.phone.replace(/\D/g, '');
     if (!phone || phone.length < 5) return res.json({ success: false, message: 'ফোন নম্বর সঠিক নয়' });
 
-    // Flexible match: exact or ends with
     const allOrders = await Order.find({}).sort({ createdAt: -1 });
     const matched = allOrders.filter(o => {
       const p = (o.phone || '').replace(/\D/g, '');
@@ -1593,13 +1617,10 @@ app.get('/api/admin/orders/track/:phone', adminMiddleware, async (req, res) => {
     const processing = matched.filter(o => o.status === 'processing').length;
     const shipped    = matched.filter(o => o.status === 'shipped').length;
 
-    // "রিসিভ করেনি" = pending (এখনও নেয়নি) + cancelled (বাতিল করেছে)
-    const notReceived = cancelled + pending;
-    // "কনফার্ম করেছে" = delivered + shipped + processing (সক্রিয় বা সম্পন্ন)
-    const confirmed   = delivered + shipped + processing;
-
-    const totalSpent  = matched.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
-    const cancelRate  = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+    const notReceived  = cancelled + pending;
+    const confirmed    = delivered + shipped + processing;
+    const totalSpent   = matched.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
+    const cancelRate   = total > 0 ? Math.round((cancelled / total) * 100) : 0;
     const notReceivedRate = total > 0 ? Math.round((notReceived / total) * 100) : 0;
 
     let riskLevel = 'low';
@@ -1613,18 +1634,9 @@ app.get('/api/admin/orders/track/:phone', adminMiddleware, async (req, res) => {
         summary: {
           customerName:     matched[0]?.customerName || '',
           phone:            matched[0]?.phone || phone,
-          total,
-          confirmed,         // ওয়েবসাইটে অর্ডার কনফার্ম করেছে (active/done)
-          notReceived,       // অর্ডার করে রেখে দিয়েছে / রিসিভ করেনি
-          delivered,
-          cancelled,
-          pending,
-          processing,
-          shipped,
-          totalSpent,
-          cancelRate,
-          notReceivedRate,
-          riskLevel,
+          total, confirmed, notReceived, delivered, cancelled,
+          pending, processing, shipped, totalSpent,
+          cancelRate, notReceivedRate, riskLevel,
         }
       }
     });
@@ -1646,14 +1658,12 @@ app.delete('/api/admin/orders/:id', adminMiddleware, async (req, res) => {
 });
 
 // ===== CATEGORIES API =====
-// Frontend এই route থেকে categories ও subcategories পাবে
 app.get('/api/categories', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'categories' });
     if (setting && Array.isArray(setting.value) && setting.value.length) {
       return res.json({ success: true, data: setting.value });
     }
-    // Default fallback — Baby Products full structure
     res.json({
       success: true,
       data: [
@@ -1700,10 +1710,6 @@ app.get('/api/categories', async (req, res) => {
 
 // ===== CATEGORIES CRUD (Admin) =====
 
-// GET — সব categories
-// (already handled by /api/categories above)
-
-// POST — নতুন main category যোগ
 app.post('/api/admin/categories', adminMiddleware, async (req, res) => {
   try {
     const { value, label } = req.body;
@@ -1718,7 +1724,6 @@ app.post('/api/admin/categories', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// PUT — main category আপডেট (rename label)
 app.put('/api/admin/categories/:value', adminMiddleware, async (req, res) => {
   try {
     const { label } = req.body;
@@ -1733,7 +1738,6 @@ app.put('/api/admin/categories/:value', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// DELETE — main category মুছো
 app.delete('/api/admin/categories/:value', adminMiddleware, async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'categories' });
@@ -1744,7 +1748,6 @@ app.delete('/api/admin/categories/:value', adminMiddleware, async (req, res) => 
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — subcategory যোগ
 app.post('/api/admin/categories/:catValue/subcategories', adminMiddleware, async (req, res) => {
   try {
     const { value, label } = req.body;
@@ -1762,7 +1765,6 @@ app.post('/api/admin/categories/:catValue/subcategories', adminMiddleware, async
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// PUT — subcategory আপডেট
 app.put('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddleware, async (req, res) => {
   try {
     const { label } = req.body;
@@ -1779,7 +1781,6 @@ app.put('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddlewa
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// DELETE — subcategory মুছো
 app.delete('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddleware, async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'categories' });
@@ -1792,7 +1793,6 @@ app.delete('/api/admin/categories/:catValue/subcategories/:subValue', adminMiddl
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — সম্পূর্ণ categories replace (bulk save)
 app.post('/api/admin/categories/bulk', adminMiddleware, async (req, res) => {
   try {
     const { categories } = req.body;
@@ -1801,8 +1801,6 @@ app.post('/api/admin/categories/bulk', adminMiddleware, async (req, res) => {
     res.json({ success: true, data: categories, message: 'Categories সেভ হয়েছে' });
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
-
-// ===== PUBLIC CATEGORIES API (উপরে /api/categories route-এ already handled) =====
 
 // ===== SETTINGS ROUTES =====
 
@@ -1817,14 +1815,13 @@ app.get('/api/settings', async (req, res) => {
 
 // ===== DELIVERY CHARGE SETTINGS =====
 
-// GET /api/delivery-settings — Public (frontend checkout এ ব্যবহার হবে)
 app.get('/api/delivery-settings', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'deliveryCharge' });
     const defaults = {
-      insideCharge:    80,   // চট্টগ্রামের ভেতরে ডেলিভারি চার্জ (BDT)
-      outsideCharge:   130,  // চট্টগ্রামের বাইরে ডেলিভারি চার্জ (BDT)
-      freeAbove:       1000, // এই পরিমাণের বেশি অর্ডারে ডেলিভারি ফ্রি (0 = disabled)
+      insideCharge:    80,
+      outsideCharge:   130,
+      freeAbove:       1000,
       freeDeliveryEnabled: true,
     };
     const data = setting ? { ...defaults, ...setting.value } : defaults;
@@ -1832,7 +1829,6 @@ app.get('/api/delivery-settings', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST /api/admin/delivery-settings — Admin only
 app.post('/api/admin/delivery-settings', adminMiddleware, async (req, res) => {
   try {
     const { insideCharge, outsideCharge, freeAbove, freeDeliveryEnabled } = req.body;
@@ -1863,12 +1859,10 @@ app.post('/api/settings', adminMiddleware, async (req, res) => {
 
 // ===== COLLECTIONS API =====
 
-// Public: Get enabled collections (for frontend)
 app.get('/api/collections', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'collections' });
     const collections = (setting && Array.isArray(setting.value)) ? setting.value : [];
-    // Only return enabled collections for frontend
     const enabled = collections.filter(c => c.enabled !== false);
     res.json({ success: true, data: enabled });
   } catch (e) {
@@ -1876,7 +1870,6 @@ app.get('/api/collections', async (req, res) => {
   }
 });
 
-// Admin: Get all collections (with disabled)
 app.get('/api/admin/collections', adminMiddleware, async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'collections' });
@@ -1887,7 +1880,6 @@ app.get('/api/admin/collections', adminMiddleware, async (req, res) => {
   }
 });
 
-// Admin: Create a new collection
 app.post('/api/admin/collections', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { title, category, link, enabled } = req.body;
@@ -1902,7 +1894,7 @@ app.post('/api/admin/collections', adminMiddleware, upload.single('image'), asyn
     }
 
     const newCollection = {
-      _id: `col_${Date.now()}`, // clearly string, never a number
+      _id: `col_${Date.now()}`,
       title: title.trim(),
       category: category || '',
       link: link || '',
@@ -1927,7 +1919,6 @@ app.post('/api/admin/collections', adminMiddleware, upload.single('image'), asyn
   }
 });
 
-// Admin: Update collection
 app.put('/api/admin/collections/:id', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -1943,7 +1934,6 @@ app.put('/api/admin/collections/:id', adminMiddleware, upload.single('image'), a
     let publicId = old.publicId;
 
     if (req.file) {
-      // Delete old image from Cloudinary if exists
       if (old.publicId) await cloudinary.uploader.destroy(old.publicId).catch(() => {});
       const result = await uploadToCloudinary(req.file.buffer, 'FamilyFashionHub/collections');
       imageUrl = result.secure_url;
@@ -1972,7 +1962,7 @@ app.put('/api/admin/collections/:id', adminMiddleware, upload.single('image'), a
   }
 });
 
-// ===== COLLECTION _id MIGRATION (পুরনো numeric _id কে string-এ রূপান্তর) =====
+// ===== COLLECTION _id MIGRATION =====
 app.post('/api/admin/collections/fix-ids', adminMiddleware, async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'collections' });
@@ -1992,7 +1982,6 @@ app.post('/api/admin/collections/fix-ids', adminMiddleware, async (req, res) => 
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// Admin: Delete collection
 app.delete('/api/admin/collections/:id', adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -2046,7 +2035,6 @@ app.post('/api/upload', adminMiddleware, upload.single('image'), async (req, res
 
 // ===== SLIDER IMAGES API =====
 
-// GET — Public slider images (Frontend এর জন্য)
 app.get('/api/slider-images', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'sliderImages' });
@@ -2055,16 +2043,14 @@ app.get('/api/slider-images', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — Admin: Slider images আপলোড (multiple)
 app.post('/api/admin/slider-images', adminMiddleware, upload.array('images', 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.json({ success: false, message: 'কোনো ছবি নেই' });
-    const { replace } = req.body; // replace=true হলে সব আগের ছবি মুছবে
+    const { replace } = req.body;
 
     const setting = await Settings.findOne({ key: 'sliderImages' });
     let existing = (setting && Array.isArray(setting.value)) ? setting.value : [];
 
-    // replace mode: পুরনো ছবি Cloudinary থেকে মুছো
     if (replace === 'true' && existing.length > 0) {
       await Promise.all(
         existing.filter(img => img.public_id).map(img =>
@@ -2092,7 +2078,6 @@ app.post('/api/admin/slider-images', adminMiddleware, upload.array('images', 10)
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// DELETE — Admin: একটি Slider image মুছো
 app.delete('/api/admin/slider-images/:index', adminMiddleware, async (req, res) => {
   try {
     const idx = parseInt(req.params.index);
@@ -2112,8 +2097,7 @@ app.delete('/api/admin/slider-images/:index', adminMiddleware, async (req, res) 
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// PUT — Admin: একটি Slider image-এর link আপডেট
-// ⚠️ এই route অবশ্যই /reorder এর আগে থাকতে হবে — নইলে Express /:index = "reorder" ধরে নেয়
+// ⚠️ এই route অবশ্যই /reorder এর আগে থাকতে হবে
 app.put('/api/admin/slider-images/:index/link', adminMiddleware, async (req, res) => {
   try {
     const idx = parseInt(req.params.index);
@@ -2132,7 +2116,6 @@ app.put('/api/admin/slider-images/:index/link', adminMiddleware, async (req, res
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// PUT — Admin: একটি Slider image-এর title আপডেট
 app.put('/api/admin/slider-images/:index/title', adminMiddleware, async (req, res) => {
   try {
     const idx = parseInt(req.params.index);
@@ -2151,7 +2134,6 @@ app.put('/api/admin/slider-images/:index/title', adminMiddleware, async (req, re
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// PUT — Admin: Slider image-এর order আপডেট (reorder)
 app.put('/api/admin/slider-images/reorder', adminMiddleware, async (req, res) => {
   try {
     const { images } = req.body;
@@ -2165,9 +2147,8 @@ app.put('/api/admin/slider-images/reorder', adminMiddleware, async (req, res) =>
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== HERO SIDE IMAGE API (Desktop mode: image beside slider) =====
+// ===== HERO SIDE IMAGE API =====
 
-// GET — Public: হোমপেজ স্লাইডারের পাশের ইমেজ
 app.get('/api/hero-side-image', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'heroSideImage' });
@@ -2175,13 +2156,11 @@ app.get('/api/hero-side-image', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — Admin: হোমপেজ স্লাইডারের পাশের ইমেজ আপলোড
 app.post('/api/admin/hero-side-image', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     let imageData = null;
 
     if (req.file) {
-      // Cloudinary-তে আপলোড
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: 'FamilyFashionHub/heroSide', resource_type: 'image' },
@@ -2192,7 +2171,6 @@ app.post('/api/admin/hero-side-image', adminMiddleware, upload.single('image'), 
       imageData = { url: result.secure_url, publicId: result.public_id };
     }
 
-    // link সেভ করো (image ছাড়াও link আপডেট করা যাবে)
     const existing = await Settings.findOne({ key: 'heroSideImage' });
     const currentData = (existing && existing.value) || {};
     const updatedData = {
@@ -2211,7 +2189,6 @@ app.post('/api/admin/hero-side-image', adminMiddleware, upload.single('image'), 
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// DELETE — Admin: হিরো সাইড ইমেজ মুছো
 app.delete('/api/admin/hero-side-image', adminMiddleware, async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'heroSideImage' });
@@ -2227,9 +2204,8 @@ app.delete('/api/admin/hero-side-image', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// ===== SIDE BANNER API (Product page side banner) =====
+// ===== SIDE BANNER API =====
 
-// GET — Public: সাইড ব্যানার
 app.get('/api/sidebanner', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'sideBanner' });
@@ -2237,7 +2213,6 @@ app.get('/api/sidebanner', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — Admin: সাইড ব্যানার আপলোড
 app.post('/api/admin/sidebanner', adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     let imageUrl = '';
@@ -2301,13 +2276,12 @@ app.get('/api/admin/health', adminMiddleware, (req, res) => {
       ADMIN_USERNAME:       process.env.ADMIN_USERNAME ? '✅ সেট আছে (Email)' : '❌ নেই',
       FRONTEND_URL:         process.env.FRONTEND_URL || '❌ নেই',
       ADMIN_URL:            process.env.ADMIN_URL || '❌ নেই',
+      SSE_CLIENTS:          `${sseClients.size} connected`,
     }
   });
 });
 
-
-// ===== SEED DEFAULT CATEGORIES (admin only) =====
-// প্রথমবার রান করলে MongoDB-তে default baby categories সেট হবে
+// ===== SEED DEFAULT CATEGORIES =====
 app.post('/api/admin/seed-categories', adminMiddleware, async (req, res) => {
   try {
     const existing = await Settings.findOne({ key: 'categories' });
@@ -2361,27 +2335,24 @@ app.post('/api/admin/seed-categories', adminMiddleware, async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
+// =====================================================================
 // ===== PRODUCT PAGE LAYOUT SETTINGS =====
+// =====================================================================
 
-// GET — পণ্য পেজের লেআউট সেটিংস (Public — Frontend এর জন্য)
 app.get('/api/product-layout', async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'productLayout' });
     const defaultLayout = {
-      // বাটন দৃশ্যমানতা
       showAddToCart:   true,
       showBuyNow:      true,
       showWhatsApp:    true,
       showCallOrder:   true,
-      // বাটনের টেক্সট
       addToCartText:   'ADD TO CART',
       buyNowText:      'BUY NOW',
       whatsappText:    'Order On WhatsApp',
       callOrderText:   'Call For Order',
-      // WhatsApp ও Call নম্বর
       whatsappNumber:  '',
       callNumber:      '',
-      // তিন কলাম লেআউট সেকশন দৃশ্যমানতা
       showPriceSection:       true,
       showSavingBadge:        true,
       showQuantitySelector:   true,
@@ -2397,11 +2368,8 @@ app.get('/api/product-layout', async (req, res) => {
       showCareInstructions:   true,
       showStockStatus:        true,
       showMoreProducts:       true,
-      // ডান কলাম "More Products" শিরোনাম
       moreProductsTitle:      'More Products',
-      // ব্র্যান্ড লেবেল টেক্সট
       brandLabel:             'Family Fashion Hub',
-      // Customer Reviews ট্যাব দেখাবে কিনা
       showReviewsTab:         true,
     };
     const layout = (setting && setting.value) ? { ...defaultLayout, ...setting.value } : defaultLayout;
@@ -2409,7 +2377,6 @@ app.get('/api/product-layout', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// POST — পণ্য পেজের লেআউট সেটিংস আপডেট (Admin only)
 app.post('/api/admin/product-layout', adminMiddleware, async (req, res) => {
   try {
     const layout = req.body;
@@ -2423,10 +2390,9 @@ app.post('/api/admin/product-layout', adminMiddleware, async (req, res) => {
 });
 
 // =====================================================================
-// ===== SEO ENDPOINTS — Auto-generated per product =====
+// ===== SEO ENDPOINTS =====
 // =====================================================================
 
-// GET /api/products/:id/seo — পণ্যের সম্পূর্ণ SEO data (meta, OG, JSON-LD)
 app.get('/api/products/:id/seo', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
@@ -2449,7 +2415,6 @@ app.get('/api/products/:id/seo', async (req, res) => {
       ogType:           'product',
       ogSiteName:       SITE_NAME,
       twitterCard:      'summary_large_image',
-      // JSON-LD Structured Data
       jsonLd: {
         "@context": "https://schema.org",
         "@type":    "Product",
@@ -2476,7 +2441,7 @@ app.get('/api/products/:id/seo', async (req, res) => {
   } catch (e) { res.json({ success: false, message: e.message }); }
 });
 
-// GET /api/sitemap.xml — Dynamic XML Sitemap for Google
+// ===== SITEMAP =====
 app.get('/api/sitemap.xml', async (req, res) => {
   try {
     const SITE_URL   = (process.env.FRONTEND_URL || 'https://familyfashionhub.com').replace(/\/$/, '');
@@ -2515,10 +2480,10 @@ app.get('/api/sitemap.xml', async (req, res) => {
     res.set('Content-Type', 'application/xml; charset=utf-8');
     res.set('Cache-Control', 'public, max-age=3600');
     res.send(xml);
-  } catch (e) { res.status(500).send('<?xml version="1.0"?><error>' + e.message + '</error>'); }
+  } catch (e) { res.status(500).send('<?xml version="1.0"?><e>' + e.message + '</e>'); }
 });
 
-// GET /api/robots.txt — Search engine crawl directives
+// ===== ROBOTS.TXT =====
 app.get('/api/robots.txt', (req, res) => {
   const SITE_URL = (process.env.FRONTEND_URL || 'https://familyfashionhub.com').replace(/\/$/, '');
   const txt = `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/admin\nDisallow: /cart\nDisallow: /checkout\n\nSitemap: ${SITE_URL}/api/sitemap.xml\n`;
@@ -2530,16 +2495,14 @@ app.get('/api/robots.txt', (req, res) => {
 app.get('/', (req, res) => res.json({
   success: true,
   message: '👗 Family Fashion Hub API চলছে',
-  version: '2.0.0',
+  version: '2.1.0',
   frontend: process.env.FRONTEND_URL,
   admin: process.env.ADMIN_URL,
+  sseClients: sseClients.size,
 }));
 
 // ===== RENDER FREE TIER — SLEEP PREVENTION =====
-// Render free plan ১৫ মিনিট idle থাকলে server sleep করে।
-// নিচের code প্রতি ১৪ মিনিটে নিজেকে ping করে জাগিয়ে রাখে।
 if (process.env.NODE_ENV !== 'development') {
-  const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.FRONTEND_URL || '';
   const BACKEND_URL = (process.env.RENDER_EXTERNAL_URL ||
     ('https://' + (process.env.RENDER_EXTERNAL_HOSTNAME || ''))).replace(/\/$/, '');
 
@@ -2551,7 +2514,7 @@ if (process.env.NODE_ENV !== 'development') {
           console.log(`🔔 Keep-alive ping → ${res.statusCode}`);
         }).on('error', () => {});
       } catch(e) {}
-    }, 14 * 60 * 1000); // প্রতি ১৪ মিনিটে
+    }, 14 * 60 * 1000);
     console.log('✅ Keep-alive ping চালু হয়েছে →', BACKEND_URL);
   }
 }
