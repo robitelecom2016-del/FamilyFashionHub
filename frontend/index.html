@@ -5726,7 +5726,7 @@ function renderFeaturedCategories(cats) {
     var label   = _ffhStripEmoji(cat.label || cat.value);
     var value   = cat.value || '';
     var icon    = _ffhCatIcon(value, label, idx);
-    var mobileHiddenClass = '';
+    var mobileHiddenClass = idx >= 4 ? ' feat-cat-mobile-hidden' : '';
     // লেবেলে ব্রেক — ২ শব্দ হলে দুই লাইন
     var labelParts = label.split(/\s+/);
     var labelHTML  = labelParts.length > 1
@@ -5751,14 +5751,14 @@ function renderFeaturedCategories(cats) {
           + '</div>';
   });
 
-  // "সকল পণ্য" কার্ড সর্বশেষে (সব ডিভাইসে দেখাবে)
+  // "All Products" কার্ড সর্বশেষে
   html += '<div onclick="filterByCategory(\'all\');return false;"'
-        + ' class="feat-cat-card"'
+        + ' class="feat-cat-card feat-cat-mobile-hidden"'
         + ' data-catvalue="all"'
         + ' style="background:#f97316;border:1.5px solid #ea580c;border-radius:12px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background 0.15s;position:relative;"'
         + ' onmouseover="this.style.background=\'#ea580c\'" onmouseout="this.style.background=\'#f97316\'">'
         + '<div style="display:flex;flex-direction:column;gap:4px;">'
-        + '<span style="font-size:14px;font-weight:700;color:white;line-height:1.35;">সকল<br>পণ্য</span>'
+        + '<span style="font-size:14px;font-weight:700;color:white;line-height:1.35;">All<br>Products</span>'
         + '<span class="ffh-cat-count-badge" style="display:none;font-size:11px;font-weight:700;color:#f97316;background:white;border-radius:10px;padding:1px 7px;width:fit-content;"></span>'
         + '</div>'
         + '<svg width="52" height="52" viewBox="0 0 64 64" fill="none"><rect x="9" y="9" width="20" height="20" rx="5" fill="white" opacity="0.9"/><rect x="35" y="9" width="20" height="20" rx="5" fill="white" opacity="0.7"/><rect x="9" y="35" width="20" height="20" rx="5" fill="white" opacity="0.7"/><rect x="35" y="35" width="20" height="20" rx="5" fill="white" opacity="0.9"/><path d="M15 19 L22 19 M15 22 L19 22" stroke="#f97316" stroke-width="2" stroke-linecap="round"/><path d="M41 19 L48 19 M41 22 L45 22" stroke="#f97316" stroke-width="2" stroke-linecap="round"/><path d="M15 45 L22 45 M15 48 L19 48" stroke="#f97316" stroke-width="2" stroke-linecap="round"/><path d="M41 45 L48 45 M41 48 L45 48" stroke="#f97316" stroke-width="2" stroke-linecap="round"/></svg>'
