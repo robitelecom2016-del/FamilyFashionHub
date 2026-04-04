@@ -238,6 +238,57 @@ const Testimonial  = mongoose.model('Testimonial',   testimonialSchema);
 const PageVisit    = mongoose.model('PageVisit',     pageVisitSchema);
 const ProductClick = mongoose.model('ProductClick',  productClickSchema);
 
+// ===== SSE — ADMIN REAL-TIME ORDER NOTIFICATION =====
+// সকল connected admin browser-এর SSE connection এখানে রাখা হবে
+const adminSSEClients = new Map(); // clientId → res
+
+function sendOrderNotificationToAdmins(orderData) {
+  const payload = JSON.stringify({ type: 'new_order', data: orderData });
+  const deadClients = [];
+  adminSSEClients.forEach((clientRes, clientId) => {
+    try {
+      clientRes.write(`data: ${payload}\n\n`);
+    } catch (e) {
+      deadClients.push(clientId);
+    }
+  });
+  deadClients.forEach(id => adminSSEClients.delete(id));
+  console.log(`🔔 Order notification sent to ${adminSSEClients.size} admin(s)`);
+}
+
+// GET /api/admin/notifications/stream — Admin SSE connection endpoint
+app.get('/api/admin/notifications/stream', adminMiddleware, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Nginx buffering বন্ধ করো
+  res.flushHeaders();
+
+  const clientId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  adminSSEClients.set(clientId, res);
+  console.log(`✅ Admin SSE connected: ${clientId} (total: ${adminSSEClients.size})`);
+
+  // Connected হওয়ার সাথে সাথে একটা ping পাঠাও
+  res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
+
+  // প্রতি ৩০ সেকেন্ডে heartbeat পাঠাও — connection জীবিত রাখার জন্য
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`: heartbeat\n\n`);
+    } catch (e) {
+      clearInterval(heartbeat);
+      adminSSEClients.delete(clientId);
+    }
+  }, 30000);
+
+  // Client disconnect হলে cleanup
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    adminSSEClients.delete(clientId);
+    console.log(`❌ Admin SSE disconnected: ${clientId} (remaining: ${adminSSEClients.size})`);
+  });
+});
+
 // ===== AUTO ADMIN SETUP =====
 // .env-এর ADMIN_USERNAME ও ADMIN_PASSWORD দিয়ে স্বয়ংক্রিয়ভাবে admin তৈরি করবে
 async function autoSetupAdmin() {
@@ -420,7 +471,9 @@ function authMiddleware(req, res, next) {
 }
 
 function adminMiddleware(req, res, next) {
-  const token = (req.headers.authorization || '').split(' ')[1];
+  // SSE endpoint-এ Authorization header পাঠানো যায় না,
+  // তাই query param থেকেও token নেওয়া হচ্ছে
+  const token = (req.headers.authorization || '').split(' ')[1] || req.query.token || '';
   if (!token) return res.json({ success: false, message: 'Token নেই' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -1437,6 +1490,19 @@ app.post('/api/orders', async (req, res) => {
     let prevRisk = 'low';
     if (prevCancelRate >= 60) prevRisk = 'high';
     else if (prevCancelRate >= 30 || prevPending >= 2) prevRisk = 'medium';
+
+    // ===== SSE — সব connected admin-কে নতুন অর্ডারের নোটিফিকেশন পাঠাও =====
+    sendOrderNotificationToAdmins({
+      _id:          order._id,
+      shortId,
+      customerName,
+      phone,
+      address,
+      total,
+      deliveryArea,
+      itemCount:    normalizedItems.length,
+      createdAt:    order.createdAt,
+    });
 
     res.json({
       success: true,

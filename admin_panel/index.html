@@ -413,6 +413,69 @@ tr:hover td { background: var(--bg); }
 .notif-dot { width: 10px; height: 10px; background: var(--danger); border-radius: 50%; animation: pulse 1.2s infinite; display: inline-block; margin-left: 4px; }
 @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.7; } }
 
+/* ===== SSE REALTIME NOTIFICATION BELL ===== */
+.sse-bell-wrap { position: relative; display: inline-flex; align-items: center; }
+.sse-bell-btn {
+  position: relative; width: 40px; height: 40px; border-radius: 50%;
+  border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: all 0.3s; background: #f3f4f6; color: var(--text-muted);
+}
+.sse-bell-btn.connected { background: #d1fae5; color: #065f46; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+.sse-bell-btn.disconnected { background: #fee2e2; color: #991b1b; }
+.sse-bell-btn.ringing { animation: bellRing 0.6s ease; }
+.sse-unread-badge {
+  position: absolute; top: -3px; right: -3px;
+  background: var(--danger); color: #fff;
+  border-radius: 50%; min-width: 18px; height: 18px;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff; padding: 0 3px;
+}
+.sse-status-dot {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 2px solid #fff;
+}
+.sse-status-dot.online { background: #10b981; }
+.sse-status-dot.offline { background: #ef4444; }
+.sse-popup {
+  position: absolute; top: 48px; right: 0;
+  background: #fff; border: 2px solid #10b981;
+  border-radius: 14px; padding: 0; min-width: 300px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  z-index: 9999; animation: sseSlideDown 0.25s ease;
+  overflow: hidden;
+}
+.sse-popup-header {
+  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+  color: #fff; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 700; font-size: 13px;
+}
+.sse-popup-body { max-height: 280px; overflow-y: auto; }
+.sse-order-item {
+  padding: 11px 16px; border-bottom: 1px solid #f3f4f6;
+  cursor: pointer; transition: background 0.15s;
+}
+.sse-order-item:hover { background: #f9fafb; }
+.sse-order-item:last-child { border-bottom: none; }
+@keyframes bellRing {
+  0%,100% { transform: rotate(0); }
+  15%     { transform: rotate(-18deg); }
+  30%     { transform: rotate(18deg); }
+  45%     { transform: rotate(-12deg); }
+  60%     { transform: rotate(12deg); }
+  75%     { transform: rotate(-6deg); }
+}
+@keyframes sseSlideDown {
+  from { opacity:0; transform: translateY(-10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity:0; transform: translateX(100px); }
+  to   { opacity:1; transform: translateX(0); }
+}
+
 /* ===== STOCK TABLE ===== */
 .stock-progress-bar { height: 6px; border-radius: 3px; background: #e5e7eb; margin-top: 4px; overflow: hidden; }
 .stock-progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
@@ -777,6 +840,25 @@ tr:hover td { background: var(--bg); }
     </div>
     <div class="topbar-right">
       <span class="topbar-time" id="topbarTime"></span>
+      <!-- SSE Real-time Notification Bell -->
+      <div class="sse-bell-wrap" id="sseBellWrap">
+        <button class="sse-bell-btn disconnected" id="sseBellBtn" onclick="toggleSSEPopup()" title="নতুন অর্ডার নোটিফিকেশন">
+          🔔
+          <span class="sse-status-dot offline" id="sseStatusDot"></span>
+        </button>
+        <!-- unread badge — শুরুতে লুকানো -->
+        <span class="sse-unread-badge" id="sseUnreadBadge" style="display:none;">0</span>
+        <!-- Popup -->
+        <div class="sse-popup" id="ssePopup" style="display:none;">
+          <div class="sse-popup-header">
+            <span>🛍️ নতুন অর্ডার সমূহ</span>
+            <button onclick="clearSSEUnread()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;">সব দেখুন</button>
+          </div>
+          <div class="sse-popup-body" id="sseOrderList">
+            <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">নতুন কোনো অর্ডার আসেনি</div>
+          </div>
+        </div>
+      </div>
       <a href="../frontend/index.html" target="_blank" class="btn btn-sm btn-outline"><i class="fas fa-external-link-alt"></i> সাইট দেখুন</a>
     </div>
   </div>
@@ -2508,6 +2590,7 @@ function adminLogout() {
   adminToken = ''; adminUser = null;
   localStorage.removeItem('ffh_admin_token');
   localStorage.removeItem('ffh_admin_user');
+  disconnectSSE();
   stopOrderPolling();
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('mainContent').style.display = 'none';
@@ -2521,7 +2604,12 @@ function showAdminPanel() {
     document.getElementById('adminAvatar').textContent = (adminUser.name || 'A')[0].toUpperCase();
   }
   loadStats(); loadDashboard(); loadDashboardAnalytics();
-  startOrderPolling();
+  // SSE দিয়ে রিয়েল-টাইম নোটিফিকেশন শুরু করো (SSE fail হলে polling চালু হবে স্বয়ংক্রিয়ভাবে)
+  connectSSE();
+  // Browser notification permission চাও
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
   loadCategoriesFromServer();
 }
 
@@ -4119,23 +4207,29 @@ async function showProductDetailModal(productId, productName) {
   }
 }
 
-// ===== ORDER NOTIFICATION SOUND =====
+// ===== ORDER NOTIFICATION SOUND (উন্নত) =====
 function playNotificationSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const beepFreq = [880, 1100, 880];
-    beepFreq.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
+    // তিনটি ascending beep — স্পষ্ট ও উৎসবমুখর
+    const notes = [
+      { freq: 880,  start: 0,    dur: 0.18 },
+      { freq: 1100, start: 0.22, dur: 0.18 },
+      { freq: 1320, start: 0.44, dur: 0.32 },
+    ];
+    notes.forEach(({ freq, start, dur }) => {
+      const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = freq;
       osc.type = 'sine';
-      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.18);
-      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + i * 0.18 + 0.05);
-      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.18 + 0.15);
-      osc.start(ctx.currentTime + i * 0.18);
-      osc.stop(ctx.currentTime + i * 0.18 + 0.18);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0, ctx.currentTime + start);
+      gain.gain.linearRampToValueAtTime(0.55, ctx.currentTime + start + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur + 0.05);
     });
+    setTimeout(() => { try { ctx.close(); } catch(e){} }, 1500);
   } catch(e) {}
 }
 
@@ -4151,7 +4245,7 @@ function showOrderNotification(count) {
       <p style="font-weight:800;font-size:14px;margin-bottom:2px;">${count}টি নতুন অর্ডার!</p>
       <p style="font-size:11px;opacity:0.85;">ক্লিক করুন — অর্ডার দেখুন</p>
     </div>
-    <button onclick="document.getElementById('orderNotifBanner').remove();" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>`;
+    <button onclick="event.stopPropagation();document.getElementById('orderNotifBanner').remove();" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>`;
   banner.addEventListener('click', (e) => {
     if (e.target.tagName === 'BUTTON') return;
     showPage('orders'); banner.remove();
@@ -4160,8 +4254,257 @@ function showOrderNotification(count) {
   setTimeout(() => { if (banner.parentNode) banner.remove(); }, 8000);
 }
 
+// ===== SSE — REAL-TIME ORDER NOTIFICATION =====
+// Polling-এর চেয়ে ৮ সেকেন্ড পর পর নয়, অর্ডার হওয়ার সাথে সাথেই জানাবে
+let sseConnection = null;
+let sseReconnectTimer = null;
+let sseReconnectDelay = 3000;
+let sseUnreadCount = 0;
+let sseRecentOrders = [];
+let ssePopupOpen = false;
+let sseActive = false;   // SSE চালু হলে polling বন্ধ হবে
 
-// ===== CATEGORY MANAGER (Full API-connected) =====
+// ===== FALLBACK: Polling (SSE কাজ না করলে চালু হবে) =====
+let orderPollingInterval = null;
+let lastOrderId = null;
+
+function startOrderPolling() {
+  if (orderPollingInterval || sseActive) return;
+  api('/admin/orders?limit=1').then(data => {
+    if (data.success && data.data.length) lastOrderId = data.data[0]._id;
+  }).catch(() => {});
+  orderPollingInterval = setInterval(async () => {
+    if (sseActive) { stopOrderPolling(); return; } // SSE চালু হলে polling বন্ধ করো
+    try {
+      const data = await api('/admin/orders?limit=1');
+      if (!data.success || !data.data.length) return;
+      const newest = data.data[0];
+      if (lastOrderId && newest._id !== lastOrderId) {
+        lastOrderId = newest._id;
+        handleNewOrder(newest);
+      }
+    } catch {}
+  }, 10000);
+}
+
+function stopOrderPolling() {
+  if (orderPollingInterval) { clearInterval(orderPollingInterval); orderPollingInterval = null; }
+}
+
+// ===== SSE CONNECT =====
+function connectSSE() {
+  if (!adminToken) return;
+  if (sseConnection) { try { sseConnection.close(); } catch(e){} }
+  clearTimeout(sseReconnectTimer);
+
+  const url = API_URL.replace('/api','') + '/api/admin/notifications/stream?token=' + encodeURIComponent(adminToken);
+
+  try {
+    const es = new EventSource(url);
+    sseConnection = es;
+
+    es.onopen = () => {
+      console.log('✅ SSE connected');
+      sseActive = true;
+      sseReconnectDelay = 3000;
+      updateSSEStatus(true);
+      stopOrderPolling(); // SSE চালু হলে polling বন্ধ করো
+    };
+
+    es.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'new_order') {
+          handleNewOrder(msg.data);
+        }
+      } catch(e) {}
+    };
+
+    es.onerror = () => {
+      console.warn('⚠️ SSE error — reconnecting in', sseReconnectDelay/1000, 's');
+      sseActive = false;
+      updateSSEStatus(false);
+      es.close();
+      sseConnection = null;
+      // Fallback polling চালু করো (SSE reconnect হওয়া পর্যন্ত)
+      startOrderPolling();
+      sseReconnectTimer = setTimeout(() => {
+        sseReconnectDelay = Math.min(sseReconnectDelay * 1.5, 30000);
+        connectSSE();
+      }, sseReconnectDelay);
+    };
+  } catch(e) {
+    console.warn('SSE not supported, using polling');
+    startOrderPolling();
+  }
+}
+
+function disconnectSSE() {
+  clearTimeout(sseReconnectTimer);
+  if (sseConnection) { try { sseConnection.close(); } catch(e){} sseConnection = null; }
+  sseActive = false;
+  updateSSEStatus(false);
+}
+
+// SSE bell button এর status আপডেট করো
+function updateSSEStatus(online) {
+  const btn = document.getElementById('sseBellBtn');
+  const dot  = document.getElementById('sseStatusDot');
+  if (!btn || !dot) return;
+  if (online) {
+    btn.classList.add('connected'); btn.classList.remove('disconnected');
+    dot.classList.add('online');    dot.classList.remove('offline');
+    btn.title = '🟢 রিয়েল-টাইম নোটিফিকেশন চালু';
+  } else {
+    btn.classList.remove('connected'); btn.classList.add('disconnected');
+    dot.classList.remove('online');    dot.classList.add('offline');
+    btn.title = '🔴 পুনরায় সংযোগ করা হচ্ছে...';
+  }
+}
+
+// নতুন অর্ডার এলে এই function চলবে (SSE ও Polling দুটো থেকেই)
+function handleNewOrder(order) {
+  // ১. সাউন্ড বাজাও
+  playNotificationSound();
+
+  // ২. Bell রিং animation
+  const btn = document.getElementById('sseBellBtn');
+  if (btn) { btn.classList.add('ringing'); setTimeout(() => btn.classList.remove('ringing'), 700); }
+
+  // ৩. Unread count বাড়াও
+  sseUnreadCount++;
+  updateSSEBadge();
+
+  // ৪. Recent orders list আপডেট করো
+  sseRecentOrders.unshift(order);
+  if (sseRecentOrders.length > 10) sseRecentOrders.pop();
+  renderSSEOrderList();
+
+  // ৫. Banner notification দেখাও
+  showNewOrderNotification(order);
+
+  // ৬. Browser push notification
+  showBrowserNotification(order);
+
+  // ৭. UI আপডেট করো
+  if (document.getElementById('page-orders')?.classList.contains('active')) loadOrders();
+  loadStats();
+  if (document.getElementById('page-dashboard')?.classList.contains('active')) loadDashboard();
+  if (document.getElementById('page-daily-report')?.classList.contains('active')) loadDailyReport();
+}
+
+// Badge নম্বর আপডেট
+function updateSSEBadge() {
+  const badge = document.getElementById('sseUnreadBadge');
+  if (!badge) return;
+  if (sseUnreadCount > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = sseUnreadCount > 99 ? '99+' : sseUnreadCount;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// SSE popup toggle
+function toggleSSEPopup() {
+  const popup = document.getElementById('ssePopup');
+  if (!popup) return;
+  ssePopupOpen = !ssePopupOpen;
+  popup.style.display = ssePopupOpen ? 'block' : 'none';
+  if (ssePopupOpen) {
+    renderSSEOrderList();
+  }
+}
+
+// Popup বাইরে ক্লিক করলে বন্ধ হবে
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('sseBellWrap');
+  if (wrap && !wrap.contains(e.target) && ssePopupOpen) {
+    ssePopupOpen = false;
+    const popup = document.getElementById('ssePopup');
+    if (popup) popup.style.display = 'none';
+  }
+});
+
+// Popup-এর order list render করো
+function renderSSEOrderList() {
+  const el = document.getElementById('sseOrderList');
+  if (!el) return;
+  if (!sseRecentOrders.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">নতুন কোনো অর্ডার আসেনি</div>';
+    return;
+  }
+  el.innerHTML = sseRecentOrders.map(o => {
+    const time = o.createdAt ? new Date(o.createdAt).toLocaleTimeString('bn-BD', {hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="sse-order-item" onclick="clearSSEUnread();showPage('orders');">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <strong style="font-size:13px;color:var(--text);">${o.customerName || 'অজানা'}</strong>
+        <span style="font-size:12px;color:var(--success);font-weight:700;">৳${(o.total||0).toLocaleString('bn-BD')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--text-muted);">#${o.shortId || ''} · ${o.itemCount||o.items?.length||0} পণ্য</span>
+        <span style="font-size:11px;color:var(--text-muted);">${time}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Unread clear করো এবং orders পেজে যাও
+function clearSSEUnread() {
+  sseUnreadCount = 0;
+  updateSSEBadge();
+  ssePopupOpen = false;
+  const popup = document.getElementById('ssePopup');
+  if (popup) popup.style.display = 'none';
+  showPage('orders');
+}
+
+// ===== BROWSER PUSH NOTIFICATION =====
+async function showBrowserNotification(order) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch(e) {}
+  }
+  if (Notification.permission === 'granted') {
+    try {
+      const n = new Notification('🛍️ নতুন অর্ডার!', {
+        body: `${order.customerName || 'নতুন গ্রাহক'} — ৳${(order.total||0).toLocaleString('bn-BD')}\nঅর্ডার #${order.shortId || ''}`,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: 'ffh-new-order',
+        renotify: true,
+        requireInteraction: false,
+        silent: false,
+      });
+      n.onclick = () => { window.focus(); showPage('orders'); n.close(); };
+      setTimeout(() => { try { n.close(); } catch(e){} }, 8000);
+    } catch(e) {}
+  }
+}
+
+// ===== showNewOrderNotification — পুরনো কোডের সাথে সামঞ্জস্য =====
+function showNewOrderNotification(order) {
+  // Toast notification
+  const c = document.getElementById('toastContainer');
+  if (c) {
+    const t = document.createElement('div');
+    t.className = 'toast success';
+    t.style.cssText = 'min-width:280px;cursor:pointer;';
+    t.innerHTML = `<i class="fas fa-bell"></i> <div><strong>নতুন অর্ডার!</strong><br><span style="font-size:12px;">${order.customerName || 'নতুন গ্রাহক'} · ৳${(order.total||0).toLocaleString('bn-BD')}</span></div>`;
+    t.onclick = () => { t.remove(); showPage('orders'); };
+    c.appendChild(t);
+    setTimeout(() => { try { t.remove(); } catch(e){} }, 8000);
+  }
+  // Big banner
+  showOrderNotification(1);
+  // Pending badge আপডেট
+  const b = document.getElementById('pendingBadge');
+  if (b) {
+    const cur = parseInt(b.textContent) || 0;
+    b.textContent = cur + 1;
+    b.style.display = 'inline-flex';
+  }
+}
 const DEFAULT_CATEGORIES = [
   { value: 'baby_dress', label: 'বেবি পোশাক', subcategories: [
       { value: 'newborn_set',    label: 'Baby Dress Newborn Set (0-6 Months)' },
@@ -4514,88 +4857,6 @@ function renderCategoryManager() {
         </div>
       </div>
     </div>`).join('');
-}
-
-// ===== REALTIME ORDER NOTIFICATION (Polling) =====
-let lastOrderId = null;
-let orderPollingInterval = null;
-
-function startOrderPolling() {
-  if (orderPollingInterval) return; // already running
-  // প্রথমে একবার রান করে latest order ID সেট করি
-  api('/admin/orders?limit=1').then(data => {
-    if (data.success && data.data.length) {
-      lastOrderId = data.data[0]._id;
-    }
-  }).catch(() => {});
-
-  orderPollingInterval = setInterval(async () => {
-    try {
-      const data = await api('/admin/orders?limit=1');
-      if (!data.success || !data.data.length) return;
-      const newest = data.data[0];
-      if (lastOrderId && newest._id !== lastOrderId) {
-        lastOrderId = newest._id;
-        // নতুন অর্ডার এসেছে!
-        showNewOrderNotification(newest);
-        // যদি অর্ডার পেজ খোলা থাকে, রিফ্রেশ করো
-        if (document.getElementById('page-orders').classList.contains('active')) {
-          loadOrders();
-        }
-        // Stats আপডেট
-        loadStats();
-        // Dashboard আপডেট
-        if (document.getElementById('page-dashboard').classList.contains('active')) {
-          loadDashboard();
-        }
-        // Daily report আপডেট
-        if (document.getElementById('page-daily-report').classList.contains('active')) {
-          loadDailyReport();
-        }
-      }
-    } catch {}
-  }, 8000); // ৮ সেকেন্ড পর পর চেক
-}
-
-function stopOrderPolling() {
-  if (orderPollingInterval) {
-    clearInterval(orderPollingInterval);
-    orderPollingInterval = null;
-  }
-}
-
-function showNewOrderNotification(order) {
-  // 🔔 Improved triple-beep sound
-  playNotificationSound();
-
-  // Toast
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = 'toast success';
-  t.style.cssText = 'min-width:280px;cursor:pointer;';
-  t.innerHTML = `<i class="fas fa-bell"></i> <div><strong>নতুন অর্ডার!</strong><br><span style="font-size:12px;">${order.customerName} · ৳${order.total}</span></div>`;
-  t.onclick = () => {
-    t.remove();
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelector('[onclick*="showPage(\'orders\')"]')?.classList.add('active');
-    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-    document.getElementById('page-orders').classList.add('active');
-    document.getElementById('pageTitle').textContent = 'অর্ডার সমূহ';
-    loadOrders();
-  };
-  c.appendChild(t);
-  setTimeout(() => t.remove(), 8000);
-
-  // 🎯 Big banner notification
-  showOrderNotification(1);
-
-  // Update pending badge
-  const b = document.getElementById('pendingBadge');
-  if (b) {
-    const cur = parseInt(b.textContent) || 0;
-    b.textContent = cur + 1;
-    b.style.display = 'inline-flex';
-  }
 }
 
 // ===== EDIT CATEGORY MODAL =====
