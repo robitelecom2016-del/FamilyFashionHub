@@ -4654,7 +4654,7 @@ window.scrollTo(0, 0);
 window.FFH_API = (function() {
   var h = window.location.hostname;
   if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
-  return 'https://familyfashionhub.onrender.com/api';
+  return 'https://familyfashionhub-o3bb.onrender.com/api';
 })();
 
 // ============================================================
@@ -5980,7 +5980,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      var API = window.FFH_API || 'https://familyfashionhub.onrender.com/api';
+      var API = window.FFH_API || 'https://familyfashionhub-o3bb.onrender.com/api';
       var token = localStorage.getItem('ffh_user_token') || '';
       var headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -6570,7 +6570,7 @@ function FFH_shareFacebook() {
 
   // ── API Base URL — সবসময় সর্বশেষ window.FFH_API ব্যবহার করো ────────
   function _getAPI() {
-    return window.FFH_API || 'https://familyfashionhub.onrender.com/api';
+    return window.FFH_API || 'https://familyfashionhub-o3bb.onrender.com/api';
   }
 
   var _vid = getVisitorId();

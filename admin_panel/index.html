@@ -2547,7 +2547,7 @@ tr:hover td { background: var(--bg); }
 
 <script>
 // ===== CONFIG =====
-let API_URL = localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub.onrender.com/api';
+let API_URL = localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub-o3bb.onrender.com/api';
 let FRONTEND_URL = localStorage.getItem('ffh_frontend_url') || '';
 let adminToken = localStorage.getItem('ffh_admin_token') || '';
 let adminUser = JSON.parse(localStorage.getItem('ffh_admin_user') || 'null');
@@ -6690,7 +6690,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================================
 
 // ── Helper: API URL ও Token (বাকি code-এর সাথে match করে) ──────────
-function getAnalyticsAPI()   { return (typeof API_URL   !== 'undefined' ? API_URL   : localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub.onrender.com/api').replace(/\/api$/, ''); }
+function getAnalyticsAPI()   { return (typeof API_URL   !== 'undefined' ? API_URL   : localStorage.getItem('ffh_admin_api') || 'https://familyfashionhub-o3bb.onrender.com/api').replace(/\/api$/, ''); }
 function getAnalyticsToken() { return (typeof adminToken !== 'undefined' ? adminToken : localStorage.getItem('ffh_admin_token') || ''); }
 function analyticsHeaders()  { return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getAnalyticsToken() }; }
 
