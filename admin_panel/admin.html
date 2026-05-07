@@ -9,19 +9,19 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 :root {
-  --primary: #1a2238;
-  --primary-dark: #0f172a;
-  --primary-light: #eef2f7;
-  --accent: #c9a961;
+  --primary: #7c3aed;
+  --primary-dark: #6d28d9;
+  --primary-light: #ede9fe;
+  --accent: #f59e0b;
   --success: #10b981;
   --danger: #ef4444;
-  --warning: #c9a961;
+  --warning: #f59e0b;
   --info: #3b82f6;
   --dark: #111827;
-  --sidebar-bg: #0f172a;
-  --sidebar-text: #cbd5e1;
-  --sidebar-active: #1a2238;
-  --bg: #f5f7fa;
+  --sidebar-bg: #1e1b4b;
+  --sidebar-text: #c4b5fd;
+  --sidebar-active: #7c3aed;
+  --bg: #f5f3ff;
   --card: #ffffff;
   --border: #e5e7eb;
   --text: #1f2937;
@@ -157,7 +157,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { background: #dc2626; }
 .btn-warning { background: var(--warning); color: #fff; }
-.btn-warning:hover { background: #a8884a; }
+.btn-warning:hover { background: #d97706; }
 .btn-info { background: var(--info); color: #fff; }
 .btn-info:hover { background: #2563eb; }
 .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
@@ -184,7 +184,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .stat-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
 .stat-icon.purple { background: var(--primary-light); color: var(--primary); }
 .stat-icon.green { background: #d1fae5; color: var(--success); }
-.stat-icon.amber { background: #faf3e0; color: var(--warning); }
+.stat-icon.amber { background: #fef3c7; color: var(--warning); }
 .stat-icon.blue { background: #dbeafe; color: var(--info); }
 .stat-icon.red { background: #fee2e2; color: var(--danger); }
 .stat-info p { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1; }
@@ -227,7 +227,7 @@ tr:hover td { background: var(--bg); }
 .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
 .badge-success { background: #d1fae5; color: #065f46; }
 .badge-danger { background: #fee2e2; color: #991b1b; }
-.badge-warning { background: #faf3e0; color: #92400e; }
+.badge-warning { background: #fef3c7; color: #92400e; }
 .badge-info { background: #dbeafe; color: #1e40af; }
 .badge-purple { background: var(--primary-light); color: var(--primary-dark); }
 .badge-gray { background: #f3f4f6; color: #4b5563; }
@@ -348,13 +348,13 @@ tr:hover td { background: var(--bg); }
 }
 
 /* Order status colors */
-.status-pending { background: #faf3e0; color: #92400e; }
+.status-pending { background: #fef3c7; color: #92400e; }
 .status-processing { background: #dbeafe; color: #1e40af; }
-.status-shipped { background: #eef2f7; color: #0b1220; }
+.status-shipped { background: #ede9fe; color: #5b21b6; }
 .status-delivered { background: #d1fae5; color: #065f46; }
 .status-cancelled { background: #fee2e2; color: #991b1b; }
 
-.star { color: #d4b876; }
+.star { color: #fbbf24; }
 .star.empty { color: #d1d5db; }
 
 /* Rating display */
@@ -375,14 +375,14 @@ tr:hover td { background: var(--bg); }
 .chart-bar:hover .chart-bar-tooltip { display: block; }
 .chart-label { font-size: 9px; color: var(--text-muted); white-space: nowrap; }
 .hourly-bar-wrap { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
-.hourly-bar { flex: 1; background: #64748b; border-radius: 3px 3px 0 0; min-height: 2px; cursor: pointer; position: relative; transition: background 0.2s; }
+.hourly-bar { flex: 1; background: #a78bfa; border-radius: 3px 3px 0 0; min-height: 2px; cursor: pointer; position: relative; transition: background 0.2s; }
 .hourly-bar:hover { background: var(--primary); }
 .hourly-bar-tooltip { position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; padding: 2px 6px; border-radius: 5px; font-size: 10px; white-space: nowrap; display: none; z-index: 10; }
 .hourly-bar:hover .hourly-bar-tooltip { display: block; }
 .product-rank-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .product-rank-item:last-child { border-bottom: none; }
 .rank-num { width: 26px; height: 26px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-.rank-num.gold { background: #faf3e0; color: #92400e; }
+.rank-num.gold { background: #fef3c7; color: #92400e; }
 .rank-num.silver { background: #f3f4f6; color: #374151; }
 .rank-num.bronze { background: #fce7f3; color: #9d174d; }
 .rank-bar-wrap { flex: 1; }
@@ -447,7 +447,7 @@ tr:hover td { background: var(--bg); }
   overflow: hidden;
 }
 .sse-popup-header {
-  background: linear-gradient(135deg,#1a2238,#1a2238);
+  background: linear-gradient(135deg,#7c3aed,#4f46e5);
   color: #fff; padding: 12px 16px;
   display: flex; align-items: center; justify-content: space-between;
   font-weight: 700; font-size: 13px;
@@ -933,7 +933,7 @@ tr:hover td { background: var(--bg); }
             <div style="font-size:22px;font-weight:800;color:var(--info);" id="dashMonthVisits">—</div>
             <div style="font-size:11px;color:var(--text-muted);">এই মাসের ভিজিট</div>
           </div>
-          <div style="text-align:center;background:#faf3e0;border-radius:10px;padding:12px;">
+          <div style="text-align:center;background:#fef3c7;border-radius:10px;padding:12px;">
             <div style="font-size:22px;font-weight:800;color:var(--warning);" id="dashTopProduct" style="font-size:13px !important;">—</div>
             <div style="font-size:11px;color:var(--text-muted);">আজকের ট্রেন্ডিং পণ্য</div>
           </div>
@@ -978,7 +978,7 @@ tr:hover td { background: var(--bg); }
     <div class="page-section" id="page-orders">
       <!-- Customer Phone Tracker -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="card-header" style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px 12px 0 0;">
+        <div class="card-header" style="background:linear-gradient(135deg,#1e1b4b,#3730a3);border-radius:12px 12px 0 0;">
           <h3 style="color:#fff;display:flex;align-items:center;gap:8px;"><i class="fas fa-phone-alt" style="color:#a5b4fc;"></i> গ্রাহক ফোন ট্র্যাকার</h3>
           <span style="font-size:11px;color:#a5b4fc;">নম্বর দিয়ে অর্ডার ইতিহাস দেখুন</span>
         </div>
@@ -1022,39 +1022,39 @@ tr:hover td { background: var(--bg); }
     <div class="page-section" id="page-analytics">
 
       <!-- Live Counter Banner -->
-      <div style="background:linear-gradient(135deg,#0f172a,#1a2238);border-radius:16px;padding:20px 24px;margin-bottom:20px;">
+      <div style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:16px;padding:20px 24px;margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="width:10px;height:10px;background:#10b981;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;box-shadow:0 0 0 3px rgba(16,185,129,0.3);"></span>
-            <span style="color:#cbd5e1;font-size:12px;font-weight:600;">এখন LIVE</span>
+            <span style="color:#c4b5fd;font-size:12px;font-weight:600;">এখন LIVE</span>
           </div>
           <div style="display:flex;align-items:baseline;gap:6px;">
             <span id="liveVisitorCount" style="font-size:34px;font-weight:900;color:#fff;line-height:1;">—</span>
-            <span style="color:#64748b;font-size:13px;">জন এখন সাইটে</span>
+            <span style="color:#a78bfa;font-size:13px;">জন এখন সাইটে</span>
           </div>
           <div style="margin-left:auto;display:flex;gap:20px;flex-wrap:wrap;">
             <div style="text-align:center;">
               <div id="liveTodayVisits" style="font-size:18px;font-weight:800;color:#fff;">—</div>
-              <div style="font-size:10px;color:#64748b;">আজকের পেজভিউ</div>
+              <div style="font-size:10px;color:#a78bfa;">আজকের পেজভিউ</div>
             </div>
             <div style="text-align:center;">
-              <div id="liveTodayClicks" style="font-size:18px;font-weight:800;color:#d4b876;">—</div>
-              <div style="font-size:10px;color:#64748b;">আজকের পণ্য ক্লিক</div>
+              <div id="liveTodayClicks" style="font-size:18px;font-weight:800;color:#fbbf24;">—</div>
+              <div style="font-size:10px;color:#a78bfa;">আজকের পণ্য ক্লিক</div>
             </div>
           </div>
         </div>
-        <div style="font-size:10px;color:#64748b;margin-bottom:6px;">গত ১ ঘণ্টার ভিজিট (৫ মিনিট বিরতিতে)</div>
+        <div style="font-size:10px;color:#a78bfa;margin-bottom:6px;">গত ১ ঘণ্টার ভিজিট (৫ মিনিট বিরতিতে)</div>
         <div id="liveChartBars" style="display:flex;align-items:flex-end;gap:3px;height:36px;margin-bottom:8px;"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span id="analyticsLastRefresh" style="font-size:10px;color:#1a2238;"></span>
-          <button onclick="loadAnalytics();loadLiveCounter();" style="background:rgba(124,58,237,0.4);border:1px solid rgba(124,58,237,0.6);color:#cbd5e1;padding:4px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
+          <span id="analyticsLastRefresh" style="font-size:10px;color:#7c3aed;"></span>
+          <button onclick="loadAnalytics();loadLiveCounter();" style="background:rgba(124,58,237,0.4);border:1px solid rgba(124,58,237,0.6);color:#c4b5fd;padding:4px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
         </div>
       </div>
 
       <!-- Top Stats -->
       <div class="analytics-grid" id="analyticsStats">
         <div class="analytics-card">
-          <div class="ac-icon" style="background:#eef2f7;color:#1a2238;"><i class="fas fa-eye"></i></div>
+          <div class="ac-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-eye"></i></div>
           <div class="ac-val" id="anTodayVisits">—</div>
           <div class="ac-label">আজকের পেজভিউ</div>
         </div>
@@ -1069,7 +1069,7 @@ tr:hover td { background: var(--bg); }
           <div class="ac-label">এই মাসের পেজভিউ (৩০ দিন)</div>
         </div>
         <div class="analytics-card">
-          <div class="ac-icon" style="background:#faf3e0;color:#c9a961;"><i class="fas fa-users"></i></div>
+          <div class="ac-icon" style="background:#fef3c7;color:#f59e0b;"><i class="fas fa-users"></i></div>
           <div class="ac-val" id="anMonthUnique">—</div>
           <div class="ac-label">এই মাসের ইউনিক ভিজিটর</div>
         </div>
@@ -1181,10 +1181,10 @@ tr:hover td { background: var(--bg); }
         </div>
       </div>
       <div class="daily-report-grid">
-        <div class="daily-stat-card"><div class="dsc-icon" style="background:#eef2f7;color:#1a2238;"><i class="fas fa-boxes"></i></div><div class="dsc-val" id="drTotalStockIn">—</div><div class="dsc-label">স্টকে ঢুকেছে</div></div>
+        <div class="daily-stat-card"><div class="dsc-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-boxes"></i></div><div class="dsc-val" id="drTotalStockIn">—</div><div class="dsc-label">স্টকে ঢুকেছে</div></div>
         <div class="daily-stat-card"><div class="dsc-icon" style="background:#d1fae5;color:#10b981;"><i class="fas fa-shopping-cart"></i></div><div class="dsc-val" id="drTotalSold">—</div><div class="dsc-label">বিক্রি হয়েছে</div></div>
         <div class="daily-stat-card"><div class="dsc-icon" style="background:#dbeafe;color:#3b82f6;"><i class="fas fa-warehouse"></i></div><div class="dsc-val" id="drTotalRemaining">—</div><div class="dsc-label">স্টকে অবশিষ্ট</div></div>
-        <div class="daily-stat-card"><div class="dsc-icon" style="background:#faf3e0;color:#c9a961;"><i class="fas fa-coins"></i></div><div class="dsc-val" id="drTotalCost">—</div><div class="dsc-label">মোট খরচ (৳)</div></div>
+        <div class="daily-stat-card"><div class="dsc-icon" style="background:#fef3c7;color:#f59e0b;"><i class="fas fa-coins"></i></div><div class="dsc-val" id="drTotalCost">—</div><div class="dsc-label">মোট খরচ (৳)</div></div>
         <div class="daily-stat-card"><div class="dsc-icon" style="background:#d1fae5;color:#10b981;"><i class="fas fa-money-bill-wave"></i></div><div class="dsc-val" id="drTotalRevenue">—</div><div class="dsc-label">মোট বিক্রয় (৳)</div></div>
         <div class="daily-stat-card" id="drProfitCard"><div class="dsc-icon" id="drProfitIcon" style="background:#d1fae5;color:#10b981;"><i class="fas fa-chart-line"></i></div><div class="dsc-val" id="drTotalProfit">—</div><div class="dsc-label" id="drProfitLabel">মোট লাভ/ক্ষতি (৳)</div></div>
       </div>
@@ -1517,7 +1517,7 @@ tr:hover td { background: var(--bg); }
               </div>
 
               <!-- More Products Height & Scroll Controls -->
-              <div style="margin-top:14px;padding:14px;background:var(--primary-light);border-radius:10px;border:1px solid #cbd5e1;">
+              <div style="margin-top:14px;padding:14px;background:var(--primary-light);border-radius:10px;border:1px solid #c4b5fd;">
                 <p style="font-size:12px;font-weight:700;color:var(--primary-dark);margin-bottom:10px;"><i class="fas fa-ruler-vertical" style="margin-right:6px;"></i> "More Products" উচ্চতা ও স্ক্রল সেটিংস</p>
 
                 <div class="form-group" style="margin-bottom:10px;">
@@ -1576,10 +1576,10 @@ tr:hover td { background: var(--bg); }
         </div>
         <div class="card-body">
           <!-- Upload Zone -->
-          <div id="sliderDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f7fa;transition:all 0.2s;margin-bottom:16px;"
+          <div id="sliderDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;margin-bottom:16px;"
             onclick="document.getElementById('sliderImagesInput').click()"
-            ondragover="event.preventDefault();this.style.background='#eef2f7';"
-            ondragleave="this.style.background='#f5f7fa';"
+            ondragover="event.preventDefault();this.style.background='#ede9fe';"
+            ondragleave="this.style.background='#f5f3ff';"
             ondrop="handleSliderDrop(event)">
             <i class="fas fa-cloud-upload-alt" style="font-size:36px;color:var(--primary);display:block;margin-bottom:8px;"></i>
             <p style="font-size:14px;color:var(--primary);font-weight:700;">স্লাইডার ছবি এখানে ড্রাগ করুন বা ক্লিক করুন</p>
@@ -1602,13 +1602,13 @@ tr:hover td { background: var(--bg); }
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
               <p style="font-size:13px;font-weight:700;color:var(--text);"><i class="fas fa-th-large" style="color:var(--primary);margin-right:5px;"></i> বর্তমান স্লাইডার ছবি</p>
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                <span style="font-size:11px;color:var(--text-muted);background:var(--primary-light);color:var(--primary-dark);padding:4px 10px;border-radius:20px;"><i class="fas fa-info-circle"></i> প্রতিটি ছবিতে শিরোনাম (<i class="fas fa-font" style="color:#c9a961;"></i>) ও লিংক (<i class="fas fa-save" style="color:var(--primary);"></i>) আলাদা সেভ করুন</span>
+                <span style="font-size:11px;color:var(--text-muted);background:var(--primary-light);color:var(--primary-dark);padding:4px 10px;border-radius:20px;"><i class="fas fa-info-circle"></i> প্রতিটি ছবিতে শিরোনাম (<i class="fas fa-font" style="color:#f59e0b;"></i>) ও লিংক (<i class="fas fa-save" style="color:var(--primary);"></i>) আলাদা সেভ করুন</span>
                 <button onclick="loadSliderImages()" class="btn btn-xs btn-outline"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
               </div>
             </div>
             <!-- Helper tip -->
-            <div style="background:#fffbeb;border:1px solid #ecd9a3;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;">
-              <i class="fas fa-lightbulb" style="color:#c9a961;font-size:16px;margin-top:1px;flex-shrink:0;"></i>
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;">
+              <i class="fas fa-lightbulb" style="color:#f59e0b;font-size:16px;margin-top:1px;flex-shrink:0;"></i>
               <div style="font-size:12px;color:#78350f;line-height:1.6;">
                 <strong>কীভাবে ব্যবহার করবেন:</strong>
                 ছবি আপলোড করুন → প্রতিটি কার্ডে <strong>শিরোনাম</strong> লিখুন (অ্যাম্বার বাটন <i class="fas fa-font"></i>) → <strong>লিংক</strong> সেট করুন (বেগুনি বাটন <i class="fas fa-save"></i>)।
@@ -1684,8 +1684,8 @@ tr:hover td { background: var(--bg); }
               </div>
             </div>
           </div>
-          <div id="dcPreview" style="background:linear-gradient(135deg,#f5f7fa,#eef2f7);border:1px solid #cbd5e1;border-radius:10px;padding:14px 18px;margin-bottom:18px;">
-            <p style="font-size:12px;font-weight:600;color:#0f172a;margin-bottom:10px;"><i class="fas fa-eye" style="margin-right:6px;"></i>ফ্রন্টএন্ডে এভাবে দেখাবে:</p>
+          <div id="dcPreview" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #c4b5fd;border-radius:10px;padding:14px 18px;margin-bottom:18px;">
+            <p style="font-size:12px;font-weight:600;color:#6d28d9;margin-bottom:10px;"><i class="fas fa-eye" style="margin-right:6px;"></i>ফ্রন্টএন্ডে এভাবে দেখাবে:</p>
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
               <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;">🏙️ চট্টগ্রাম ভেতর: <span style="color:var(--primary);" id="dcPvInside">৳৮০</span></div>
               <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;">🚚 চট্টগ্রামের বাইরে: <span style="color:var(--warning);" id="dcPvOutside">৳১৩০</span></div>
@@ -1838,10 +1838,10 @@ tr:hover td { background: var(--bg); }
                   <span style="font-size:10px;color:#6b7280;">মেইন স্লাইডার</span>
                 </div>
               </div>
-              <div style="background:linear-gradient(135deg,#1a2238,#0f172a);border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;border:2px dashed #64748b;">
+              <div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;border:2px dashed #a78bfa;">
                 <div style="text-align:center;">
-                  <i class="fas fa-image" style="color:#cbd5e1;font-size:16px;display:block;margin-bottom:4px;"></i>
-                  <span style="font-size:10px;color:#cbd5e1;">সাইড ইমেজ ← এখানে</span>
+                  <i class="fas fa-image" style="color:#c4b5fd;font-size:16px;display:block;margin-bottom:4px;"></i>
+                  <span style="font-size:10px;color:#c4b5fd;">সাইড ইমেজ ← এখানে</span>
                 </div>
               </div>
             </div>
@@ -1861,10 +1861,10 @@ tr:hover td { background: var(--bg); }
           <!-- Upload Zone -->
           <div class="form-group">
             <label class="form-label">নতুন ইমেজ আপলোড</label>
-            <div id="heroSideDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f7fa;transition:all 0.2s;"
+            <div id="heroSideDropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
               onclick="document.getElementById('heroSideInput').click()"
-              ondragover="event.preventDefault();this.style.background='#eef2f7';"
-              ondragleave="this.style.background='#f5f7fa';"
+              ondragover="event.preventDefault();this.style.background='#ede9fe';"
+              ondragleave="this.style.background='#f5f3ff';"
               ondrop="handleHeroSideDrop(event)">
               <i class="fas fa-cloud-upload-alt" style="font-size:34px;color:var(--primary);display:block;margin-bottom:8px;"></i>
               <p style="font-size:13px;color:var(--primary);font-weight:700;">ইমেজ এখানে ড্রাগ করুন বা ক্লিক করুন</p>
@@ -1919,7 +1919,7 @@ tr:hover td { background: var(--bg); }
             <input type="hidden" id="heroSideLink">
 
             <!-- Current link preview -->
-            <div id="heroSideLinkPreview" style="display:none;margin-top:10px;padding:10px 14px;background:var(--primary-light);border-radius:8px;border:1px solid #cbd5e1;">
+            <div id="heroSideLinkPreview" style="display:none;margin-top:10px;padding:10px 14px;background:var(--primary-light);border-radius:8px;border:1px solid #c4b5fd;">
               <p style="font-size:12px;color:var(--primary-dark);font-weight:600;margin-bottom:2px;">✅ সেট করা লিংক:</p>
               <p id="heroSideLinkPreviewText" style="font-size:12px;color:var(--primary);word-break:break-all;"></p>
             </div>
@@ -2016,10 +2016,10 @@ tr:hover td { background: var(--bg); }
           </div>
           <div class="form-group" style="grid-column:1/-1;">
             <label class="form-label">ছবি আপলোড</label>
-            <div id="dropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:18px;text-align:center;cursor:pointer;background:#f5f7fa;transition:all 0.2s;"
+            <div id="dropZone" style="border:2px dashed var(--primary);border-radius:10px;padding:18px;text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
               onclick="document.getElementById('productImages').click()"
-              ondragover="event.preventDefault();this.style.background='#eef2f7';this.style.borderColor='var(--primary-dark)'"
-              ondragleave="this.style.background='#f5f7fa';this.style.borderColor='var(--primary)'"
+              ondragover="event.preventDefault();this.style.background='#ede9fe';this.style.borderColor='var(--primary-dark)'"
+              ondragleave="this.style.background='#f5f3ff';this.style.borderColor='var(--primary)'"
               ondrop="handleImageDrop(event)">
               <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--primary);margin-bottom:6px;display:block;"></i>
               <p style="font-size:13px;color:var(--primary);font-weight:600;">ছবি এখানে ড্রাগ করুন অথবা ক্লিক করুন</p>
@@ -2118,17 +2118,17 @@ tr:hover td { background: var(--bg); }
       <div id="prodTab-seo" class="prod-tab-content" style="display:none;">
 
         <!-- Auto SEO Banner -->
-        <div style="background:linear-gradient(135deg,#0f172a,#1a2238);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:12px;">
             <div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <i class="fas fa-magic" style="color:#cbd5e1;font-size:18px;"></i>
+              <i class="fas fa-magic" style="color:#c4b5fd;font-size:18px;"></i>
             </div>
             <div>
               <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:2px;">⚡ Auto-SEO Generator</p>
               <p style="color:#a5b4fc;font-size:11px;">পণ্যের নাম, বিবরণ ও ট্যাগ দিয়ে স্বয়ংক্রিয়ভাবে SEO তৈরি করুন</p>
             </div>
           </div>
-          <button onclick="autoGenerateSEO()" style="background:linear-gradient(135deg,#1a2238,#475569);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:7px;white-space:nowrap;">
+          <button onclick="autoGenerateSEO()" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:7px;white-space:nowrap;">
             <i class="fas fa-magic"></i> Auto SEO তৈরি করুন
           </button>
         </div>
@@ -2180,7 +2180,7 @@ tr:hover td { background: var(--bg); }
           <!-- Structured Data Preview -->
           <div class="form-group" style="grid-column:1/-1;">
             <label class="form-label"><i class="fas fa-code" style="color:var(--primary);margin-right:6px;"></i>Structured Data (JSON-LD) Preview</label>
-            <div style="background:#0f172a;border-radius:10px;padding:14px;font-family:monospace;font-size:11px;color:#a5b4fc;line-height:1.6;max-height:200px;overflow-y:auto;" id="seoJsonLdPreview">
+            <div style="background:#1e1b4b;border-radius:10px;padding:14px;font-family:monospace;font-size:11px;color:#a5b4fc;line-height:1.6;max-height:200px;overflow-y:auto;" id="seoJsonLdPreview">
               <span style="color:#6b7280;">// পণ্যের তথ্য দিলে এখানে Schema.org structured data দেখাবে</span>
             </div>
             <p style="font-size:11px;color:var(--text-muted);margin-top:5px;"><i class="fas fa-info-circle"></i> এই JSON-LD ডেটা গুগলকে পণ্যটি সম্পর্কে সঠিক তথ্য দেয় — Rich Snippet তৈরি করে।</p>
@@ -2198,16 +2198,16 @@ tr:hover td { background: var(--bg); }
 
           <!-- SEO Tips -->
           <div class="form-group" style="grid-column:1/-1;">
-            <div style="background:#fffbeb;border:1px solid #ecd9a3;border-radius:10px;padding:14px 16px;">
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;">
               <p style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:10px;"><i class="fas fa-lightbulb"></i> SEO টিপস — Family Fashion Hub</p>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                 <div style="font-size:12px;color:#78350f;line-height:1.6;">
                   <p style="font-weight:600;margin-bottom:4px;">✅ ভালো SEO Title:</p>
-                  <p style="background:#faf3e0;padding:5px 8px;border-radius:6px;font-size:11px;">Baby Cotton Dress 0-6M | Family Fashion Hub Bangladesh</p>
+                  <p style="background:#fef3c7;padding:5px 8px;border-radius:6px;font-size:11px;">Baby Cotton Dress 0-6M | Family Fashion Hub Bangladesh</p>
                 </div>
                 <div style="font-size:12px;color:#78350f;line-height:1.6;">
                   <p style="font-weight:600;margin-bottom:4px;">✅ বাংলা + ইংরেজি Keywords:</p>
-                  <p style="background:#faf3e0;padding:5px 8px;border-radius:6px;font-size:11px;">baby dress bd, শিশু পোশাক, বেবি ড্রেস বাংলাদেশ</p>
+                  <p style="background:#fef3c7;padding:5px 8px;border-radius:6px;font-size:11px;">baby dress bd, শিশু পোশাক, বেবি ড্রেস বাংলাদেশ</p>
                 </div>
               </div>
             </div>
@@ -2378,9 +2378,9 @@ tr:hover td { background: var(--bg); }
 <!-- ===== PRODUCT DETAIL MODAL (Stock & Profit Analysis) ===== -->
 <div class="modal-overlay" id="productDetailModal">
   <div class="modal" style="max-width:580px;">
-    <div class="modal-header" style="background:linear-gradient(135deg,#0f172a,#1a2238);border-radius:16px 16px 0 0;">
-      <h3 style="color:#fff;display:flex;align-items:center;gap:10px;"><i class="fas fa-chart-pie" style="color:#cbd5e1;"></i> <span id="pdmProductName">পণ্যের বিশ্লেষণ</span></h3>
-      <button class="modal-close" onclick="closeModal('productDetailModal')" style="color:#cbd5e1;"><i class="fas fa-times"></i></button>
+    <div class="modal-header" style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:16px 16px 0 0;">
+      <h3 style="color:#fff;display:flex;align-items:center;gap:10px;"><i class="fas fa-chart-pie" style="color:#c4b5fd;"></i> <span id="pdmProductName">পণ্যের বিশ্লেষণ</span></h3>
+      <button class="modal-close" onclick="closeModal('productDetailModal')" style="color:#c4b5fd;"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body" id="productDetailModalBody" style="padding:20px;">
       <div class="loading"><div class="spinner"></div></div>
@@ -2853,7 +2853,7 @@ async function loadDashboard() {
       orders.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++; });
       const totalRevenue = orders.filter(o=>o.status==='delivered').reduce((s,o)=>s+(o.total||0),0);
       summaryEl.innerHTML = `
-        <div style="text-align:center;padding:12px;background:#faf3e0;border-radius:10px;cursor:pointer;" onclick="showPage('orders')">
+        <div style="text-align:center;padding:12px;background:#fef3c7;border-radius:10px;cursor:pointer;" onclick="showPage('orders')">
           <p style="font-size:22px;font-weight:900;color:#92400e;">${counts.pending}</p>
           <span style="font-size:11px;color:#92400e;font-weight:600;">⏳ পেন্ডিং</span>
         </div>
@@ -2861,9 +2861,9 @@ async function loadDashboard() {
           <p style="font-size:22px;font-weight:900;color:#1e40af;">${counts.processing}</p>
           <span style="font-size:11px;color:#1e40af;font-weight:600;">⚙️ প্রসেসিং</span>
         </div>
-        <div style="text-align:center;padding:12px;background:#eef2f7;border-radius:10px;cursor:pointer;" onclick="showPage('orders')">
-          <p style="font-size:22px;font-weight:900;color:#0b1220;">${counts.shipped}</p>
-          <span style="font-size:11px;color:#0b1220;font-weight:600;">🚚 শিপড</span>
+        <div style="text-align:center;padding:12px;background:#ede9fe;border-radius:10px;cursor:pointer;" onclick="showPage('orders')">
+          <p style="font-size:22px;font-weight:900;color:#5b21b6;">${counts.shipped}</p>
+          <span style="font-size:11px;color:#5b21b6;font-weight:600;">🚚 শিপড</span>
         </div>
         <div style="text-align:center;padding:12px;background:#d1fae5;border-radius:10px;cursor:pointer;" onclick="showPage('orders')">
           <p style="font-size:22px;font-weight:900;color:#065f46;">${counts.delivered}</p>
@@ -2873,7 +2873,7 @@ async function loadDashboard() {
           <p style="font-size:22px;font-weight:900;color:#991b1b;">${counts.cancelled}</p>
           <span style="font-size:11px;color:#991b1b;font-weight:600;">❌ বাতিল</span>
         </div>
-        <div style="text-align:center;padding:12px;background:linear-gradient(135deg,#f5f7fa,#eef2f7);border-radius:10px;">
+        <div style="text-align:center;padding:12px;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:10px;">
           <p style="font-size:18px;font-weight:900;color:var(--primary);">৳${totalRevenue.toLocaleString()}</p>
           <span style="font-size:11px;color:var(--primary);font-weight:600;">💰 মোট আয়</span>
         </div>`;
@@ -3218,7 +3218,7 @@ let pendingImageFiles = []; // Track all selected images (accumulate, don't repl
 function handleImageDrop(event) {
   event.preventDefault();
   const zone = document.getElementById('dropZone');
-  zone.style.background = '#f5f7fa';
+  zone.style.background = '#f5f3ff';
   zone.style.borderColor = 'var(--primary)';
   const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
   if (!files.length) return;
@@ -3281,7 +3281,7 @@ function renderOrders(list) {
       return `
       <tr>
         <td>
-          <span style="font-family:monospace;font-size:13px;font-weight:700;background:#f5f7fa;padding:4px 9px;border-radius:6px;color:#0f172a;cursor:pointer;letter-spacing:0.5px;display:inline-block;" title="ক্লিক করলে কপি হবে" onclick="copyOrderId('#${sid}',this)">#${sid}</span>
+          <span style="font-family:monospace;font-size:13px;font-weight:700;background:#f5f3ff;padding:4px 9px;border-radius:6px;color:#6d28d9;cursor:pointer;letter-spacing:0.5px;display:inline-block;" title="ক্লিক করলে কপি হবে" onclick="copyOrderId('#${sid}',this)">#${sid}</span>
         </td>
         <td><p style="font-weight:600;font-size:13px;">${o.customerName}</p></td>
         <td>${o.phone}</td>
@@ -3356,16 +3356,16 @@ async function viewOrder(id) {
   if (!o) return;
   const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
   document.getElementById('orderModalBody').innerHTML = `
-    <div style="background:#f5f7fa;border:1px solid #eef2f7;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div style="background:#f5f3ff;border:1px solid #ede9fe;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div>
         <p style="font-size:11px;color:#6b7280;margin-bottom:3px;">📦 অর্ডার আইডি — ফ্রন্টএন্ড Track Order এ এই আইডি ব্যবহার করুন</p>
-        <p style="font-family:monospace;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:1px;">#${sid}</p>
+        <p style="font-family:monospace;font-size:22px;font-weight:800;color:#6d28d9;letter-spacing:1px;">#${sid}</p>
       </div>
-      <button onclick="copyOrderId('${sid}',this)" style="background:#1a2238;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px;"><i class="fas fa-copy"></i> কপি করুন</button>
+      <button onclick="copyOrderId('${sid}',this)" style="background:#7c3aed;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px;"><i class="fas fa-copy"></i> কপি করুন</button>
     </div>
     <!-- Phone History Banner — async load -->
     <div id="phoneHistoryBanner" style="margin-bottom:14px;">
-      <div style="background:#f5f7fa;border:1px solid #eef2f7;border-radius:8px;padding:10px 14px;font-size:12px;color:#1a2238;display:flex;align-items:center;gap:8px;">
+      <div style="background:#f5f3ff;border:1px solid #ede9fe;border-radius:8px;padding:10px 14px;font-size:12px;color:#7c3aed;display:flex;align-items:center;gap:8px;">
         <i class="fas fa-spinner fa-spin"></i> ফোন নম্বরের ইতিহাস লোড হচ্ছে...
       </div>
     </div>
@@ -3374,7 +3374,7 @@ async function viewOrder(id) {
       <div>
         <p style="font-size:12px;color:var(--text-muted);">ফোন</p>
         <p style="font-weight:600;">${o.phone}
-          <button onclick="document.getElementById('phoneTrackInput').value='${o.phone}';closeModal('orderModal');showPage('orders');setTimeout(()=>trackPhone(),300);" style="background:#1a2238;color:#fff;border:none;padding:2px 8px;border-radius:5px;font-size:10px;cursor:pointer;margin-left:6px;"><i class="fas fa-search"></i> ট্র্যাক</button>
+          <button onclick="document.getElementById('phoneTrackInput').value='${o.phone}';closeModal('orderModal');showPage('orders');setTimeout(()=>trackPhone(),300);" style="background:#7c3aed;color:#fff;border:none;padding:2px 8px;border-radius:5px;font-size:10px;cursor:pointer;margin-left:6px;"><i class="fas fa-search"></i> ট্র্যাক</button>
         </p>
       </div>
       <div style="grid-column:1/-1;"><p style="font-size:12px;color:var(--text-muted);">ঠিকানা</p><p>${o.address}</p></div>
@@ -3421,7 +3421,7 @@ async function viewOrder(id) {
     }
     let bgColor = '#d1fae5', borderColor = '#6ee7b7', textColor = '#065f46', icon = 'fa-check-circle', riskLabel = 'বিশ্বস্ত গ্রাহক';
     if (s.riskLevel === 'high')   { bgColor = '#fee2e2'; borderColor = '#fca5a5'; textColor = '#991b1b'; icon = 'fa-exclamation-triangle'; riskLabel = 'ঝুঁকিপূর্ণ গ্রাহক'; }
-    else if (s.riskLevel === 'medium') { bgColor = '#faf3e0'; borderColor = '#ecd9a3'; textColor = '#92400e'; icon = 'fa-exclamation-circle'; riskLabel = 'সতর্কতা প্রয়োজন'; }
+    else if (s.riskLevel === 'medium') { bgColor = '#fef3c7'; borderColor = '#fde68a'; textColor = '#92400e'; icon = 'fa-exclamation-circle'; riskLabel = 'সতর্কতা প্রয়োজন'; }
 
     banner.innerHTML = `
       <div style="background:${bgColor};border:1.5px solid ${borderColor};border-radius:10px;padding:12px 16px;">
@@ -3442,12 +3442,12 @@ async function viewOrder(id) {
             <span style="font-size:10px;color:#991b1b;font-weight:600;">❌ রিসিভ করেনি</span>
           </div>
           <div style="background:rgba(255,255,255,0.6);border-radius:7px;padding:7px;text-align:center;">
-            <p style="font-size:18px;font-weight:900;color:#c9a961;">${s.cancelRate}%</p>
+            <p style="font-size:18px;font-weight:900;color:#f59e0b;">${s.cancelRate}%</p>
             <span style="font-size:10px;color:#92400e;font-weight:600;">বাতিলের হার</span>
           </div>
           <div style="background:rgba(255,255,255,0.6);border-radius:7px;padding:7px;text-align:center;">
-            <p style="font-size:14px;font-weight:900;color:#1a2238;">৳${(s.totalSpent||0).toLocaleString()}</p>
-            <span style="font-size:10px;color:#0b1220;font-weight:600;">মোট ব্যয়</span>
+            <p style="font-size:14px;font-weight:900;color:#7c3aed;">৳${(s.totalSpent||0).toLocaleString()}</p>
+            <span style="font-size:10px;color:#5b21b6;font-weight:600;">মোট ব্যয়</span>
           </div>
         </div>
         ${s.notReceived > 0 ? `<p style="font-size:11px;color:${textColor};margin-top:8px;font-weight:600;">⚠️ ${s.cancelled}টি বাতিল + ${s.pending}টি পেন্ডিং (রিসিভ করেনি)</p>` : ''}
@@ -3486,7 +3486,7 @@ function renderReviews(list) {
     <tbody>${list.map(r => `
       <tr>
         <td><p style="font-weight:600;font-size:13px;">${r.name}</p><p style="font-size:11px;color:var(--text-muted);">${r.phone||''}</p></td>
-        <td><span style="color:#c9a961;font-size:14px;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span></td>
+        <td><span style="color:#f59e0b;font-size:14px;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span></td>
         <td style="max-width:200px;font-size:12px;">${r.comment}</td>
         <td style="font-size:12px;">${r.productName||'—'}</td>
         <td><button class="btn btn-xs ${r.approved?'btn-success':'btn-light'}" onclick="toggleReview('${r._id}','approved',${!r.approved})">${r.approved?'অনুমোদিত':'অনুমোদন দিন'}</button></td>
@@ -3703,7 +3703,7 @@ function checkPwStrength(val) {
   const levels = [
     { w:'20%', bg:'#ef4444', text:'খুব দুর্বল' },
     { w:'40%', bg:'#f97316', text:'দুর্বল' },
-    { w:'60%', bg:'#c9a961', text:'মাঝারি' },
+    { w:'60%', bg:'#f59e0b', text:'মাঝারি' },
     { w:'80%', bg:'#3b82f6', text:'ভালো' },
     { w:'100%',bg:'#10b981', text:'শক্তিশালী ✓' },
   ];
@@ -4070,7 +4070,7 @@ function renderStock(list) {
     <tbody>
       ${list.map(p => {
         const pct = p._stock > 0 ? Math.round((p._remaining / p._stock) * 100) : 0;
-        const statusColor = p._remaining === 0 ? '#ef4444' : p._remaining <= 5 ? '#c9a961' : '#10b981';
+        const statusColor = p._remaining === 0 ? '#ef4444' : p._remaining <= 5 ? '#f59e0b' : '#10b981';
         const statusText = p._remaining === 0 ? 'স্টক শেষ' : p._remaining <= 5 ? 'কম স্টক' : 'পর্যাপ্ত';
         return `<tr>
           <td>
@@ -4184,7 +4184,7 @@ async function showProductDetailModal(productId, productName) {
             <div style="font-size:11px;color:var(--text-muted);">বিক্রয় মূল্য (প্রতিটি)</div>
             <div style="font-size:16px;font-weight:700;color:var(--primary);">৳${sellPrice}</div>
           </div>
-          <div style="padding:10px 12px;background:#faf3e0;border-radius:8px;border:1px solid #ecd9a3;">
+          <div style="padding:10px 12px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a;">
             <div style="font-size:11px;color:#92400e;">মোট ক্রয় খরচ</div>
             <div style="font-size:16px;font-weight:700;color:#78350f;">${totalBuyCost ? '৳'+totalBuyCost.toLocaleString() : '—'}</div>
           </div>
@@ -4238,7 +4238,7 @@ function showOrderNotification(count) {
   if (existing) existing.remove();
   const banner = document.createElement('div');
   banner.id = 'orderNotifBanner';
-  banner.style.cssText = `position:fixed;top:80px;right:20px;z-index:9999;background:linear-gradient(135deg,#1a2238,#1a2238);color:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 8px 32px rgba(124,58,237,0.45);display:flex;align-items:center;gap:14px;max-width:320px;animation:slideIn 0.4s ease;cursor:pointer;`;
+  banner.style.cssText = `position:fixed;top:80px;right:20px;z-index:9999;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 8px 32px rgba(124,58,237,0.45);display:flex;align-items:center;gap:14px;max-width:320px;animation:slideIn 0.4s ease;cursor:pointer;`;
   banner.innerHTML = `
     <div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">🛍️</div>
     <div style="flex:1;">
@@ -5265,7 +5265,7 @@ function layoutMoreProductsPreview() {
   box.innerHTML = `
     <div style="font-size:11px;color:var(--primary-dark);font-weight:600;margin-bottom:6px;">📐 ফ্রন্টএন্ড প্রিভিউ (scaled):</div>
     <div style="display:flex;align-items:flex-start;gap:8px;">
-      <div style="flex:1;border:2px dashed #64748b;border-radius:8px;overflow:hidden;position:relative;background:#fff;height:${previewH}px;">
+      <div style="flex:1;border:2px dashed #a78bfa;border-radius:8px;overflow:hidden;position:relative;background:#fff;height:${previewH}px;">
         <div style="background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;">
           <span><i class="fas fa-th-list" style="margin-right:5px;"></i>${title}</span>
           <span style="font-size:9px;opacity:0.8;">${height}px</span>
@@ -5273,7 +5273,7 @@ function layoutMoreProductsPreview() {
         <div style="padding:6px 8px;">
           ${[1,2,3,4].map(i=>`
             <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f3f4f6;">
-              <div style="width:28px;height:28px;background:#eef2f7;border-radius:5px;flex-shrink:0;"></div>
+              <div style="width:28px;height:28px;background:#ede9fe;border-radius:5px;flex-shrink:0;"></div>
               <div>
                 <div style="height:8px;background:#e5e7eb;border-radius:3px;width:80px;margin-bottom:3px;"></div>
                 <div style="height:7px;background:#f3f4f6;border-radius:3px;width:50px;"></div>
@@ -5337,7 +5337,7 @@ async function trackPhone() {
     const cleanPhone = phoneRaw.replace(/\D/g, '');
     const data = await api(`/admin/orders/track/${cleanPhone}`);
     if (!data.success) {
-      resultBox.innerHTML = `<div style="background:#faf3e0;border:1px solid #ecd9a3;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;">
+      resultBox.innerHTML = `<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;">
         <i class="fas fa-search" style="font-size:22px;color:#92400e;"></i>
         <div>
           <p style="font-weight:700;color:#92400e;font-size:14px;">কোনো অর্ডার পাওয়া যায়নি</p>
@@ -5351,7 +5351,7 @@ async function trackPhone() {
     const matched = data.data.orders || [];
 
     if (!matched.length) {
-      resultBox.innerHTML = `<div style="background:#faf3e0;border:1px solid #ecd9a3;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;">
+      resultBox.innerHTML = `<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;">
         <i class="fas fa-search" style="font-size:22px;color:#92400e;"></i>
         <div>
           <p style="font-weight:700;color:#92400e;font-size:14px;">কোনো অর্ডার পাওয়া যায়নি</p>
@@ -5364,7 +5364,7 @@ async function trackPhone() {
     // Risk badge
     let riskColor = '#10b981', riskBg = '#d1fae5', riskText = '✅ বিশ্বস্ত গ্রাহক';
     if (s.riskLevel === 'high')   { riskColor = '#ef4444'; riskBg = '#fee2e2'; riskText = '🚨 ঝুঁকিপূর্ণ গ্রাহক'; }
-    else if (s.riskLevel === 'medium') { riskColor = '#c9a961'; riskBg = '#faf3e0'; riskText = '⚠️ সতর্কতা প্রয়োজন'; }
+    else if (s.riskLevel === 'medium') { riskColor = '#f59e0b'; riskBg = '#fef3c7'; riskText = '⚠️ সতর্কতা প্রয়োজন'; }
 
     // Confirmed vs NotReceived bar
     const confirmedPct  = s.total > 0 ? Math.round((s.confirmed   / s.total) * 100) : 0;
@@ -5373,10 +5373,10 @@ async function trackPhone() {
     const orderRows = matched.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(o => {
       const sid = (o.shortId || o._id.slice(-8)).toUpperCase();
       const date = new Date(o.createdAt).toLocaleDateString('bn-BD');
-      const statusColors = {pending:'#faf3e0',processing:'#dbeafe',shipped:'#eef2f7',delivered:'#d1fae5',cancelled:'#fee2e2'};
-      const statusTxtColors = {pending:'#92400e',processing:'#1e40af',shipped:'#0b1220',delivered:'#065f46',cancelled:'#991b1b'};
+      const statusColors = {pending:'#fef3c7',processing:'#dbeafe',shipped:'#ede9fe',delivered:'#d1fae5',cancelled:'#fee2e2'};
+      const statusTxtColors = {pending:'#92400e',processing:'#1e40af',shipped:'#5b21b6',delivered:'#065f46',cancelled:'#991b1b'};
       return `<tr>
-        <td><span style="font-family:monospace;font-size:12px;font-weight:700;background:#f5f7fa;padding:3px 8px;border-radius:5px;color:#0f172a;">#${sid}</span></td>
+        <td><span style="font-family:monospace;font-size:12px;font-weight:700;background:#f5f3ff;padding:3px 8px;border-radius:5px;color:#6d28d9;">#${sid}</span></td>
         <td style="font-size:12px;">${date}</td>
         <td style="font-weight:700;color:var(--primary);font-size:13px;">৳${o.total}</td>
         <td><span style="background:${statusColors[o.status]||'#f3f4f6'};color:${statusTxtColors[o.status]||'#374151'};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;">${statusLabel(o.status)}</span></td>
@@ -5385,14 +5385,14 @@ async function trackPhone() {
     }).join('');
 
     resultBox.innerHTML = `
-      <div style="border:1.5px solid #64748b;border-radius:12px;overflow:hidden;">
+      <div style="border:1.5px solid #a78bfa;border-radius:12px;overflow:hidden;">
         <!-- Header -->
-        <div style="background:linear-gradient(135deg,#1a2238,#0f172a);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="background:linear-gradient(135deg,#4c1d95,#6d28d9);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
           <div style="display:flex;align-items:center;gap:12px;">
             <div style="width:42px;height:42px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
             <div>
               <p style="color:#fff;font-weight:700;font-size:15px;">${s.customerName || '—'}</p>
-              <p style="color:#cbd5e1;font-size:12px;"><i class="fas fa-phone" style="margin-right:5px;"></i>${s.phone || phoneRaw}</p>
+              <p style="color:#c4b5fd;font-size:12px;"><i class="fas fa-phone" style="margin-right:5px;"></i>${s.phone || phoneRaw}</p>
             </div>
           </div>
           <div style="background:${riskBg};color:${riskColor};padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;">${riskText}</div>
@@ -5400,7 +5400,7 @@ async function trackPhone() {
 
         <!-- KEY STATS: Confirmed vs NotReceived — মূল তথ্য -->
         <div style="background:#faf5ff;border-bottom:1px solid #e9d5ff;padding:14px 20px;">
-          <p style="font-size:11px;font-weight:700;color:#1a2238;letter-spacing:0.5px;margin-bottom:10px;text-transform:uppercase;">📊 অর্ডার বিশ্লেষণ</p>
+          <p style="font-size:11px;font-weight:700;color:#7c3aed;letter-spacing:0.5px;margin-bottom:10px;text-transform:uppercase;">📊 অর্ডার বিশ্লেষণ</p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
             <!-- কনফার্ম করেছে -->
             <div style="background:#d1fae5;border:1.5px solid #6ee7b7;border-radius:10px;padding:12px 14px;text-align:center;">
@@ -5428,28 +5428,28 @@ async function trackPhone() {
         </div>
 
         <!-- Full Stats Row -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:0;border-bottom:1px solid #eef2f7;">
-          <div style="padding:10px 12px;text-align:center;border-right:1px solid #eef2f7;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:0;border-bottom:1px solid #ede9fe;">
+          <div style="padding:10px 12px;text-align:center;border-right:1px solid #ede9fe;">
             <p style="font-size:20px;font-weight:800;color:var(--primary);">${s.total}</p>
             <span style="font-size:10px;color:var(--text-muted);">মোট অর্ডার</span>
           </div>
-          <div style="padding:10px 12px;text-align:center;border-right:1px solid #eef2f7;">
+          <div style="padding:10px 12px;text-align:center;border-right:1px solid #ede9fe;">
             <p style="font-size:20px;font-weight:800;color:#10b981;">${s.delivered}</p>
             <span style="font-size:10px;color:var(--text-muted);">ডেলিভার্ড</span>
           </div>
-          <div style="padding:10px 12px;text-align:center;border-right:1px solid #eef2f7;">
-            <p style="font-size:20px;font-weight:800;color:#334155;">${s.shipped}</p>
+          <div style="padding:10px 12px;text-align:center;border-right:1px solid #ede9fe;">
+            <p style="font-size:20px;font-weight:800;color:#8b5cf6;">${s.shipped}</p>
             <span style="font-size:10px;color:var(--text-muted);">শিপড</span>
           </div>
-          <div style="padding:10px 12px;text-align:center;border-right:1px solid #eef2f7;">
+          <div style="padding:10px 12px;text-align:center;border-right:1px solid #ede9fe;">
             <p style="font-size:20px;font-weight:800;color:#3b82f6;">${s.processing}</p>
             <span style="font-size:10px;color:var(--text-muted);">প্রসেসিং</span>
           </div>
-          <div style="padding:10px 12px;text-align:center;border-right:1px solid #eef2f7;">
-            <p style="font-size:20px;font-weight:800;color:#c9a961;">${s.pending}</p>
+          <div style="padding:10px 12px;text-align:center;border-right:1px solid #ede9fe;">
+            <p style="font-size:20px;font-weight:800;color:#f59e0b;">${s.pending}</p>
             <span style="font-size:10px;color:var(--text-muted);">পেন্ডিং</span>
           </div>
-          <div style="padding:10px 12px;text-align:center;border-right:1px solid #eef2f7;">
+          <div style="padding:10px 12px;text-align:center;border-right:1px solid #ede9fe;">
             <p style="font-size:20px;font-weight:800;color:#ef4444;">${s.cancelled}</p>
             <span style="font-size:10px;color:var(--text-muted);">বাতিল</span>
           </div>
@@ -5550,9 +5550,9 @@ function renderSliderImages(images) {
         <div style="display:flex;gap:5px;align-items:center;">
           <input type="text" id="sliderTitleInput_${i}" value="${(img.title||'').replace(/"/g,'&quot;')}" placeholder="স্লাইড শিরোনাম (ঐচ্ছিক)"
             style="flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--font);outline:none;color:var(--text);"
-            onfocus="this.style.borderColor='#c9a961'" onblur="this.style.borderColor='var(--border)'"
+            onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"
             onkeydown="if(event.key==='Enter')saveSliderTitle(${i})">
-          <button onclick="saveSliderTitle(${i})" style="background:#c9a961;color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="শিরোনাম সেভ করুন"><i class="fas fa-font"></i></button>
+          <button onclick="saveSliderTitle(${i})" style="background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="শিরোনাম সেভ করুন"><i class="fas fa-font"></i></button>
         </div>
 
         <!-- Link Row -->
@@ -5696,7 +5696,7 @@ async function uploadSliderImages(replace = false) {
 
 function handleSliderDrop(event) {
   event.preventDefault();
-  document.getElementById('sliderDropZone').style.background = '#f5f7fa';
+  document.getElementById('sliderDropZone').style.background = '#f5f3ff';
   const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
   if (!files.length) return;
   // Simulate file input
@@ -6225,7 +6225,7 @@ async function searchProductsForHeroLink(q) {
       box.innerHTML = prods.map(p => `
         <div onmousedown="setHeroSideProductLink('${p._id}','${(p.name||'').replace(/'/g,'').replace(/"/g,'')}')"
           style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;transition:background 0.15s;"
-          onmouseover="this.style.background='#f5f7fa'" onmouseout="this.style.background='#fff'">
+          onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='#fff'">
           <img src="${p.img || (p.images && p.images[0] ? p.images[0].url : '')}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0;" onerror="this.style.display='none'">
           <div style="flex:1;min-width:0;">
             <p style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</p>
@@ -6261,7 +6261,7 @@ function previewHeroSideImage(input) {
 
 function handleHeroSideDrop(event) {
   event.preventDefault();
-  document.getElementById('heroSideDropZone').style.background = '#f5f7fa';
+  document.getElementById('heroSideDropZone').style.background = '#f5f3ff';
   const file = Array.from(event.dataTransfer.files).find(f => f.type.startsWith('image/'));
   if (!file) return;
   const dt = new DataTransfer();
@@ -6391,7 +6391,7 @@ function updateSeoCharCount() {
   if (tFill) {
     const pct = Math.min(100, Math.round((tLen / 60) * 100));
     tFill.style.width = pct + '%';
-    tFill.style.background = tLen > 60 ? '#ef4444' : tLen >= 50 ? '#10b981' : '#c9a961';
+    tFill.style.background = tLen > 60 ? '#ef4444' : tLen >= 50 ? '#10b981' : '#f59e0b';
   }
   if (dFill) {
     const pct = Math.min(100, Math.round((dLen / 160) * 100));
@@ -6739,7 +6739,7 @@ function renderLiveChart(chartData) {
   el.innerHTML = chartData.map(c => {
     const pct = Math.round((c.count / max) * 100);
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;">
-      <div style="width:100%;background:${pct > 0 ? '#1a2238' : '#e5e7eb'};border-radius:3px 3px 0 0;height:${Math.max(pct,3)}%;min-height:3px;transition:height 0.4s;position:relative;" title="${c.time}: ${c.count}"></div>
+      <div style="width:100%;background:${pct > 0 ? '#7c3aed' : '#e5e7eb'};border-radius:3px 3px 0 0;height:${Math.max(pct,3)}%;min-height:3px;transition:height 0.4s;position:relative;" title="${c.time}: ${c.count}"></div>
       <div style="font-size:8px;color:var(--text-muted);white-space:nowrap;">${c.time.slice(3)}</div>
     </div>`;
   }).join('');
